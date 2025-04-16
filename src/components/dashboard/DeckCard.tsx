@@ -1,0 +1,88 @@
+
+import React from 'react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Deck } from '@/context/DeckContext';
+import { useNavigate } from 'react-router-dom';
+import { Heart, Edit, Trash, Share2, PlayCircle } from 'lucide-react';
+import { useDeck } from '@/context/DeckContext';
+
+interface DeckCardProps {
+  deck: Deck;
+}
+
+const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
+  const navigate = useNavigate();
+  const { toggleFavorite, isFavorite, deleteDeck } = useDeck();
+  
+  const handlePlay = () => {
+    navigate(`/deck/${deck.id}/practice`);
+  };
+  
+  const handleEdit = () => {
+    navigate(`/deck/${deck.id}`);
+  };
+  
+  const handleShare = () => {
+    navigate(`/deck/${deck.id}/share`);
+  };
+  
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    toggleFavorite(deck.id);
+  };
+  
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    if (confirm('Are you sure you want to delete this deck?')) {
+      deleteDeck(deck.id);
+    }
+  };
+
+  return (
+    <Card className="h-full cursor-pointer hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex justify-between items-center">
+          <span className="text-lg line-clamp-1">{deck.title}</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="p-0 h-8 w-8" 
+            onClick={handleToggleFavorite}
+          >
+            <Heart 
+              className={`h-5 w-5 ${isFavorite(deck.id) ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} 
+            />
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent 
+        className="pb-2"
+        onClick={handlePlay}
+      >
+        <p className="text-muted-foreground text-sm line-clamp-2">
+          {deck.description || `${deck.cards.length} cards`}
+        </p>
+      </CardContent>
+      <CardFooter className="pt-2 flex justify-between">
+        <Button variant="outline" size="sm" onClick={handlePlay}>
+          <PlayCircle className="h-4 w-4 mr-1" />
+          Practice
+        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleEdit}>
+            <Edit className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleShare}>
+            <Share2 className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleDelete}>
+            <Trash className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default DeckCard;

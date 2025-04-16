@@ -1,9 +1,21 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
+import { DeckProvider } from "@/context/DeckContext";
+
+// Pages
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import DeckEdit from "./pages/DeckEdit";
+import Practice from "./pages/Practice";
+import Test from "./pages/Test";
+import DeckShare from "./pages/DeckShare";
+import SharedDeck from "./pages/SharedDeck";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -11,15 +23,25 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <DeckProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/deck/:id" element={<DeckEdit />} />
+              <Route path="/deck/:id/practice" element={<Practice />} />
+              <Route path="/deck/:id/test" element={<Test />} />
+              <Route path="/deck/:id/share" element={<DeckShare />} />
+              <Route path="/shared/:code" element={<SharedDeck />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </DeckProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
