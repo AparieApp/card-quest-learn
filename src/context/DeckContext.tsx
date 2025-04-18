@@ -1,12 +1,12 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
-import { deckService } from '@/services/deckService';
 import { useDeckStorage } from '@/hooks/useDeckStorage';
 import { useFavorites } from '@/hooks/useFavorites';
-import { useSharing } from '@/hooks/useSharing';
-import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+import { useDeckOperations } from '@/hooks/deck/useDeckOperations';
+import { useCardOperations } from '@/hooks/deck/useCardOperations';
+import { useSharingOperations } from '@/hooks/deck/useSharingOperations';
 
 interface DeckContextType {
   decks: Deck[];
@@ -32,145 +32,36 @@ const DeckContext = createContext<DeckContextType>({} as DeckContextType);
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { decks, loading, setDecks } = useDeckStorage();
-  const { favorites, toggleFavorite: toggleFav, isFavorite } = useFavorites();
-  const { generateShareCode: genShareCode, getDeckByShareCode: getSharedDeckId } = useSharing();
-  const queryClient = useQueryClient();
-  const [shareCodeCache, setShareCodeCache] = useState<Record<string, string>>({});
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  
+  const {
+    createDeck,
+    updateDeck,
+    deleteDeck,
+    getDeck,
+  } = useDeckOperations(setDecks, user?.id);
+
+  const {
+    addCardToDeck,
+    updateCard,
+    deleteCard,
+  } = useCardOperations(setDecks, user?.id);
+
+  const {
+    getDeckByShareCode,
+    generateShareCode,
+    copyDeck,
+  } = useSharingOperations(decks, setDecks, user?.id);
 
   const refreshDecks = async () => {
     if (!user) return;
     
     try {
-      const fetchedDecks = await deckService.getDecks();
-      setDecks(fetchedDecks);
+      const refreshedDecks = await deckService.getDecks();
+      setDecks(refreshedDecks);
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
-  };
-
-  const createDeck = async (input: CreateDeckInput): Promise<Deck> => {
-    if (!user) throw new Error('User not authenticated');
-    
-    const newDeck = await deckService.createDeck(user.id, input);
-    setDecks(prev => [newDeck, ...prev]);
-    toast.success(`Deck "${input.title}" created!`);
-    return newDeck;
-  };
-
-  const updateDeck = async (id: string, input: UpdateDeckInput) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    await deckService.updateDeck(id, input);
-    
-    setDecks(prev => prev.map(d => d.id === id ? { ...d, ...input, updated_at: new Date().toISOString() } : d));
-    toast.success('Deck updated!');
-  };
-
-  const deleteDeck = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    await deckService.deleteDeck(id);
-    setDecks(prev => prev.filter(deck => deck.id !== id));
-    toast.success('Deck deleted!');
-  };
-
-  const getDeck = (id: string): Deck | null => {
-    const cachedDeck = decks.find(deck => deck.id === id);
-    if (cachedDeck) return cachedDeck;
-    return null;
-  };
-
-  const addCardToDeck = async (deckId: string, card: CreateCardInput) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    const newCard = await deckService.addCard(deckId, card);
-    
-    setDecks(prev => 
-      prev.map(deck => 
-        deck.id === deckId 
-          ? { ...deck, cards: [...deck.cards, newCard], updated_at: new Date().toISOString() } 
-          : deck
-      )
-    );
-    
-    toast.success('Card added!');
-  };
-
-  const updateCard = async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    await deckService.updateCard(cardId, cardData);
-    
-    setDecks(prev => 
-      prev.map(deck => 
-        deck.id === deckId 
-          ? { 
-              ...deck, 
-              updated_at: new Date().toISOString(),
-              cards: deck.cards.map(card => 
-                card.id === cardId ? { ...card, ...cardData } : card
-              ) 
-            } 
-          : deck
-      )
-    );
-    
-    toast.success('Card updated!');
-  };
-
-  const deleteCard = async (deckId: string, cardId: string) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    await deckService.deleteCard(cardId);
-    
-    setDecks(prev => 
-      prev.map(deck => 
-        deck.id === deckId 
-          ? { 
-              ...deck, 
-              updated_at: new Date().toISOString(),
-              cards: deck.cards.filter(card => card.id !== cardId) 
-            } 
-          : deck
-      )
-    );
-    
-    toast.success('Card deleted!');
-  };
-
-  const getDeckByShareCode = async (code: string): Promise<Deck | null> => {
-    try {
-      const deckId = await getSharedDeckId(code);
-      if (!deckId) return null;
-      
-      const cachedDeck = decks.find(d => d.id === deckId);
-      if (cachedDeck) return cachedDeck;
-      
-      return await deckService.getDeck(deckId);
-    } catch (error) {
-      console.error('Error getting deck by share code:', error);
-      return null;
-    }
-  };
-
-  const generateShareCode = (deckId: string): string => {
-    if (!user) throw new Error('User not authenticated');
-    
-    if (shareCodeCache[deckId]) {
-      return shareCodeCache[deckId];
-    }
-    
-    const code = genShareCode(deckId);
-    setShareCodeCache(prev => ({...prev, [deckId]: code}));
-    return code;
-  };
-
-  const copyDeck = async (deckId: string): Promise<Deck> => {
-    if (!user) throw new Error('User not authenticated');
-    
-    const copiedDeck = await deckService.copyDeck(user.id, deckId);
-    setDecks(prev => [copiedDeck, ...prev]);
-    return copiedDeck;
   };
 
   return (
@@ -186,7 +77,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
         addCardToDeck,
         updateCard,
         deleteCard,
-        toggleFavorite: toggleFav,
+        toggleFavorite,
         isFavorite,
         getDeckByShareCode,
         generateShareCode,
