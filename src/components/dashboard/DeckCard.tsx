@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Deck } from '@/context/DeckContext';
+import { Deck } from '@/types/deck';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck } from 'lucide-react';
 import { useDeck } from '@/context/DeckContext';

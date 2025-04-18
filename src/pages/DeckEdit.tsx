@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Flashcard } from '@/context/DeckContext';
+import { Flashcard, CreateCardInput, UpdateDeckInput } from '@/types/deck';
 import { ArrowLeft, Plus, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -66,7 +66,11 @@ const DeckEdit = () => {
     
     setIsSaving(true);
     try {
-      await updateDeck(id, title, description);
+      const updateInput: UpdateDeckInput = {
+        title,
+        description
+      };
+      await updateDeck(id, updateInput);
       toast.success('Deck updated successfully');
     } catch (error) {
       toast.error('Failed to update deck');
@@ -76,7 +80,12 @@ const DeckEdit = () => {
   };
   
   const handleAddCard = (cardData: Omit<Flashcard, 'id' | 'created_at'>) => {
-    addCardToDeck(id, cardData);
+    const cardInput: CreateCardInput = {
+      front_text: cardData.front_text,
+      correct_answer: cardData.correct_answer,
+      incorrect_answers: cardData.incorrect_answers
+    };
+    addCardToDeck(id, cardInput);
     setIsCardDialogOpen(false);
     setCurrentCard(undefined);
   };

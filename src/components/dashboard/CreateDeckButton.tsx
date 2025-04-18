@@ -47,7 +47,10 @@ const CreateDeckButton: React.FC = () => {
 
   const onSubmit = async (values: CreateDeckFormValues) => {
     try {
-      const newDeck = await createDeck(values.title, values.description);
+      const newDeck = await createDeck({
+        title: values.title,
+        description: values.description
+      });
       setOpen(false);
       form.reset();
       navigate(`/deck/${newDeck.id}`);

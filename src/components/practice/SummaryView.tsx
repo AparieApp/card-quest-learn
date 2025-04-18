@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useDeck } from '@/context/DeckContext';
 import { useAuth } from '@/context/AuthContext';
-import { Flashcard } from '@/context/DeckContext';
+import { Flashcard } from '@/types/deck';
 import {
   BarChart,
   CheckCircle,

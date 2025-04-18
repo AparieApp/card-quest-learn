@@ -1,7 +1,6 @@
-
 import React from 'react';
 import DeckCard from './DeckCard';
-import { Deck } from '@/context/DeckContext';
+import { Deck } from '@/types/deck';
 
 interface DeckGridProps {
   decks: Deck[];

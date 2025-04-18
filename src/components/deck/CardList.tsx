@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Flashcard } from '@/context/DeckContext';
+import { Flashcard } from '@/types/deck';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash } from 'lucide-react';

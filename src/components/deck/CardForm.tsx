@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Flashcard } from '@/context/DeckContext';
+import { Flashcard } from '@/types/deck';
 import { Trash } from 'lucide-react';
 
 const cardSchema = z.object({
