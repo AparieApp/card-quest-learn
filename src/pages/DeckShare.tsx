@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -11,6 +10,7 @@ import { QRCodeDisplay } from '@/components/deck/share/QRCodeDisplay';
 import { handleError } from '@/utils/errorHandling';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Deck } from '@/types/deck';
 
 const DeckShare = () => {
   const { id } = useParams<{ id: string }>();
