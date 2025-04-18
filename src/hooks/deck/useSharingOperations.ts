@@ -10,7 +10,7 @@ export const useSharingOperations = (
   userId?: string
 ) => {
   const [shareCodeCache, setShareCodeCache] = useState<Record<string, string>>({});
-  const { generateShareCode: genShareCode, getDeckByShareCode: getSharedDeckId } = useSharing();
+  const { generateShareCode: genShareCode, getDeckIdByShareCode: getSharedDeckId } = useSharing();
 
   const getDeckByShareCode = async (code: string): Promise<Deck | null> => {
     try {

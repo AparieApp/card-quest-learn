@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
@@ -7,6 +6,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useDeckOperations } from '@/hooks/deck/useDeckOperations';
 import { useCardOperations } from '@/hooks/deck/useCardOperations';
 import { useSharingOperations } from '@/hooks/deck/useSharingOperations';
+import { deckService } from '@/services/deckService';
 
 interface DeckContextType {
   decks: Deck[];

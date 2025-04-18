@@ -33,7 +33,15 @@ export const useDeckOperations = (
   };
 
   const getDeck = (id: string): Deck | null => {
-    return null;
+    if (!id) return null;
+    
+    // Look for the deck in the current state
+    const decks = setDecks((prevDecks) => {
+      const deck = prevDecks.find(d => d.id === id);
+      return prevDecks; // Return unchanged state
+    });
+    
+    return decks((prevDecks) => prevDecks.find(d => d.id === id) || null);
   };
 
   return {
