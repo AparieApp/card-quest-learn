@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -58,7 +57,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
     },
   });
 
-  // Debounced function to check username availability
   const checkUsername = debounce(async (username: string) => {
     if (username.length < 3) return;
     
@@ -73,14 +71,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
       return;
     }
     
-    // Clear previous errors
     setError(null);
     
     try {
       setIsSubmitting(true);
       console.log('SignupForm: Attempting signup...');
       
-      // Create a timeout for signup
       const signupTimeout = setTimeout(() => {
         if (isSubmitting) {
           setIsSubmitting(false);
@@ -90,14 +86,11 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
         }
       }, SIGNUP_TIMEOUT_MS);
       
-      // Attempt signup
       await signup(values.email, values.username, values.password);
       console.log('SignupForm: Signup successful');
       
-      // Clear timeout as signup succeeded
       clearTimeout(signupTimeout);
       
-      // Call onSuccess callback
       onSuccess?.();
     } catch (error: any) {
       console.log('SignupForm: Signup failed', error);

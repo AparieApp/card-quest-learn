@@ -6,7 +6,7 @@ import { useDeck } from '@/context/DeckContext';
 import DeckGrid from '@/components/dashboard/DeckGrid';
 import CreateDeckButton from '@/components/dashboard/CreateDeckButton';
 import FindDeckForm from '@/components/dashboard/FindDeckForm';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { Navigate } from 'react-router-dom';
 
 const Dashboard = () => {

@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import Layout from '@/components/layout/Layout';
 import { Loader2 } from 'lucide-react';
 
