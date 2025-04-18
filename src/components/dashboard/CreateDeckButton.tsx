@@ -68,9 +68,8 @@ const CreateDeckButton: React.FC = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // We should render the button regardless of authentication state
+  // The Dashboard component already checks for authentication
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
