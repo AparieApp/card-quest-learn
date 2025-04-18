@@ -1,36 +1,23 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
+import { deckService } from '@/services/deckService';
+import { useDeckStorage } from '@/hooks/useDeckStorage';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useSharing } from '@/hooks/useSharing';
 import { toast } from 'sonner';
-
-// Define types
-export interface Flashcard {
-  id: string;
-  front_text: string;
-  correct_answer: string;
-  incorrect_answers: string[];
-  created_at: string;
-}
-
-export interface Deck {
-  id: string;
-  creator_id: string;
-  title: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  cards: Flashcard[];
-}
 
 interface DeckContextType {
   decks: Deck[];
   favorites: string[];
   loading: boolean;
-  createDeck: (title: string, description?: string) => Promise<Deck>;
-  updateDeck: (id: string, title: string, description?: string) => Promise<void>;
+  createDeck: (input: CreateDeckInput) => Promise<Deck>;
+  updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
   deleteDeck: (id: string) => Promise<void>;
   getDeck: (id: string) => Deck | undefined;
-  addCardToDeck: (deckId: string, card: Omit<Flashcard, 'id' | 'created_at'>) => Promise<void>;
-  updateCard: (deckId: string, cardId: string, cardData: Partial<Omit<Flashcard, 'id' | 'created_at'>>) => Promise<void>;
+  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<void>;
+  updateCard: (deckId: string, cardId: string, cardData: UpdateCardInput) => Promise<void>;
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
   isFavorite: (deckId: string) => boolean;
@@ -39,218 +26,93 @@ interface DeckContextType {
   copyDeck: (deckId: string) => Promise<Deck>;
 }
 
-const DeckContext = createContext<DeckContextType>({
-  decks: [],
-  favorites: [],
-  loading: true,
-  createDeck: async () => ({ id: '', creator_id: '', title: '', created_at: '', updated_at: '', cards: [] }),
-  updateDeck: async () => {},
-  deleteDeck: async () => {},
-  getDeck: () => undefined,
-  addCardToDeck: async () => {},
-  updateCard: async () => {},
-  deleteCard: async () => {},
-  toggleFavorite: async () => {},
-  isFavorite: () => false,
-  getDeckByShareCode: () => undefined,
-  generateShareCode: () => '',
-  copyDeck: async () => ({ id: '', creator_id: '', title: '', created_at: '', updated_at: '', cards: [] }),
-});
+const DeckContext = createContext<DeckContextType>({} as DeckContextType);
 
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [decks, setDecks] = useState<Deck[]>([]);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [shareCodes, setShareCodes] = useState<Record<string, string>>({});
+  const { decks, loading, updateDecks } = useDeckStorage(user?.id);
+  const { favorites, toggleFavorite, isFavorite } = useFavorites(user?.id);
+  const { generateShareCode, getDeckByShareCode: getSharedDeckId } = useSharing();
 
-  useEffect(() => {
-    if (user) {
-      const storedDecks = localStorage.getItem(`flashcard_decks_${user.id}`);
-      if (storedDecks) {
-        setDecks(JSON.parse(storedDecks));
-      }
-      
-      const storedFavorites = localStorage.getItem(`flashcard_favorites_${user.id}`);
-      if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
-      }
-      
-      const storedShareCodes = localStorage.getItem('flashcard_share_codes');
-      if (storedShareCodes) {
-        setShareCodes(JSON.parse(storedShareCodes));
-      }
-    }
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`flashcard_decks_${user.id}`, JSON.stringify(decks));
-    }
-  }, [decks, user]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`flashcard_favorites_${user.id}`, JSON.stringify(favorites));
-    }
-  }, [favorites, user]);
-
-  useEffect(() => {
-    localStorage.setItem('flashcard_share_codes', JSON.stringify(shareCodes));
-  }, [shareCodes]);
-
-  const createDeck = async (title: string, description?: string): Promise<Deck> => {
+  const createDeck = async (input: CreateDeckInput): Promise<Deck> => {
     if (!user) throw new Error('User not authenticated');
     
-    const newDeck: Deck = {
-      id: `deck_${Date.now()}`,
-      creator_id: user.id,
-      title,
-      description,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      cards: [],
-    };
-    
-    setDecks(prev => [...prev, newDeck]);
-    toast.success(`Deck "${title}" created!`);
+    const newDeck = deckService.createDeck(user.id, input);
+    updateDecks([...decks, newDeck]);
+    toast.success(`Deck "${input.title}" created!`);
     return newDeck;
   };
 
-  const updateDeck = async (id: string, title: string, description?: string) => {
+  const updateDeck = async (id: string, input: UpdateDeckInput) => {
     if (!user) throw new Error('User not authenticated');
     
-    setDecks(prev => prev.map(deck => 
-      deck.id === id ? { 
-        ...deck, 
-        title, 
-        description, 
-        updated_at: new Date().toISOString() 
-      } : deck
-    ));
-    toast.success(`Deck updated!`);
+    const deck = getDeck(id);
+    if (!deck) throw new Error('Deck not found');
+    
+    const updatedDeck = deckService.updateDeck(deck, input);
+    updateDecks(decks.map(d => d.id === id ? updatedDeck : d));
+    toast.success('Deck updated!');
   };
 
   const deleteDeck = async (id: string) => {
     if (!user) throw new Error('User not authenticated');
     
-    setDecks(prev => prev.filter(deck => deck.id !== id));
-    
-    if (favorites.includes(id)) {
-      setFavorites(prev => prev.filter(favId => favId !== id));
-    }
-    
-    toast.success(`Deck deleted!`);
+    updateDecks(decks.filter(deck => deck.id !== id));
+    toast.success('Deck deleted!');
   };
 
   const getDeck = (id: string) => {
     return decks.find(deck => deck.id === id);
   };
 
-  const addCardToDeck = async (deckId: string, card: Omit<Flashcard, 'id' | 'created_at'>) => {
+  const addCardToDeck = async (deckId: string, card: CreateCardInput) => {
     if (!user) throw new Error('User not authenticated');
     
-    const newCard: Flashcard = {
-      id: `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      created_at: new Date().toISOString(),
-      ...card,
-    };
+    const deck = getDeck(deckId);
+    if (!deck) throw new Error('Deck not found');
     
-    setDecks(prev => prev.map(deck => 
-      deck.id === deckId ? {
-        ...deck,
-        updated_at: new Date().toISOString(),
-        cards: [...deck.cards, newCard],
-      } : deck
-    ));
+    const updatedDeck = deckService.addCard(deck, card);
+    updateDecks(decks.map(d => d.id === deckId ? updatedDeck : d));
     toast.success('Card added!');
   };
 
-  const updateCard = async (deckId: string, cardId: string, cardData: Partial<Omit<Flashcard, 'id' | 'created_at'>>) => {
+  const updateCard = async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
     if (!user) throw new Error('User not authenticated');
     
-    setDecks(prev => prev.map(deck => 
-      deck.id === deckId ? {
-        ...deck,
-        updated_at: new Date().toISOString(),
-        cards: deck.cards.map(card => 
-          card.id === cardId ? { ...card, ...cardData } : card
-        ),
-      } : deck
-    ));
+    const deck = getDeck(deckId);
+    if (!deck) throw new Error('Deck not found');
+    
+    const updatedDeck = deckService.updateCard(deck, cardId, cardData);
+    updateDecks(decks.map(d => d.id === deckId ? updatedDeck : d));
     toast.success('Card updated!');
   };
 
   const deleteCard = async (deckId: string, cardId: string) => {
     if (!user) throw new Error('User not authenticated');
     
-    setDecks(prev => prev.map(deck => 
-      deck.id === deckId ? {
-        ...deck,
-        updated_at: new Date().toISOString(),
-        cards: deck.cards.filter(card => card.id !== cardId),
-      } : deck
-    ));
+    const deck = getDeck(deckId);
+    if (!deck) throw new Error('Deck not found');
+    
+    const updatedDeck = deckService.deleteCard(deck, cardId);
+    updateDecks(decks.map(d => d.id === deckId ? updatedDeck : d));
     toast.success('Card deleted!');
   };
 
-  const toggleFavorite = async (deckId: string) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    if (favorites.includes(deckId)) {
-      setFavorites(prev => prev.filter(id => id !== deckId));
-      toast.success('Removed from favorites!');
-    } else {
-      setFavorites(prev => [...prev, deckId]);
-      toast.success('Added to favorites!');
-    }
-  };
-
-  const isFavorite = (deckId: string): boolean => {
-    return favorites.includes(deckId);
-  };
-
-  const generateShareCode = (deckId: string): string => {
-    const existingCode = Object.entries(shareCodes).find(([_, id]) => id === deckId)?.[0];
-    if (existingCode) return existingCode;
-    
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setShareCodes(prev => ({ ...prev, [code]: deckId }));
-    return code;
-  };
-
   const getDeckByShareCode = (code: string): Deck | undefined => {
-    const deckId = shareCodes[code];
+    const deckId = getSharedDeckId(code);
     if (!deckId) return undefined;
-    
-    return decks.find(deck => deck.id === deckId);
+    return getDeck(deckId);
   };
 
   const copyDeck = async (deckId: string): Promise<Deck> => {
     if (!user) throw new Error('User not authenticated');
     
     const sourceDeck = getDeck(deckId);
-    if (!sourceDeck) {
-      throw new Error('Deck not found');
-    }
+    if (!sourceDeck) throw new Error('Deck not found');
     
-    const newDeck: Deck = {
-      id: `deck_${Date.now()}_copy`,
-      creator_id: user.id,
-      title: sourceDeck.title,
-      description: sourceDeck.description,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      cards: sourceDeck.cards.map(card => ({
-        ...card,
-        id: `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      })),
-    };
-    
-    setDecks(prev => [...prev, newDeck]);
-    
-    return newDeck;
+    const copiedDeck = deckService.copyDeck(user.id, sourceDeck);
+    updateDecks([...decks, copiedDeck]);
+    return copiedDeck;
   };
 
   return (
