@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useDeck } from '@/context/DeckContext';
 import { useNavigate } from 'react-router-dom';
+import { useCreateDeck } from '@/hooks/deck/useCreateDeck';
+import { useAuth } from '@/context/auth';
 
 const createDeckSchema = z.object({
   title: z.string().min(1, 'Title is required').max(50, 'Title must be 50 characters or less'),
@@ -34,8 +35,9 @@ type CreateDeckFormValues = z.infer<typeof createDeckSchema>;
 
 const CreateDeckButton: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const { createDeck } = useDeck();
   const navigate = useNavigate();
+  const { handleCreateDeck, isCreating } = useCreateDeck();
+  const { isAuthenticated } = useAuth();
 
   const form = useForm<CreateDeckFormValues>({
     resolver: zodResolver(createDeckSchema),
@@ -46,18 +48,17 @@ const CreateDeckButton: React.FC = () => {
   });
 
   const onSubmit = async (values: CreateDeckFormValues) => {
-    try {
-      const newDeck = await createDeck({
-        title: values.title,
-        description: values.description
-      });
+    const newDeck = await handleCreateDeck(values);
+    if (newDeck) {
       setOpen(false);
       form.reset();
       navigate(`/deck/${newDeck.id}`);
-    } catch (error) {
-      // Error already handled in the deck context
     }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -79,7 +80,11 @@ const CreateDeckButton: React.FC = () => {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Deck title" {...field} />
+                    <Input 
+                      placeholder="Deck title" 
+                      {...field} 
+                      disabled={isCreating}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -96,6 +101,7 @@ const CreateDeckButton: React.FC = () => {
                       placeholder="A short description of this deck"
                       {...field}
                       rows={3}
+                      disabled={isCreating}
                     />
                   </FormControl>
                   <FormMessage />
@@ -103,7 +109,23 @@ const CreateDeckButton: React.FC = () => {
               )}
             />
             <div className="flex justify-end">
-              <Button type="submit">Create Deck</Button>
+              <Button 
+                type="submit" 
+                disabled={isCreating}
+                className="bg-flashcard-primary hover:bg-flashcard-secondary"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Deck
+                  </>
+                )}
+              </Button>
             </div>
           </form>
         </Form>
