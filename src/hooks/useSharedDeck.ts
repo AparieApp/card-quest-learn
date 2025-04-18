@@ -24,9 +24,18 @@ export const useSharedDeck = (code: string | undefined) => {
       setIsLoading(true);
       try {
         const fetchedDeck = await getDeckByShareCode(code);
+        
+        if (!fetchedDeck) {
+          toast.error('Deck not found or no longer available');
+          navigate('/');
+          return;
+        }
+        
         setDeck(fetchedDeck);
       } catch (error) {
         console.error('Error loading shared deck:', error);
+        toast.error('Failed to load deck');
+        navigate('/');
       } finally {
         setIsLoading(false);
       }

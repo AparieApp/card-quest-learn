@@ -9,6 +9,7 @@ export const useSharingOperations = (
   setDecks: React.Dispatch<React.SetStateAction<Deck[]>>,
   userId?: string
 ) => {
+  // Initialize state unconditionally at the top level
   const [shareCodeCache, setShareCodeCache] = useState<Record<string, string>>({});
   const { generateShareCode: genShareCode, getDeckIdByShareCode: getSharedDeckId } = useSharing();
 
@@ -29,7 +30,10 @@ export const useSharingOperations = (
   };
 
   const generateShareCode = (deckId: string): string => {
-    if (!userId) throw new Error('User not authenticated');
+    if (!userId) {
+      console.error('User not authenticated when generating share code');
+      return '';
+    }
     
     if (shareCodeCache[deckId]) {
       return shareCodeCache[deckId];
