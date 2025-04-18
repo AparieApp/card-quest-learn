@@ -6,16 +6,29 @@ import { useDeck } from '@/context/DeckContext';
 import DeckGrid from '@/components/dashboard/DeckGrid';
 import CreateDeckButton from '@/components/dashboard/CreateDeckButton';
 import FindDeckForm from '@/components/dashboard/FindDeckForm';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const { decks, favorites, loading } = useDeck();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
 
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-10 w-10 animate-spin text-flashcard-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // Redirect to auth if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/auth" />;
+    return <Navigate to="/auth" replace />;
   }
 
   const favoritedDecks = decks.filter(deck => favorites.includes(deck.id));
