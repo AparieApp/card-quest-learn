@@ -12,6 +12,7 @@ import { useSharedDeck } from '@/hooks/useSharedDeck';
 
 const SharedDeck = () => {
   const { code } = useParams<{ code: string }>();
+  const navigate = useNavigate();
   const {
     deck,
     isLoading,

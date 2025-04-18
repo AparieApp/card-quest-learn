@@ -75,7 +75,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getDeck = (id: string): Deck | null => {
-    // First check local cache
     const cachedDeck = decks.find(deck => deck.id === id);
     if (cachedDeck) return cachedDeck;
     return null;
@@ -144,11 +143,9 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
       const deckId = await getSharedDeckId(code);
       if (!deckId) return null;
       
-      // Check if we have this deck in the local cache
       const cachedDeck = decks.find(d => d.id === deckId);
       if (cachedDeck) return cachedDeck;
       
-      // If not, fetch it from the database
       return await deckService.getDeck(deckId);
     } catch (error) {
       console.error('Error getting deck by share code:', error);
@@ -159,13 +156,10 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const generateShareCode = (deckId: string): string => {
     if (!user) throw new Error('User not authenticated');
     
-    // First check if we have a cached share code
     if (shareCodeCache[deckId]) {
       return shareCodeCache[deckId];
     }
     
-    // Generate and cache a new code
-    // Note: This is now synchronous, but the actual saving to DB happens in background
     const code = genShareCode(deckId);
     setShareCodeCache(prev => ({...prev, [deckId]: code}));
     return code;

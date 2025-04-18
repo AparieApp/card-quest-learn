@@ -28,6 +28,8 @@ export const SharedDeckDetails = ({
             size="sm" 
             className="p-0 h-8 w-8" 
             onClick={onFavorite}
+            disabled={!isAuthenticated}
+            title={!isAuthenticated ? "Log in to favorite this deck" : (isFavorite ? "Remove from favorites" : "Add to favorites")}
           >
             <Heart 
               className={`h-5 w-5 ${isAuthenticated && isFavorite ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} 
