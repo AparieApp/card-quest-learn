@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { SharedDeckHeader } from '@/components/shared-deck/SharedDeckHeader';
 import { SharedDeckDetails } from '@/components/shared-deck/SharedDeckDetails';

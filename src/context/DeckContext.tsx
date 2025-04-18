@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
@@ -16,14 +15,14 @@ interface DeckContextType {
   createDeck: (input: CreateDeckInput) => Promise<Deck>;
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
   deleteDeck: (id: string) => Promise<void>;
-  getDeck: (id: string) => Deck | null;  // Changed from Promise<Deck | null> to Deck | null
+  getDeck: (id: string) => Deck | null;
   addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<void>;
   updateCard: (deckId: string, cardId: string, cardData: UpdateCardInput) => Promise<void>;
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
   isFavorite: (deckId: string) => boolean;
   getDeckByShareCode: (code: string) => Promise<Deck | null>;
-  generateShareCode: (deckId: string) => string;  // Changed from Promise<string> to string
+  generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
   refreshDecks: () => Promise<void>;
 }
