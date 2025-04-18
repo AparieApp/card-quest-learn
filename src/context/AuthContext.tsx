@@ -12,6 +12,7 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -22,6 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  session: null,
   isAuthenticated: false,
   isLoading: true,
   login: async () => {},
@@ -36,19 +38,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
+    // Set up auth state listener first to capture all auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
-        await refreshUser(session?.user || null);
+        
+        // Handle auth events appropriately
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await refreshUser(session?.user || null);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+        
         setIsLoading(false);
       }
     );
 
+    // Then check for existing session
     const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      await refreshUser(session?.user || null);
-      setIsLoading(false);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        
+        if (session?.user) {
+          await refreshUser(session.user);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initializeAuth();
@@ -90,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -100,8 +119,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       toast.success('Logged in successfully!');
+      return data;
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      console.error('Login error:', error);
+      let message = 'Login failed. Please check your credentials and try again.';
+      
+      // Handle specific error messages for better user feedback
+      if (error.message) {
+        if (error.message.includes('Invalid login credentials')) {
+          message = 'Invalid email or password. Please try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          message = 'Please verify your email before logging in.';
+        } else {
+          message = error.message;
+        }
+      }
+      
+      toast.error(message);
       throw error;
     }
   };
@@ -134,8 +168,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       toast.success('Account created successfully!');
+      return authData;
     } catch (error: any) {
-      toast.error(error.message || 'Signup failed');
+      console.error('Signup error:', error);
+      const message = error.message || 'Signup failed';
+      toast.error(message);
       throw error;
     }
   };
@@ -148,8 +185,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setUser(null);
+      setSession(null);
       toast.success('Logged out successfully');
     } catch (error: any) {
+      console.error('Logout error:', error);
       toast.error(error.message || 'Logout failed');
     }
   };
@@ -176,6 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        session,
         isAuthenticated: !!user,
         isLoading,
         login,

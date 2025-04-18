@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -28,9 +30,22 @@ interface LoginFormProps {
   onSwitch: () => void;
 }
 
+const LOGIN_TIMEOUT_MS = 10000; // 10 seconds
+
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
   const { login } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Clean up timeout if component unmounts
+    return () => {
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+      }
+    };
+  }, [loginTimeout]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -41,13 +56,41 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    // Clear any previous errors
+    setError(null);
+    
     try {
       setIsSubmitting(true);
+      
+      // Set a timeout to prevent hanging on login indefinitely
+      const timeout = setTimeout(() => {
+        if (isSubmitting) {
+          setIsSubmitting(false);
+          setError('Login attempt timed out. Please try again.');
+          toast.error('Login attempt timed out');
+        }
+      }, LOGIN_TIMEOUT_MS);
+      
+      setLoginTimeout(timeout);
+      
+      // Attempt login
       await login(values.email, values.password);
+      
+      // Clear timeout as login succeeded
+      clearTimeout(timeout);
+      setLoginTimeout(null);
+      
+      // Navigate on success
       onSuccess?.();
-    } catch (error) {
-      // Error is already handled in the auth context
+    } catch (error: any) {
+      // Error is handled in the auth context
+      setError(error.message || 'An error occurred during login');
     } finally {
+      // Clear timeout if it's still active
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
+      }
       setIsSubmitting(false);
     }
   };
@@ -59,6 +102,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
         <p className="text-sm text-muted-foreground mt-2">Welcome back to FlashCards!</p>
       </div>
       
+      {error && (
+        <Alert variant="destructive" className="bg-red-50">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -68,7 +117,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="your@email.com" {...field} />
+                  <Input placeholder="your@email.com" autoComplete="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -81,14 +130,23 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full bg-flashcard-primary hover:bg-flashcard-secondary" disabled={isSubmitting}>
-            {isSubmitting ? 'Logging in...' : 'Login'}
+          <Button 
+            type="submit" 
+            className="w-full bg-flashcard-primary hover:bg-flashcard-secondary" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : 'Login'}
           </Button>
         </form>
       </Form>
