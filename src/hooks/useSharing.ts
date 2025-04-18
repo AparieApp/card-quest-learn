@@ -2,16 +2,15 @@
 import { useState } from 'react';
 import { shareService } from '@/services/shareService';
 import { toast } from 'sonner';
+import { deckService } from '@/services/deckService';
+import { Deck } from '@/types/deck';
 
 export const useSharing = () => {
   const [generatingCode, setGeneratingCode] = useState(false);
 
-  // This function generates a share code and stores it in the database asynchronously
   const generateShareCode = (deckId: string): string => {
-    // Generate a client-side code immediately
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
-    // Save it to the database in the background
     setGeneratingCode(true);
     shareService.saveShareCode(deckId, code)
       .then(() => {
@@ -35,5 +34,16 @@ export const useSharing = () => {
     }
   };
 
-  return { generateShareCode, getDeckIdByShareCode, generatingCode };
+  const getDeckByShareCode = async (code: string): Promise<Deck | null> => {
+    try {
+      const deckId = await getDeckIdByShareCode(code);
+      if (!deckId) return null;
+      return await deckService.getDeck(deckId);
+    } catch (error) {
+      console.error('Error getting deck by share code:', error);
+      return null;
+    }
+  };
+
+  return { generateShareCode, getDeckIdByShareCode, getDeckByShareCode, generatingCode };
 };
