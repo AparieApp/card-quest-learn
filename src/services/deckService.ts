@@ -30,14 +30,14 @@ export const deckService = {
         flashcards (*)
       `)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) return null;
     
-    return {
+    return deck ? {
       ...deck,
       cards: deck.flashcards || []
-    };
+    } : null;
   },
 
   // Create a new deck

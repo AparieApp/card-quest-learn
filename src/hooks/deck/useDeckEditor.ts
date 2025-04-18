@@ -11,13 +11,13 @@ export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!initialDeck);
   
-  // Never conditionally call hooks - move the logic inside useEffect
+  // Only load the deck if no initial deck is provided and we have a deckId
   useEffect(() => {
     if (initialDeck) {
       setTitle(initialDeck.title);
       setDescription(initialDeck.description || '');
       setIsLoading(false);
-    } else if (deckId) {
+    } else if (deckId && !initialDeck) {
       loadDeck();
     }
   }, [deckId, initialDeck]);

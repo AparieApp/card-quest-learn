@@ -16,9 +16,9 @@ import { Deck } from '@/types/deck';
 
 const DeckEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getDeck, refreshDecks } = useDeck();
+  const { getDeck } = useDeck();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [fetchedDeck, setFetchedDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -57,11 +57,13 @@ const DeckEdit = () => {
       return;
     }
     
-    // Load the deck
+    // Load the deck only once when the component mounts or id changes
     const loadDeckData = async () => {
+      // Skip if we're already loading or if we already have the deck
+      if (!loading || fetchedDeck) return;
+      
       setLoading(true);
       try {
-        await refreshDecks();
         const deck = getDeck(id);
         if (!deck) {
           toast.error('Deck not found');
@@ -79,7 +81,7 @@ const DeckEdit = () => {
     };
     
     loadDeckData();
-  }, [id, getDeck, navigate, isAuthenticated, refreshDecks]);
+  }, [id, getDeck, navigate, isAuthenticated]);
 
   if (!isAuthenticated) {
     return null;
