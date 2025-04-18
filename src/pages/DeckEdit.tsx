@@ -1,49 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useDeck } from '@/context/DeckContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import CardForm from '@/components/deck/CardForm';
-import CardList from '@/components/deck/CardList';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Flashcard, CreateCardInput, UpdateDeckInput } from '@/types/deck';
-import { ArrowLeft, Plus, Save } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import DeckEditForm from '@/components/deck/DeckEditForm';
+import DeckCardManager from '@/components/deck/DeckCardManager';
+import CardDialog from '@/components/deck/CardDialog';
+import { useDeckEditor } from '@/hooks/deck/useDeckEditor';
+import { useCardManager } from '@/hooks/deck/useCardManager';
 
 const DeckEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getDeck, updateDeck, addCardToDeck, updateCard, deleteCard } = useDeck();
+  const { getDeck } = useDeck();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
-  const [currentCard, setCurrentCard] = useState<Flashcard | undefined>(undefined);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Effect for loading the deck
-  React.useEffect(() => {
-    if (id) {
-      const deck = getDeck(id);
-      if (deck) {
-        setTitle(deck.title);
-        setDescription(deck.description || '');
-      } else {
-        toast.error('Deck not found');
-        navigate('/dashboard');
-      }
-    }
-  }, [id, getDeck, navigate]);
   
   if (!isAuthenticated) {
     navigate('/auth');
@@ -54,71 +28,38 @@ const DeckEdit = () => {
     navigate('/dashboard');
     return null;
   }
+
+  const {
+    title,
+    setTitle,
+    description,
+    setDescription,
+    isSaving,
+    loadDeck,
+    saveDeck
+  } = useDeckEditor(id);
+
+  const {
+    isCardDialogOpen,
+    setIsCardDialogOpen,
+    currentCard,
+    setCurrentCard,
+    handleAddCard,
+    handleUpdateCard,
+    handleDeleteCard,
+    handleDeleteCurrentCard
+  } = useCardManager(id);
+  
+  useEffect(() => {
+    const deck = loadDeck();
+    if (!deck) {
+      toast.error('Deck not found');
+      navigate('/dashboard');
+    }
+  }, [id]);
   
   const deck = getDeck(id);
   if (!deck) return null;
-  
-  const handleSave = async () => {
-    if (!title) {
-      toast.error('Title is required');
-      return;
-    }
-    
-    setIsSaving(true);
-    try {
-      const updateInput: UpdateDeckInput = {
-        title,
-        description
-      };
-      await updateDeck(id, updateInput);
-      toast.success('Deck updated successfully');
-    } catch (error) {
-      toast.error('Failed to update deck');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  const handleAddCard = (cardData: Omit<Flashcard, 'id' | 'created_at'>) => {
-    const cardInput: CreateCardInput = {
-      front_text: cardData.front_text,
-      correct_answer: cardData.correct_answer,
-      incorrect_answers: cardData.incorrect_answers
-    };
-    addCardToDeck(id, cardInput);
-    setIsCardDialogOpen(false);
-    setCurrentCard(undefined);
-  };
-  
-  const handleUpdateCard = (cardData: Omit<Flashcard, 'id' | 'created_at'>) => {
-    if (!currentCard) return;
-    updateCard(id, currentCard.id, cardData);
-    setIsCardDialogOpen(false);
-    setCurrentCard(undefined);
-  };
-  
-  const handleEditCard = (cardId: string) => {
-    const card = deck.cards.find(c => c.id === cardId);
-    if (card) {
-      setCurrentCard(card);
-      setIsCardDialogOpen(true);
-    }
-  };
-  
-  const handleDeleteCard = (cardId: string) => {
-    if (confirm('Are you sure you want to delete this card?')) {
-      deleteCard(id, cardId);
-    }
-  };
-  
-  const handleDeleteCurrentCard = () => {
-    if (!currentCard) return;
-    if (confirm('Are you sure you want to delete this card?')) {
-      deleteCard(id, currentCard.id);
-      setIsCardDialogOpen(false);
-      setCurrentCard(undefined);
-    }
-  };
 
   return (
     <Layout>
@@ -135,77 +76,40 @@ const DeckEdit = () => {
         </div>
         
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">
-                Title
-              </label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Deck title"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium">
-                Description (optional)
-              </label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="A short description of this deck"
-                rows={3}
-              />
-            </div>
-            
-            <Button 
-              onClick={handleSave} 
-              disabled={isSaving || !title} 
-              className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
-            >
-              <Save className="mr-1 h-4 w-4" /> 
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
+          <DeckEditForm
+            title={title}
+            description={description}
+            isSaving={isSaving}
+            onTitleChange={setTitle}
+            onDescriptionChange={setDescription}
+            onSave={saveDeck}
+          />
           
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="font-semibold">Cards ({deck.cards.length})</h2>
-              <Button 
-                onClick={() => {
-                  setCurrentCard(undefined);
-                  setIsCardDialogOpen(true);
-                }}
-                className="bg-flashcard-primary hover:bg-flashcard-secondary"
-              >
-                <Plus className="mr-1 h-4 w-4" /> Add Card
-              </Button>
-            </div>
-            
-            <CardList
-              cards={deck.cards}
-              onEdit={handleEditCard}
-              onDelete={handleDeleteCard}
-            />
-          </div>
+          <DeckCardManager
+            cards={deck.cards}
+            onAddClick={() => {
+              setCurrentCard(undefined);
+              setIsCardDialogOpen(true);
+            }}
+            onEditCard={(cardId) => {
+              const card = deck.cards.find(c => c.id === cardId);
+              if (card) {
+                setCurrentCard(card);
+                setIsCardDialogOpen(true);
+              }
+            }}
+            onDeleteCard={handleDeleteCard}
+          />
         </div>
         
-        <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{currentCard ? 'Edit Card' : 'Add New Card'}</DialogTitle>
-            </DialogHeader>
-            <CardForm
-              card={currentCard}
-              onSubmit={currentCard ? handleUpdateCard : handleAddCard}
-              onCancel={() => setIsCardDialogOpen(false)}
-              onDelete={currentCard ? handleDeleteCurrentCard : undefined}
-            />
-          </DialogContent>
-        </Dialog>
+        <CardDialog
+          open={isCardDialogOpen}
+          onOpenChange={setIsCardDialogOpen}
+          card={currentCard}
+          onSubmit={currentCard ? handleUpdateCard : handleAddCard}
+          onCancel={() => setIsCardDialogOpen(false)}
+          onDelete={currentCard ? handleDeleteCurrentCard : undefined}
+        />
       </div>
     </Layout>
   );
