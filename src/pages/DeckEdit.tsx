@@ -20,7 +20,31 @@ const DeckEdit = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [fetchedDeck, setFetchedDeck] = useState<Deck | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  
+  // Always initialize hooks at the top level, even with potential default values
+  const deckId = id || '';
+  
+  const {
+    title,
+    setTitle,
+    description,
+    setDescription,
+    isSaving,
+    isLoading: isEditorLoading,
+    saveDeck
+  } = useDeckEditor(deckId, fetchedDeck);
+
+  const {
+    isCardDialogOpen,
+    setIsCardDialogOpen,
+    currentCard,
+    setCurrentCard,
+    handleAddCard,
+    handleUpdateCard,
+    handleDeleteCard,
+    handleDeleteCurrentCard
+  } = useCardManager(deckId);
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -35,7 +59,7 @@ const DeckEdit = () => {
     
     // Load the deck
     const loadDeckData = async () => {
-      setIsLoading(true);
+      setLoading(true);
       try {
         await refreshDecks();
         const deck = getDeck(id);
@@ -48,17 +72,22 @@ const DeckEdit = () => {
       } catch (error) {
         console.error('Error loading deck:', error);
         toast.error('Error loading deck');
+        navigate('/dashboard');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     
     loadDeckData();
   }, [id, getDeck, navigate, isAuthenticated, refreshDecks]);
 
-  if (!isAuthenticated || !id) return null;
+  if (!isAuthenticated) {
+    return null;
+  }
   
-  if (isLoading || !fetchedDeck) {
+  const isPageLoading = loading || isEditorLoading;
+  
+  if (isPageLoading || !fetchedDeck) {
     return (
       <Layout>
         <div className="container py-12 flex flex-col items-center justify-center">
@@ -68,26 +97,6 @@ const DeckEdit = () => {
       </Layout>
     );
   }
-  
-  const {
-    title,
-    setTitle,
-    description,
-    setDescription,
-    isSaving,
-    saveDeck
-  } = useDeckEditor(id, fetchedDeck);
-
-  const {
-    isCardDialogOpen,
-    setIsCardDialogOpen,
-    currentCard,
-    setCurrentCard,
-    handleAddCard,
-    handleUpdateCard,
-    handleDeleteCard,
-    handleDeleteCurrentCard
-  } = useCardManager(id);
 
   return (
     <Layout>
@@ -127,7 +136,7 @@ const DeckEdit = () => {
               }
             }}
             onDeleteCard={handleDeleteCard}
-            isLoading={isLoading}
+            isLoading={isPageLoading}
           />
         </div>
         

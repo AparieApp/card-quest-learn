@@ -6,34 +6,40 @@ import { toast } from 'sonner';
 
 export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
   const { getDeck, updateDeck } = useDeck();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(initialDeck?.title || '');
+  const [description, setDescription] = useState(initialDeck?.description || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!initialDeck);
-
-  const loadDeck = () => {
+  
+  // Never conditionally call hooks - move the logic inside useEffect
+  useEffect(() => {
     if (initialDeck) {
       setTitle(initialDeck.title);
       setDescription(initialDeck.description || '');
       setIsLoading(false);
-      return initialDeck;
+    } else if (deckId) {
+      loadDeck();
     }
-    
+  }, [deckId, initialDeck]);
+
+  const loadDeck = () => {
     setIsLoading(true);
     try {
       const deck = getDeck(deckId);
       if (deck) {
         setTitle(deck.title);
         setDescription(deck.description || '');
+      } else {
+        toast.error('Deck not found');
       }
-      setIsLoading(false);
-      return deck;
     } catch (error) {
       console.error('Error loading deck:', error);
       toast.error('Failed to load deck');
+    } finally {
       setIsLoading(false);
-      return null;
     }
+    
+    return null;
   };
 
   const saveDeck = async () => {
@@ -57,16 +63,6 @@ export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
       setIsSaving(false);
     }
   };
-
-  useEffect(() => {
-    if (initialDeck) {
-      setTitle(initialDeck.title);
-      setDescription(initialDeck.description || '');
-      setIsLoading(false);
-    } else {
-      loadDeck();
-    }
-  }, [deckId, initialDeck]);
 
   return {
     title,
