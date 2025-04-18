@@ -15,12 +15,13 @@ export const deckService = {
 
     if (error) throw error;
     
+    // Properly convert the database response to our expected type structure
     return decks.map(deck => ({
       ...deck,
       cards: (deck.flashcards || []).map(card => ({
         ...card,
         manual_incorrect_answers: card.manual_incorrect_answers || [] 
-      }))
+      })) as Flashcard[]
     }));
   },
 
@@ -42,7 +43,7 @@ export const deckService = {
       cards: (deck.flashcards || []).map(card => ({
         ...card,
         manual_incorrect_answers: card.manual_incorrect_answers || []
-      }))
+      })) as Flashcard[]
     } : null;
   },
 
@@ -108,7 +109,7 @@ export const deckService = {
     return {
       ...data,
       manual_incorrect_answers: data.manual_incorrect_answers || []
-    };
+    } as Flashcard;
   },
 
   // Update a card in a deck
@@ -194,7 +195,7 @@ export const deckService = {
         cards: newCards.map(card => ({
           ...card,
           manual_incorrect_answers: card.manual_incorrect_answers || []
-        }))
+        })) as Flashcard[]
       };
     }
 
