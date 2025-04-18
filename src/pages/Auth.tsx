@@ -18,19 +18,19 @@ const Auth = () => {
   // If user is already authenticated, redirect to dashboard
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(redirectTo);
+      navigate(redirectTo, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, redirectTo]);
   
   const handleAuthSuccess = () => {
-    navigate(redirectTo);
+    navigate(redirectTo, { replace: true });
   };
 
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <Layout>
-        <div className="container py-12 flex flex-col items-center justify-center min-h-screen">
+        <div className="container py-12 flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="h-10 w-10 animate-spin text-flashcard-primary" />
           <p className="mt-4 text-muted-foreground">Checking authentication...</p>
         </div>
@@ -45,7 +45,7 @@ const Auth = () => {
 
   return (
     <Layout>
-      <div className="container py-12 flex flex-col items-center justify-center min-h-screen">
+      <div className="container py-12 flex flex-col items-center justify-center min-h-[80vh]">
         <AuthForm onSuccess={handleAuthSuccess} />
       </div>
     </Layout>

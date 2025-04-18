@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,22 +30,22 @@ interface LoginFormProps {
   onSwitch: () => void;
 }
 
-const LOGIN_TIMEOUT_MS = 10000; // 10 seconds
+const LOGIN_TIMEOUT_MS = 15000; // 15 seconds
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
   const { login } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Clean up timeout if component unmounts
   useEffect(() => {
-    // Clean up timeout if component unmounts
     return () => {
-      if (loginTimeout) {
-        clearTimeout(loginTimeout);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-  }, [loginTimeout]);
+  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -59,37 +59,43 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
     // Clear any previous errors
     setError(null);
     
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
     try {
       setIsSubmitting(true);
       
       // Set a timeout to prevent hanging on login indefinitely
-      const timeout = setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         if (isSubmitting) {
           setIsSubmitting(false);
           setError('Login attempt timed out. Please try again.');
           toast.error('Login attempt timed out');
+          timeoutRef.current = null;
         }
       }, LOGIN_TIMEOUT_MS);
-      
-      setLoginTimeout(timeout);
       
       // Attempt login
       await login(values.email, values.password);
       
       // Clear timeout as login succeeded
-      clearTimeout(timeout);
-      setLoginTimeout(null);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       
-      // Navigate on success
+      // Call onSuccess callback
       onSuccess?.();
     } catch (error: any) {
       // Error is handled in the auth context
       setError(error.message || 'An error occurred during login');
     } finally {
       // Clear timeout if it's still active
-      if (loginTimeout) {
-        clearTimeout(loginTimeout);
-        setLoginTimeout(null);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       setIsSubmitting(false);
     }

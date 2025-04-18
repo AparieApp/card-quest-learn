@@ -38,38 +38,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // Set up auth state listener first to capture all auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        
-        // Handle auth events appropriately
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await refreshUser(session?.user || null);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // Then check for existing session
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
+        setIsLoading(true);
         
-        if (session?.user) {
-          await refreshUser(session.user);
+        // First check for existing session
+        const { data: sessionData } = await supabase.auth.getSession();
+        setSession(sessionData.session);
+        
+        if (sessionData.session?.user) {
+          await refreshUser(sessionData.session.user);
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        setSession(newSession);
+        
+        // Handle auth events appropriately
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
+          setIsLoading(true);
+          await refreshUser(newSession.user);
+          setIsLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
+    // Initialize auth
     initializeAuth();
 
     return () => {
