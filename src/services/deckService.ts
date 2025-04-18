@@ -17,7 +17,10 @@ export const deckService = {
     
     return decks.map(deck => ({
       ...deck,
-      cards: deck.flashcards || []
+      cards: (deck.flashcards || []).map(card => ({
+        ...card,
+        manual_incorrect_answers: card.manual_incorrect_answers || [] 
+      }))
     }));
   },
 
@@ -36,7 +39,10 @@ export const deckService = {
     
     return deck ? {
       ...deck,
-      cards: deck.flashcards || []
+      cards: (deck.flashcards || []).map(card => ({
+        ...card,
+        manual_incorrect_answers: card.manual_incorrect_answers || []
+      }))
     } : null;
   },
 
@@ -91,14 +97,18 @@ export const deckService = {
         deck_id: deckId,
         front_text: cardData.front_text,
         correct_answer: cardData.correct_answer,
-        incorrect_answers: cardData.incorrect_answers
+        incorrect_answers: cardData.incorrect_answers,
+        manual_incorrect_answers: cardData.manual_incorrect_answers || []
       })
       .select()
       .single();
 
     if (error) throw error;
     
-    return data;
+    return {
+      ...data,
+      manual_incorrect_answers: data.manual_incorrect_answers || []
+    };
   },
 
   // Update a card in a deck
@@ -108,7 +118,8 @@ export const deckService = {
       .update({
         front_text: cardData.front_text,
         correct_answer: cardData.correct_answer,
-        incorrect_answers: cardData.incorrect_answers
+        incorrect_answers: cardData.incorrect_answers,
+        manual_incorrect_answers: cardData.manual_incorrect_answers
       })
       .eq('id', cardId);
 
@@ -150,7 +161,8 @@ export const deckService = {
         deck_id: newDeck.id,
         front_text: card.front_text,
         correct_answer: card.correct_answer,
-        incorrect_answers: card.incorrect_answers
+        incorrect_answers: card.incorrect_answers,
+        manual_incorrect_answers: card.manual_incorrect_answers || []
       }));
 
       const { data: newCards, error: cardsError } = await supabase
@@ -162,7 +174,10 @@ export const deckService = {
 
       return {
         ...newDeck,
-        cards: newCards
+        cards: newCards.map(card => ({
+          ...card,
+          manual_incorrect_answers: card.manual_incorrect_answers || []
+        }))
       };
     }
 

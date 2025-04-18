@@ -22,5 +22,5 @@ export interface Deck {
 
 export type CreateDeckInput = Pick<Deck, 'title' | 'description'>;
 export type UpdateDeckInput = Pick<Deck, 'title' | 'description'>;
-export type CreateCardInput = Pick<Flashcard, 'front_text' | 'correct_answer' | 'incorrect_answers'>;
-export type UpdateCardInput = Partial<Pick<Flashcard, 'front_text' | 'correct_answer' | 'incorrect_answers'>>;
+export type CreateCardInput = Pick<Flashcard, 'front_text' | 'correct_answer' | 'incorrect_answers' | 'manual_incorrect_answers'>;
+export type UpdateCardInput = Partial<Pick<Flashcard, 'front_text' | 'correct_answer' | 'incorrect_answers' | 'manual_incorrect_answers'>>;

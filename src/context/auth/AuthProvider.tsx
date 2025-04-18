@@ -1,9 +1,9 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
 import { AuthContextType, AuthUser, AuthState } from './types';
 import { processUserData } from './utils';
-import { useAuthActions } from './hooks';
 
 // Create the initial auth state
 const initialState: AuthState = {
@@ -28,7 +28,102 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ...initialState,
     authInitialized: false
   });
-  const authActions = useAuthActions();
+  
+  // Instead of calling useAuthActions, define these functions directly here
+  const login = async (email: string, password: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      console.log('Login successful:', data);
+      // The auth state listener will handle updating the user/session
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const signup = async (email: string, username: string, password: string): Promise<void> => {
+    try {
+      // Check if username is available
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        throw new Error('Username already taken');
+      }
+
+      // Create the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+          },
+        },
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('Failed to create user');
+      }
+
+      console.log('Signup successful:', authData);
+      // The auth state listener will handle updating the user/session
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      
+      console.log('Logout successful');
+      // The auth state listener will handle removing the user
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
+  const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username);
+
+      if (error) {
+        throw error;
+      }
+
+      return data.length === 0;
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     console.log('Initializing auth state...');
@@ -70,7 +165,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, ...authActions }}>
+    <AuthContext.Provider value={{ 
+      ...state, 
+      login,
+      signup,
+      logout,
+      checkUsernameAvailability,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,9 +10,16 @@ export interface CardListProps {
   onEdit: (cardId: string) => void;
   onDelete: (cardId: string) => void;
   isLoading?: boolean;
+  existingAnswers?: string[];
 }
 
-const CardList: React.FC<CardListProps> = ({ cards, onEdit, onDelete, isLoading = false }) => {
+const CardList: React.FC<CardListProps> = ({ 
+  cards, 
+  onEdit, 
+  onDelete, 
+  isLoading = false, 
+  existingAnswers = [] 
+}) => {
   if (cards.length === 0) {
     return (
       <div className="text-center p-8 border border-dashed rounded-lg">
@@ -38,8 +45,8 @@ const CardList: React.FC<CardListProps> = ({ cards, onEdit, onDelete, isLoading 
                 <p className="font-medium mb-2">{card.front_text}</p>
                 <div className="mt-2">
                   <p className="text-sm text-green-600">✓ {card.correct_answer}</p>
-                  {card.incorrect_answers.map((answer, index) => (
-                    <p key={index} className="text-sm text-red-600">✗ {answer}</p>
+                  {card.manual_incorrect_answers.map((answer, index) => (
+                    <p key={`manual-${index}`} className="text-sm text-red-600">✗ {answer}</p>
                   ))}
                 </div>
               </div>
