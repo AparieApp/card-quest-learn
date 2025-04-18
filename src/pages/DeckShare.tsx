@@ -5,17 +5,12 @@ import Layout from '@/components/layout/Layout';
 import { useDeck } from '@/context/DeckContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  ArrowLeft,
-  Copy,
-  Share2,
-  QrCode,
-  ExternalLink,
-  Loader2
-} from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ShareOptions } from '@/components/deck/share/ShareOptions';
+import { QRCodeDisplay } from '@/components/deck/share/QRCodeDisplay';
+import { handleError } from '@/utils/errorHandling';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import QRCode from 'qrcode.react';
-import { Deck } from '@/types/deck';
 
 const DeckShare = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,34 +23,30 @@ const DeckShare = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (!id) {
-      navigate('/dashboard');
-      return;
-    }
-    
     const loadDeckAndGenerateCode = async () => {
+      if (!id) {
+        navigate('/dashboard');
+        return;
+      }
+      
       setIsLoading(true);
       try {
         await refreshDecks();
         const fetchedDeck = getDeck(id);
         if (!fetchedDeck) {
-          toast.error('Deck not found');
-          navigate('/dashboard');
-          return;
+          throw new Error('Deck not found');
         }
         
         setDeck(fetchedDeck);
         
-        // Generate share code
         const code = generateShareCode(id);
         setShareCode(code);
         
-        // Generate share URL
         const baseUrl = window.location.origin;
         setShareUrl(`${baseUrl}/shared/${code}`);
       } catch (error) {
-        console.error('Error loading deck:', error);
-        toast.error('Error loading deck information');
+        handleError(error, 'Error loading deck information');
+        navigate('/dashboard');
       } finally {
         setIsLoading(false);
       }
@@ -64,7 +55,24 @@ const DeckShare = () => {
     loadDeckAndGenerateCode();
   }, [id, getDeck, navigate, generateShareCode, refreshDecks]);
   
-  if (!id || isLoading) {
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `FlashCards: ${deck?.title}`,
+          text: `Check out my flashcard deck: ${deck?.title}`,
+          url: shareUrl,
+        });
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        toast.success('Share link copied to clipboard');
+      }
+    } catch (error) {
+      handleError(error, 'Failed to share deck');
+    }
+  };
+
+  if (isLoading) {
     return (
       <Layout>
         <div className="container py-12 flex flex-col items-center justify-center">
@@ -76,33 +84,6 @@ const DeckShare = () => {
   }
   
   if (!deck) return null;
-  
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(shareCode);
-    toast.success('Share code copied to clipboard');
-  };
-  
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    toast.success('Share link copied to clipboard');
-  };
-  
-  const handleShareClick = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `FlashCards: ${deck.title}`,
-          text: `Check out my flashcard deck: ${deck.title}`,
-          url: shareUrl,
-        });
-      } else {
-        handleCopyLink();
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
-      handleCopyLink();
-    }
-  };
 
   return (
     <Layout>
@@ -130,72 +111,19 @@ const DeckShare = () => {
         </Card>
         
         <div className="grid gap-6 md:grid-cols-2">
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Share Options</h2>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Share Code:</p>
-                <div className="flex">
-                  <div className="bg-muted flex-1 p-2 rounded-l-md font-mono">
-                    {shareCode}
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-l-none" 
-                    onClick={handleCopyCode}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Share Link:</p>
-                <div className="flex">
-                  <div className="bg-muted flex-1 p-2 rounded-l-md truncate text-xs sm:text-sm">
-                    {shareUrl}
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-l-none" 
-                    onClick={handleCopyLink}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="pt-2">
-                <Button 
-                  className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
-                  onClick={handleShareClick}
-                >
-                  <Share2 className="mr-2 h-4 w-4" /> 
-                  Share Deck
-                </Button>
-              </div>
-              
-              <div>
-                <Button variant="outline" className="w-full" onClick={() => navigate(`/shared/${shareCode}`)}>
-                  <ExternalLink className="mr-2 h-4 w-4" /> 
-                  Preview Shared View
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-center justify-center">
-            <div className="mb-4">
-              <QrCode className="h-6 w-6 text-flashcard-primary" />
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <QRCode value={shareUrl} size={180} renderAs="svg" />
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Scan to access this deck
-            </p>
-          </div>
+          <ShareOptions 
+            shareCode={shareCode}
+            shareUrl={shareUrl}
+            onShare={handleShare}
+          />
+          <QRCodeDisplay shareUrl={shareUrl} />
+        </div>
+        
+        <div className="mt-4">
+          <Button variant="outline" className="w-full" onClick={() => navigate(`/shared/${shareCode}`)}>
+            <ExternalLink className="mr-2 h-4 w-4" /> 
+            Preview Shared View
+          </Button>
         </div>
       </div>
     </Layout>
