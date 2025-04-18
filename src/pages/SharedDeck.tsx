@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useDeck } from '@/context/DeckContext';
@@ -11,15 +11,17 @@ import {
   Play, 
   BookOpen, 
   Heart,
-  Share2
+  Share2,
+  Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SharedDeck = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { getDeckByShareCode, toggleFavorite, isFavorite } = useDeck();
+  const { getDeckByShareCode, toggleFavorite, isFavorite, copyDeck } = useDeck();
   const { isAuthenticated } = useAuth();
+  const [isCopying, setIsCopying] = useState(false);
   
   if (!code) {
     navigate('/');
@@ -60,6 +62,30 @@ const SharedDeck = () => {
     }
     
     toggleFavorite(deck.id);
+  };
+  
+  const handleCopyDeck = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to save this deck to your collection', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/auth'),
+        },
+      });
+      return;
+    }
+    
+    setIsCopying(true);
+    try {
+      const copiedDeck = await copyDeck(deck.id);
+      toast.success('Deck saved to your collection!');
+      navigate(`/deck/${copiedDeck.id}`);
+    } catch (error) {
+      console.error('Error copying deck:', error);
+      toast.error('Failed to save deck to your collection');
+    } finally {
+      setIsCopying(false);
+    }
   };
   
   const handleStartPractice = () => {
@@ -130,6 +156,17 @@ const SharedDeck = () => {
                   <Play className="mr-2 h-4 w-4" /> 
                   Test Mode
                   <span className="text-xs opacity-70 ml-auto">Challenge yourself</span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleCopyDeck}
+                  disabled={isCopying}
+                >
+                  <Copy className="mr-2 h-4 w-4" /> 
+                  Save to My Decks
+                  {isCopying && <span className="ml-2 animate-spin">⟳</span>}
                 </Button>
                 
                 <Button 

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -37,6 +36,7 @@ interface DeckContextType {
   isFavorite: (deckId: string) => boolean;
   getDeckByShareCode: (code: string) => Deck | undefined;
   generateShareCode: (deckId: string) => string;
+  copyDeck: (deckId: string) => Promise<Deck>;
 }
 
 const DeckContext = createContext<DeckContextType>({
@@ -54,6 +54,7 @@ const DeckContext = createContext<DeckContextType>({
   isFavorite: () => false,
   getDeckByShareCode: () => undefined,
   generateShareCode: () => '',
+  copyDeck: async () => ({ id: '', creator_id: '', title: '', created_at: '', updated_at: '', cards: [] }),
 });
 
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
@@ -63,7 +64,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [shareCodes, setShareCodes] = useState<Record<string, string>>({});
 
-  // Load decks from localStorage
   useEffect(() => {
     if (user) {
       const storedDecks = localStorage.getItem(`flashcard_decks_${user.id}`);
@@ -84,21 +84,18 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, [user]);
 
-  // Save decks to localStorage whenever they change
   useEffect(() => {
     if (user) {
       localStorage.setItem(`flashcard_decks_${user.id}`, JSON.stringify(decks));
     }
   }, [decks, user]);
 
-  // Save favorites to localStorage whenever they change
   useEffect(() => {
     if (user) {
       localStorage.setItem(`flashcard_favorites_${user.id}`, JSON.stringify(favorites));
     }
   }, [favorites, user]);
 
-  // Save share codes to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('flashcard_share_codes', JSON.stringify(shareCodes));
   }, [shareCodes]);
@@ -140,7 +137,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     
     setDecks(prev => prev.filter(deck => deck.id !== id));
     
-    // Also remove from favorites if it was favorited
     if (favorites.includes(id)) {
       setFavorites(prev => prev.filter(favId => favId !== id));
     }
@@ -215,24 +211,46 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     return favorites.includes(deckId);
   };
 
-  // Generate a unique share code for a deck
   const generateShareCode = (deckId: string): string => {
-    // Check if we already have a code for this deck
     const existingCode = Object.entries(shareCodes).find(([_, id]) => id === deckId)?.[0];
     if (existingCode) return existingCode;
     
-    // Generate a new code
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     setShareCodes(prev => ({ ...prev, [code]: deckId }));
     return code;
   };
 
-  // Get a deck by its share code
   const getDeckByShareCode = (code: string): Deck | undefined => {
     const deckId = shareCodes[code];
     if (!deckId) return undefined;
     
     return decks.find(deck => deck.id === deckId);
+  };
+
+  const copyDeck = async (deckId: string): Promise<Deck> => {
+    if (!user) throw new Error('User not authenticated');
+    
+    const sourceDeck = getDeck(deckId);
+    if (!sourceDeck) {
+      throw new Error('Deck not found');
+    }
+    
+    const newDeck: Deck = {
+      id: `deck_${Date.now()}_copy`,
+      creator_id: user.id,
+      title: sourceDeck.title,
+      description: sourceDeck.description,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      cards: sourceDeck.cards.map(card => ({
+        ...card,
+        id: `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      })),
+    };
+    
+    setDecks(prev => [...prev, newDeck]);
+    
+    return newDeck;
   };
 
   return (
@@ -252,6 +270,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
         isFavorite,
         getDeckByShareCode,
         generateShareCode,
+        copyDeck,
       }}
     >
       {children}
