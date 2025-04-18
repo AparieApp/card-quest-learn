@@ -20,7 +20,7 @@ export const deckService = {
       ...deck,
       cards: (deck.flashcards || []).map(card => ({
         ...card,
-        manual_incorrect_answers: card.manual_incorrect_answers || [] 
+        manual_incorrect_answers: card.manual_incorrect_answers || []
       })) as Flashcard[]
     }));
   },

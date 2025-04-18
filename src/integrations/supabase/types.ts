@@ -88,6 +88,7 @@ export type Database = {
           front_text: string
           id: string
           incorrect_answers: string[]
+          manual_incorrect_answers: string[] | null
         }
         Insert: {
           correct_answer: string
@@ -96,6 +97,7 @@ export type Database = {
           front_text: string
           id?: string
           incorrect_answers: string[]
+          manual_incorrect_answers?: string[] | null
         }
         Update: {
           correct_answer?: string
@@ -104,6 +106,7 @@ export type Database = {
           front_text?: string
           id?: string
           incorrect_answers?: string[]
+          manual_incorrect_answers?: string[] | null
         }
         Relationships: [
           {
