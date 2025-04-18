@@ -20,6 +20,13 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
   onDeleteCard,
   isLoading = false,
 }) => {
+  // Collect all unique answers from the deck
+  const existingAnswers = Array.from(new Set(cards.flatMap(card => [
+    card.correct_answer,
+    ...card.incorrect_answers,
+    ...card.manual_incorrect_answers
+  ])));
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -41,6 +48,7 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
         onEdit={onEditCard}
         onDelete={onDeleteCard}
         isLoading={isLoading}
+        existingAnswers={existingAnswers}
       />
     </div>
   );

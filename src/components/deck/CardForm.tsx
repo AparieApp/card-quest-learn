@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,12 +15,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Flashcard } from '@/types/deck';
-import { Trash, Loader2 } from 'lucide-react';
+import { Trash, Loader2, Plus, X } from 'lucide-react';
+import { Combobox } from '@/components/ui/combobox';
 
 const cardSchema = z.object({
   front_text: z.string().min(1, 'Question is required'),
   correct_answer: z.string().min(1, 'Correct answer is required'),
-  incorrect_answers: z.array(z.string()).min(3, 'At least 3 incorrect answers are required'),
+  manual_incorrect_answers: z.array(z.string()).max(3, 'Maximum 3 manual incorrect answers'),
 });
 
 type CardFormValues = z.infer<typeof cardSchema>;
@@ -31,6 +32,7 @@ interface CardFormProps {
   onCancel?: () => void;
   onDelete?: () => void;
   isSubmitting?: boolean;
+  existingAnswers?: string[];
 }
 
 const CardForm: React.FC<CardFormProps> = ({ 
@@ -38,41 +40,51 @@ const CardForm: React.FC<CardFormProps> = ({
   onSubmit, 
   onCancel, 
   onDelete,
-  isSubmitting = false 
+  isSubmitting = false,
+  existingAnswers = []
 }) => {
+  const [manualAnswers, setManualAnswers] = useState<string[]>(
+    card ? card.manual_incorrect_answers : []
+  );
+
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
     defaultValues: card ? {
       front_text: card.front_text,
       correct_answer: card.correct_answer,
-      incorrect_answers: card.incorrect_answers.length >= 3 
-        ? card.incorrect_answers 
-        : [...card.incorrect_answers, ...Array(3 - card.incorrect_answers.length).fill('')],
+      manual_incorrect_answers: card.manual_incorrect_answers,
     } : {
       front_text: '',
       correct_answer: '',
-      incorrect_answers: ['', '', ''],
+      manual_incorrect_answers: [],
     },
   });
 
   const handleSubmit = (values: CardFormValues) => {
-    // Filter out any empty incorrect answers
-    const filteredIncorrectAnswers = values.incorrect_answers.filter(answer => answer.trim() !== '');
-    
-    if (filteredIncorrectAnswers.length < 3) {
-      form.setError('incorrect_answers', {
-        type: 'manual',
-        message: 'At least 3 incorrect answers are required',
-      });
-      return;
-    }
-    
     onSubmit({
       front_text: values.front_text,
       correct_answer: values.correct_answer,
-      incorrect_answers: filteredIncorrectAnswers,
+      manual_incorrect_answers: manualAnswers,
+      incorrect_answers: [], // This will be populated from the pool when displaying
     });
   };
+
+  const addManualAnswer = (answer: string) => {
+    if (manualAnswers.length < 3 && answer.trim() && !manualAnswers.includes(answer.trim())) {
+      setManualAnswers([...manualAnswers, answer.trim()]);
+      form.setValue('manual_incorrect_answers', [...manualAnswers, answer.trim()]);
+    }
+  };
+
+  const removeManualAnswer = (index: number) => {
+    const newAnswers = manualAnswers.filter((_, i) => i !== index);
+    setManualAnswers(newAnswers);
+    form.setValue('manual_incorrect_answers', newAnswers);
+  };
+
+  const filteredExistingAnswers = existingAnswers.filter(
+    answer => answer !== form.watch('correct_answer') && !manualAnswers.includes(answer)
+  );
 
   return (
     <Form {...form}>
@@ -95,6 +107,7 @@ const CardForm: React.FC<CardFormProps> = ({
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="correct_answer"
@@ -114,30 +127,50 @@ const CardForm: React.FC<CardFormProps> = ({
         />
         
         <div className="space-y-4">
-          <FormLabel>Incorrect Answers (at least 3)</FormLabel>
-          {form.watch('incorrect_answers').map((_, index) => (
-            <FormField
-              key={index}
-              control={form.control}
-              name={`incorrect_answers.${index}`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      placeholder={`Incorrect answer ${index + 1}`} 
-                      {...field} 
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          ))}
-          {form.formState.errors.incorrect_answers && (
-            <p className="text-sm font-medium text-destructive">
-              {form.formState.errors.incorrect_answers.message}
-            </p>
-          )}
+          <FormLabel>Incorrect Answers (up to 3)</FormLabel>
+          
+          <div className="space-y-2">
+            {manualAnswers.map((answer, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input value={answer} disabled />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeManualAnswer(index)}
+                  disabled={isSubmitting}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            {manualAnswers.length < 3 && (
+              <div className="flex items-center gap-2">
+                <Combobox
+                  options={filteredExistingAnswers}
+                  emptyMessage="No matching answers"
+                  placeholder="Add an incorrect answer"
+                  onSelect={addManualAnswer}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const input = document.querySelector('input[role="combobox"]') as HTMLInputElement;
+                    if (input && input.value.trim()) {
+                      addManualAnswer(input.value);
+                      input.value = '';
+                    }
+                  }}
+                  disabled={isSubmitting || manualAnswers.length >= 3}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="flex justify-between pt-4">

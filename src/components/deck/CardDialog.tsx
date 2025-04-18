@@ -18,6 +18,7 @@ interface CardDialogProps {
   onCancel: () => void;
   onDelete?: () => void;
   isSubmitting?: boolean;
+  existingAnswers?: string[];
 }
 
 const CardDialog: React.FC<CardDialogProps> = ({
@@ -28,10 +29,10 @@ const CardDialog: React.FC<CardDialogProps> = ({
   onCancel,
   onDelete,
   isSubmitting = false,
+  existingAnswers = []
 }) => {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
-      // Prevent closing the dialog if we're submitting
       if (isSubmitting && !isOpen) return;
       onOpenChange(isOpen);
     }}>
@@ -48,6 +49,7 @@ const CardDialog: React.FC<CardDialogProps> = ({
           onCancel={onCancel}
           onDelete={onDelete}
           isSubmitting={isSubmitting}
+          existingAnswers={existingAnswers}
         />
       </DialogContent>
     </Dialog>

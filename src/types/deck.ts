@@ -5,6 +5,7 @@ export interface Flashcard {
   front_text: string;
   correct_answer: string;
   incorrect_answers: string[];
+  manual_incorrect_answers: string[];
   created_at: string;
 }
 

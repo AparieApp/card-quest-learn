@@ -17,15 +17,40 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({ card, onAnswer, mod
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   
-  // Shuffle answers when card changes
   useEffect(() => {
-    const allOptions = [card.correct_answer, ...card.incorrect_answers];
-    // Fisher-Yates shuffle
-    for (let i = allOptions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]];
-    }
-    setOptions(allOptions);
+    // Prioritized answer selection
+    const generateOptions = () => {
+      // Start with the correct answer and manual incorrect answers
+      const baseAnswers = [
+        card.correct_answer,
+        ...card.manual_incorrect_answers
+      ];
+      
+      // Add other incorrect answers from the pool
+      const remainingAnswers = card.incorrect_answers.filter(
+        answer => !baseAnswers.includes(answer)
+      );
+      
+      // Shuffle remaining answers
+      for (let i = remainingAnswers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remainingAnswers[i], remainingAnswers[j]] = [remainingAnswers[j], remainingAnswers[i]];
+      }
+      
+      // Combine all answers and ensure we have exactly 4 options
+      const allAnswers = [...baseAnswers, ...remainingAnswers];
+      const finalAnswers = allAnswers.slice(0, 4);
+      
+      // Shuffle the final array to randomize position
+      for (let i = finalAnswers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [finalAnswers[i], finalAnswers[j]] = [finalAnswers[j], finalAnswers[i]];
+      }
+      
+      setOptions(finalAnswers);
+    };
+    
+    generateOptions();
     setSelectedAnswer(null);
     setShowFeedback(false);
   }, [card]);
