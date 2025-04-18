@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Deck } from '@/types/deck';
 import { deckService } from '@/services/deckService';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 
 export const useDeckStorage = () => {
   const [decks, setDecks] = useState<Deck[]>([]);

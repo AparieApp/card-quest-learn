@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
@@ -24,7 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useCreateDeck } from '@/hooks/deck/useCreateDeck';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { CreateDeckInput } from '@/types/deck';
 
 const createDeckSchema = z.object({
@@ -40,7 +39,6 @@ const CreateDeckButton: React.FC = () => {
   const { handleCreateDeck, isCreating } = useCreateDeck();
   const { isAuthenticated, user } = useAuth();
 
-  // Log auth state when component renders
   console.log('CreateDeckButton auth state:', { isAuthenticated, userId: user?.id });
 
   const form = useForm<CreateDeckFormValues>({
@@ -52,8 +50,6 @@ const CreateDeckButton: React.FC = () => {
   });
 
   const onSubmit = async (values: CreateDeckFormValues) => {
-    // Ensure title is present (it should be due to zod validation)
-    // Create a properly typed input object that matches CreateDeckInput
     const deckInput: CreateDeckInput = {
       title: values.title,
       description: values.description
@@ -67,9 +63,6 @@ const CreateDeckButton: React.FC = () => {
       navigate(`/deck/${newDeck.id}`);
     }
   };
-
-  // We should render the button regardless of authentication state
-  // The Dashboard component already checks for authentication
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

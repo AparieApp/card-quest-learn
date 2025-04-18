@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useDeck } from '@/context/DeckContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
 import { CreateDeckInput } from '@/types/deck';
 
