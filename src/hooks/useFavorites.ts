@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { favoriteService } from '@/services/favoriteService';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
 
 export const useFavorites = () => {
