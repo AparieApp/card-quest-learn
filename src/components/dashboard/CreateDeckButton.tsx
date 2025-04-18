@@ -25,6 +25,7 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useCreateDeck } from '@/hooks/deck/useCreateDeck';
 import { useAuth } from '@/context/auth';
+import { CreateDeckInput } from '@/types/deck';
 
 const createDeckSchema = z.object({
   title: z.string().min(1, 'Title is required').max(50, 'Title must be 50 characters or less'),
@@ -48,7 +49,14 @@ const CreateDeckButton: React.FC = () => {
   });
 
   const onSubmit = async (values: CreateDeckFormValues) => {
-    const newDeck = await handleCreateDeck(values);
+    // Ensure title is present (it should be due to zod validation)
+    // Create a properly typed input object that matches CreateDeckInput
+    const deckInput: CreateDeckInput = {
+      title: values.title,
+      description: values.description
+    };
+    
+    const newDeck = await handleCreateDeck(deckInput);
     if (newDeck) {
       setOpen(false);
       form.reset();

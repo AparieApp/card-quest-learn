@@ -18,6 +18,8 @@ export const useCreateDeck = () => {
 
     setIsCreating(true);
     try {
+      // Log the input for debugging purposes
+      console.log('Creating deck with input:', input);
       const newDeck = await createDeck(input);
       toast.success('Deck created successfully!');
       return newDeck;
