@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<void> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       toast.success('Logged in successfully!');
-      return data;
+      // We don't return the data anymore, as the function is typed to return Promise<void>
     } catch (error: any) {
       console.error('Login error:', error);
       let message = 'Login failed. Please check your credentials and try again.';
@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signup = async (email: string, username: string, password: string) => {
+  const signup = async (email: string, username: string, password: string): Promise<void> => {
     try {
       // Check if username is available
       const isAvailable = await checkUsernameAvailability(username);
@@ -168,7 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       toast.success('Account created successfully!');
-      return authData;
+      // We don't return the authData anymore, as the function is typed to return Promise<void>
     } catch (error: any) {
       console.error('Signup error:', error);
       const message = error.message || 'Signup failed';
