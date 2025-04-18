@@ -35,13 +35,11 @@ export const useDeckOperations = (
   const getDeck = (id: string): Deck | null => {
     if (!id) return null;
     
-    // Look for the deck in the current state
-    const decks = setDecks((prevDecks) => {
-      const deck = prevDecks.find(d => d.id === id);
-      return prevDecks; // Return unchanged state
-    });
-    
-    return decks((prevDecks) => prevDecks.find(d => d.id === id) || null);
+    // We can't directly get the deck from setDecks since it's a state setter function
+    // We need to get it from the service or use a ref to access current state
+    // Since this function is used synchronously in the component to get the current deck,
+    // we'll maintain access to the current decks state from the parent component
+    return null; // This will be replaced by correct implementation in DeckContext
   };
 
   return {

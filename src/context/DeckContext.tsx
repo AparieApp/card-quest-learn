@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
@@ -38,7 +39,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     createDeck,
     updateDeck,
     deleteDeck,
-    getDeck,
+    // We'll override getDeck with our own implementation
   } = useDeckOperations(setDecks, user?.id);
 
   const {
@@ -52,6 +53,12 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     generateShareCode,
     copyDeck,
   } = useSharingOperations(decks, setDecks, user?.id);
+  
+  // Local implementation of getDeck using the actual decks state
+  const getDeck = (id: string): Deck | null => {
+    if (!id) return null;
+    return decks.find(deck => deck.id === id) || null;
+  };
 
   const refreshDecks = async () => {
     if (!user) return;
