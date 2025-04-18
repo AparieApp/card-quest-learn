@@ -15,7 +15,8 @@ export const useCardManager = (deckId: string) => {
       const cardInput: CreateCardInput = {
         front_text: cardData.front_text,
         correct_answer: cardData.correct_answer,
-        incorrect_answers: cardData.incorrect_answers
+        incorrect_answers: cardData.incorrect_answers,
+        manual_incorrect_answers: cardData.manual_incorrect_answers || []
       };
       await addCardToDeck(deckId, cardInput);
       setIsCardDialogOpen(false);
