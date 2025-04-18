@@ -1,33 +1,33 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { shareService } from '@/services/shareService';
+import { toast } from 'sonner';
 
 export const useSharing = () => {
-  const [shareCodes, setShareCodes] = useState<Record<string, string>>({});
+  const [generatingCode, setGeneratingCode] = useState(false);
 
-  useEffect(() => {
-    const storedShareCodes = localStorage.getItem('flashcard_share_codes');
-    if (storedShareCodes) {
-      setShareCodes(JSON.parse(storedShareCodes));
+  const generateShareCode = async (deckId: string): Promise<string> => {
+    setGeneratingCode(true);
+    try {
+      const code = await shareService.saveShareCode(deckId);
+      return code;
+    } catch (error) {
+      console.error('Error generating share code:', error);
+      toast.error('Failed to generate share code');
+      throw error;
+    } finally {
+      setGeneratingCode(false);
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('flashcard_share_codes', JSON.stringify(shareCodes));
-  }, [shareCodes]);
-
-  const generateShareCode = (deckId: string): string => {
-    const existingCode = Object.entries(shareCodes).find(([_, id]) => id === deckId)?.[0];
-    if (existingCode) return existingCode;
-    
-    const code = shareService.generateShareCode();
-    setShareCodes(prev => ({ ...prev, [code]: deckId }));
-    return code;
   };
 
-  const getDeckByShareCode = (code: string): string | undefined => {
-    return shareCodes[code];
+  const getDeckByShareCode = async (code: string): Promise<string | null> => {
+    try {
+      return await shareService.getDeckIdByShareCode(code);
+    } catch (error) {
+      console.error('Error getting deck by share code:', error);
+      return null;
+    }
   };
 
-  return { generateShareCode, getDeckByShareCode };
+  return { generateShareCode, getDeckByShareCode, generatingCode };
 };

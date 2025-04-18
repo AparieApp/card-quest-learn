@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UpdateDeckInput } from '@/types/deck';
 import { useDeck } from '@/context/DeckContext';
 import { toast } from 'sonner';
@@ -9,14 +9,24 @@ export const useDeckEditor = (deckId: string) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadDeck = () => {
-    const deck = getDeck(deckId);
-    if (deck) {
-      setTitle(deck.title);
-      setDescription(deck.description || '');
+  const loadDeck = async () => {
+    setIsLoading(true);
+    try {
+      const deck = await getDeck(deckId);
+      if (deck) {
+        setTitle(deck.title);
+        setDescription(deck.description || '');
+      }
+      return deck;
+    } catch (error) {
+      console.error('Error loading deck:', error);
+      toast.error('Failed to load deck');
+      return null;
+    } finally {
+      setIsLoading(false);
     }
-    return deck;
   };
 
   const saveDeck = async () => {
@@ -34,11 +44,16 @@ export const useDeckEditor = (deckId: string) => {
       await updateDeck(deckId, updateInput);
       toast.success('Deck updated successfully');
     } catch (error) {
+      console.error('Error saving deck:', error);
       toast.error('Failed to update deck');
     } finally {
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    loadDeck();
+  }, [deckId]);
 
   return {
     title,
@@ -46,6 +61,7 @@ export const useDeckEditor = (deckId: string) => {
     description,
     setDescription,
     isSaving,
+    isLoading,
     loadDeck,
     saveDeck
   };

@@ -1,39 +1,68 @@
 
 import { useState, useEffect } from 'react';
 import { favoriteService } from '@/services/favoriteService';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
-export const useFavorites = (userId: string | undefined) => {
+export const useFavorites = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (userId) {
-      const storedFavorites = localStorage.getItem(`flashcard_favorites_${userId}`);
-      if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
+    const fetchFavorites = async () => {
+      if (!isAuthenticated || !user) {
+        setFavorites([]);
+        setLoading(false);
+        return;
       }
-    }
-  }, [userId]);
 
-  useEffect(() => {
-    if (userId) {
-      localStorage.setItem(`flashcard_favorites_${userId}`, JSON.stringify(favorites));
-    }
-  }, [favorites, userId]);
+      setLoading(true);
+      try {
+        const fetchedFavorites = await favoriteService.getFavorites(user.id);
+        setFavorites(fetchedFavorites);
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFavorites();
+  }, [isAuthenticated, user]);
 
   const toggleFavorite = async (deckId: string) => {
-    if (favoriteService.isFavorite(favorites, deckId)) {
-      setFavorites(favoriteService.removeFavorite(favorites, deckId));
-      toast.success('Removed from favorites!');
-    } else {
-      setFavorites(favoriteService.addFavorite(favorites, deckId));
-      toast.success('Added to favorites!');
+    if (!isAuthenticated || !user) {
+      toast.error('Please log in to add decks to favorites', {
+        action: {
+          label: 'Login',
+          onClick: () => window.location.href = '/auth',
+        },
+      });
+      return;
+    }
+
+    try {
+      const isFavorited = favorites.includes(deckId);
+      
+      if (isFavorited) {
+        await favoriteService.removeFavorite(user.id, deckId);
+        setFavorites(prev => prev.filter(id => id !== deckId));
+        toast.success('Removed from favorites!');
+      } else {
+        await favoriteService.addFavorite(user.id, deckId);
+        setFavorites(prev => [...prev, deckId]);
+        toast.success('Added to favorites!');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error('Failed to update favorites');
     }
   };
 
   const isFavorite = (deckId: string): boolean => {
-    return favoriteService.isFavorite(favorites, deckId);
+    return favorites.includes(deckId);
   };
 
-  return { favorites, toggleFavorite, isFavorite };
+  return { favorites, toggleFavorite, isFavorite, loading };
 };

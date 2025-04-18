@@ -1,6 +1,7 @@
 
 export interface Flashcard {
   id: string;
+  deck_id: string;
   front_text: string;
   correct_answer: string;
   incorrect_answers: string[];
@@ -15,9 +16,10 @@ export interface Deck {
   created_at: string;
   updated_at: string;
   cards: Flashcard[];
+  flashcards?: Flashcard[]; // Used when fetching from Supabase
 }
 
 export type CreateDeckInput = Pick<Deck, 'title' | 'description'>;
 export type UpdateDeckInput = Pick<Deck, 'title' | 'description'>;
-export type CreateCardInput = Omit<Flashcard, 'id' | 'created_at'>;
-export type UpdateCardInput = Partial<Omit<Flashcard, 'id' | 'created_at'>>;
+export type CreateCardInput = Pick<Flashcard, 'front_text' | 'correct_answer' | 'incorrect_answers'>;
+export type UpdateCardInput = Partial<Pick<Flashcard, 'front_text' | 'correct_answer' | 'incorrect_answers'>>;

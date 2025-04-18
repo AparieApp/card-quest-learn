@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useDeck } from '@/context/DeckContext';
@@ -12,23 +12,58 @@ import {
   BookOpen, 
   Heart,
   Share2,
-  Copy
+  Copy,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Deck } from '@/types/deck';
 
 const SharedDeck = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { getDeckByShareCode, toggleFavorite, isFavorite, copyDeck } = useDeck();
   const { isAuthenticated } = useAuth();
+  const [deck, setDeck] = useState<Deck | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadDeck = async () => {
+      if (!code) {
+        navigate('/');
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const fetchedDeck = await getDeckByShareCode(code);
+        setDeck(fetchedDeck);
+      } catch (error) {
+        console.error('Error loading shared deck:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDeck();
+  }, [code, getDeckByShareCode, navigate]);
   
   if (!code) {
     navigate('/');
     return null;
   }
   
-  const deck = getDeckByShareCode(code);
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container py-12 flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-flashcard-primary" />
+          <p className="mt-4 text-muted-foreground">Loading shared deck...</p>
+        </div>
+      </Layout>
+    );
+  }
+  
   if (!deck) {
     return (
       <Layout>

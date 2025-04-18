@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import CardList from './CardList';
 import { Flashcard } from '@/types/deck';
 
@@ -10,6 +10,7 @@ interface DeckCardManagerProps {
   onAddClick: () => void;
   onEditCard: (cardId: string) => void;
   onDeleteCard: (cardId: string) => void;
+  isLoading?: boolean;
 }
 
 const DeckCardManager: React.FC<DeckCardManagerProps> = ({
@@ -17,14 +18,19 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
   onAddClick,
   onEditCard,
   onDeleteCard,
+  isLoading = false,
 }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="font-semibold">Cards ({cards.length})</h2>
+        <h2 className="font-semibold flex items-center gap-2">
+          Cards ({cards.length})
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        </h2>
         <Button 
           onClick={onAddClick}
           className="bg-flashcard-primary hover:bg-flashcard-secondary"
+          disabled={isLoading}
         >
           <Plus className="mr-1 h-4 w-4" /> Add Card
         </Button>
@@ -34,6 +40,7 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
         cards={cards}
         onEdit={onEditCard}
         onDelete={onDeleteCard}
+        isLoading={isLoading}
       />
     </div>
   );

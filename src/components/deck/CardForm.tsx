@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Flashcard } from '@/types/deck';
-import { Trash } from 'lucide-react';
+import { Trash, Loader2 } from 'lucide-react';
 
 const cardSchema = z.object({
   front_text: z.string().min(1, 'Question is required'),
@@ -27,12 +27,19 @@ type CardFormValues = z.infer<typeof cardSchema>;
 
 interface CardFormProps {
   card?: Flashcard;
-  onSubmit: (data: Omit<Flashcard, 'id' | 'created_at'>) => void;
+  onSubmit: (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => void;
   onCancel?: () => void;
   onDelete?: () => void;
+  isSubmitting?: boolean;
 }
 
-const CardForm: React.FC<CardFormProps> = ({ card, onSubmit, onCancel, onDelete }) => {
+const CardForm: React.FC<CardFormProps> = ({ 
+  card, 
+  onSubmit, 
+  onCancel, 
+  onDelete,
+  isSubmitting = false 
+}) => {
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
     defaultValues: card ? {
@@ -81,6 +88,7 @@ const CardForm: React.FC<CardFormProps> = ({ card, onSubmit, onCancel, onDelete 
                   placeholder="Enter the question or front side text"
                   className="min-h-20"
                   {...field}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -94,7 +102,11 @@ const CardForm: React.FC<CardFormProps> = ({ card, onSubmit, onCancel, onDelete 
             <FormItem>
               <FormLabel>Correct Answer</FormLabel>
               <FormControl>
-                <Input placeholder="Enter the correct answer" {...field} />
+                <Input 
+                  placeholder="Enter the correct answer" 
+                  {...field} 
+                  disabled={isSubmitting}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -111,7 +123,11 @@ const CardForm: React.FC<CardFormProps> = ({ card, onSubmit, onCancel, onDelete 
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder={`Incorrect answer ${index + 1}`} {...field} />
+                    <Input 
+                      placeholder={`Incorrect answer ${index + 1}`} 
+                      {...field} 
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                 </FormItem>
               )}
@@ -127,18 +143,39 @@ const CardForm: React.FC<CardFormProps> = ({ card, onSubmit, onCancel, onDelete 
         <div className="flex justify-between pt-4">
           <div className="flex gap-2">
             {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
             )}
             {onDelete && (
-              <Button type="button" variant="destructive" onClick={onDelete}>
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={onDelete}
+                disabled={isSubmitting}
+              >
                 <Trash className="h-4 w-4 mr-1" /> Delete
               </Button>
             )}
           </div>
-          <Button type="submit" className="bg-flashcard-primary hover:bg-flashcard-secondary">
-            {card ? 'Update Card' : 'Add Card'}
+          <Button 
+            type="submit" 
+            className="bg-flashcard-primary hover:bg-flashcard-secondary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {card ? 'Updating...' : 'Adding...'}
+              </>
+            ) : (
+              card ? 'Update Card' : 'Add Card'
+            )}
           </Button>
         </div>
       </form>

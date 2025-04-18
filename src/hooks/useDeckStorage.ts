@@ -1,31 +1,35 @@
 
 import { useState, useEffect } from 'react';
 import { Deck } from '@/types/deck';
-import { toast } from 'sonner';
+import { deckService } from '@/services/deckService';
+import { useAuth } from '@/context/AuthContext';
 
-export const useDeckStorage = (userId: string | undefined) => {
+export const useDeckStorage = () => {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (userId) {
-      const storedDecks = localStorage.getItem(`flashcard_decks_${userId}`);
-      if (storedDecks) {
-        setDecks(JSON.parse(storedDecks));
+    const fetchDecks = async () => {
+      if (!isAuthenticated || !user) {
+        setDecks([]);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    }
-  }, [userId]);
 
-  useEffect(() => {
-    if (userId) {
-      localStorage.setItem(`flashcard_decks_${userId}`, JSON.stringify(decks));
-    }
-  }, [decks, userId]);
+      setLoading(true);
+      try {
+        const fetchedDecks = await deckService.getDecks();
+        setDecks(fetchedDecks);
+      } catch (error) {
+        console.error('Error fetching decks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const updateDecks = (newDecks: Deck[]) => {
-    setDecks(newDecks);
-  };
+    fetchDecks();
+  }, [isAuthenticated, user]);
 
-  return { decks, loading, updateDecks };
+  return { decks, loading, setDecks };
 };

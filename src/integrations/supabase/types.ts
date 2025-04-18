@@ -9,7 +9,162 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      decks: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decks_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          deck_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          deck_id: string
+          front_text: string
+          id: string
+          incorrect_answers: string[]
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          deck_id: string
+          front_text: string
+          id?: string
+          incorrect_answers: string[]
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          deck_id?: string
+          front_text?: string
+          id?: string
+          incorrect_answers?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      share_codes: {
+        Row: {
+          code: string
+          created_at: string
+          deck_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          deck_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deck_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_codes_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

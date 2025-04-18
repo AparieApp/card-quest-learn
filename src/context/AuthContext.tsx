@@ -1,17 +1,17 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// Define User type based on specs
-interface User {
+interface AuthUser {
   id: string;
   email: string;
   username: string;
 }
 
-// Auth context type
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -20,7 +20,6 @@ interface AuthContextType {
   checkUsernameAvailability: (username: string) => Promise<boolean>;
 }
 
-// Create context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
@@ -31,96 +30,146 @@ const AuthContext = createContext<AuthContextType>({
   checkUsernameAvailability: async () => true,
 });
 
-// Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // For MVP we'll simulate auth with localStorage
-  // In the future this would be replaced with Supabase auth
+  const [session, setSession] = useState<Session | null>(null);
+
   useEffect(() => {
-    const storedUser = localStorage.getItem('flashcard_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        await refreshUser(session?.user || null);
+        setIsLoading(false);
+      }
+    );
+
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      await refreshUser(session?.user || null);
+      setIsLoading(false);
+    };
+
+    initializeAuth();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const refreshUser = async (supabaseUser: User | null) => {
+    if (!supabaseUser) {
+      setUser(null);
+      return;
+    }
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        setUser(null);
+        return;
+      }
+
+      setUser({
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        username: profile?.username || supabaseUser.email?.split('@')[0] || '',
+      });
+    } catch (error) {
+      console.error('Error in refreshUser:', error);
+      setUser(null);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
-      // For demo purposes - in real app, this would validate against Supabase
-      const mockUsers = JSON.parse(localStorage.getItem('flashcard_users') || '[]');
-      const foundUser = mockUsers.find((u: any) => 
-        u.email === email && u.password === password
-      );
-      
-      if (foundUser) {
-        const userObj = {
-          id: foundUser.id,
-          email: foundUser.email,
-          username: foundUser.username
-        };
-        setUser(userObj);
-        localStorage.setItem('flashcard_user', JSON.stringify(userObj));
-        toast.success(`Welcome back, ${foundUser.username}!`);
-      } else {
-        throw new Error('Invalid email or password');
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
       }
+
+      toast.success('Logged in successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
       throw error;
     }
   };
-  
+
   const signup = async (email: string, username: string, password: string) => {
     try {
-      // For demo purposes - in real app, this would create a user in Supabase
-      const mockUsers = JSON.parse(localStorage.getItem('flashcard_users') || '[]');
-      
-      // Check if email or username already exists
-      if (mockUsers.some((u: any) => u.email === email)) {
-        throw new Error('Email already in use');
-      }
-      
-      if (mockUsers.some((u: any) => u.username === username)) {
+      // Check if username is available
+      const isAvailable = await checkUsernameAvailability(username);
+      if (!isAvailable) {
         throw new Error('Username already taken');
       }
-      
-      const newUser = {
-        id: `user_${Date.now()}`,
+
+      // Create the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        username,
-        password // In real app, we'd never store plain passwords
-      };
-      
-      mockUsers.push(newUser);
-      localStorage.setItem('flashcard_users', JSON.stringify(mockUsers));
-      
-      const userObj = {
-        id: newUser.id,
-        email: newUser.email,
-        username: newUser.username
-      };
-      
-      setUser(userObj);
-      localStorage.setItem('flashcard_user', JSON.stringify(userObj));
-      toast.success(`Welcome, ${username}!`);
+        password,
+        options: {
+          data: {
+            username,
+          },
+        },
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('Failed to create user');
+      }
+
+      toast.success('Account created successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Signup failed');
       throw error;
     }
   };
-  
+
   const logout = async () => {
-    localStorage.removeItem('flashcard_user');
-    setUser(null);
-    toast.success('Logged out successfully');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      
+      setUser(null);
+      toast.success('Logged out successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Logout failed');
+    }
   };
-  
+
   const checkUsernameAvailability = async (username: string): Promise<boolean> => {
-    // For demo purposes
-    const mockUsers = JSON.parse(localStorage.getItem('flashcard_users') || '[]');
-    return !mockUsers.some((u: any) => u.username === username);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username);
+
+      if (error) {
+        throw error;
+      }
+
+      return data.length === 0;
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      return false;
+    }
   };
 
   return (
@@ -140,5 +189,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Custom hook to use auth context
 export const useAuth = () => useContext(AuthContext);
