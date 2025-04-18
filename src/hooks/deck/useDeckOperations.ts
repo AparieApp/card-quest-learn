@@ -8,8 +8,12 @@ export const useDeckOperations = (
   userId?: string
 ) => {
   const createDeck = async (input: CreateDeckInput): Promise<Deck> => {
-    if (!userId) throw new Error('User not authenticated');
+    if (!userId) {
+      console.error('Cannot create deck: User ID is undefined', { userId });
+      throw new Error('User not authenticated');
+    }
     
+    console.log('Creating deck with user ID:', userId);
     const newDeck = await deckService.createDeck(userId, input);
     setDecks(prev => [newDeck, ...prev]);
     toast.success(`Deck "${input.title}" created!`);

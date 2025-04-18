@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useDeck } from '@/context/DeckContext';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { CreateDeckInput } from '@/types/deck';
 
@@ -11,6 +11,9 @@ export const useCreateDeck = () => {
   const { isAuthenticated, user } = useAuth();
 
   const handleCreateDeck = async (input: CreateDeckInput) => {
+    // Log auth state for debugging
+    console.log('Auth state when creating deck:', { isAuthenticated, userId: user?.id });
+    
     if (!isAuthenticated || !user) {
       toast.error('You must be logged in to create a deck');
       return null;

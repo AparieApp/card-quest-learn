@@ -24,7 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useCreateDeck } from '@/hooks/deck/useCreateDeck';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/AuthContext';
 import { CreateDeckInput } from '@/types/deck';
 
 const createDeckSchema = z.object({
@@ -38,7 +38,10 @@ const CreateDeckButton: React.FC = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { handleCreateDeck, isCreating } = useCreateDeck();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Log auth state when component renders
+  console.log('CreateDeckButton auth state:', { isAuthenticated, userId: user?.id });
 
   const form = useForm<CreateDeckFormValues>({
     resolver: zodResolver(createDeckSchema),
@@ -56,6 +59,7 @@ const CreateDeckButton: React.FC = () => {
       description: values.description
     };
     
+    console.log('Submitting form with values:', deckInput);
     const newDeck = await handleCreateDeck(deckInput);
     if (newDeck) {
       setOpen(false);
