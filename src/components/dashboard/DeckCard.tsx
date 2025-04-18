@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Deck } from '@/context/DeckContext';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Edit, Trash, Share2, PlayCircle } from 'lucide-react';
+import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck } from 'lucide-react';
 import { useDeck } from '@/context/DeckContext';
 
 interface DeckCardProps {
@@ -17,6 +16,10 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
   
   const handlePlay = () => {
     navigate(`/deck/${deck.id}/practice`);
+  };
+  
+  const handleTest = () => {
+    navigate(`/deck/${deck.id}/test`);
   };
   
   const handleEdit = () => {
@@ -65,10 +68,16 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
         </p>
       </CardContent>
       <CardFooter className="pt-2 flex justify-between">
-        <Button variant="outline" size="sm" onClick={handlePlay}>
-          <PlayCircle className="h-4 w-4 mr-1" />
-          Practice
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handlePlay}>
+            <PlayCircle className="h-4 w-4 mr-1" />
+            Practice
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleTest}>
+            <ClipboardCheck className="h-4 w-4 mr-1" />
+            Test
+          </Button>
+        </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleEdit}>
             <Edit className="h-4 w-4 text-muted-foreground" />
