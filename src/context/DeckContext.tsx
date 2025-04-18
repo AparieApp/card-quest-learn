@@ -16,14 +16,14 @@ interface DeckContextType {
   createDeck: (input: CreateDeckInput) => Promise<Deck>;
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
   deleteDeck: (id: string) => Promise<void>;
-  getDeck: (id: string) => Promise<Deck | null>;
+  getDeck: (id: string) => Deck | null;  // Changed from Promise<Deck | null> to Deck | null
   addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<void>;
   updateCard: (deckId: string, cardId: string, cardData: UpdateCardInput) => Promise<void>;
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
   isFavorite: (deckId: string) => boolean;
   getDeckByShareCode: (code: string) => Promise<Deck | null>;
-  generateShareCode: (deckId: string) => Promise<string>;
+  generateShareCode: (deckId: string) => string;  // Changed from Promise<string> to string
   copyDeck: (deckId: string) => Promise<Deck>;
   refreshDecks: () => Promise<void>;
 }
@@ -36,6 +36,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { favorites, toggleFavorite: toggleFav, isFavorite } = useFavorites();
   const { generateShareCode: genShareCode, getDeckByShareCode: getSharedDeckId } = useSharing();
   const queryClient = useQueryClient();
+  const [shareCodeCache, setShareCodeCache] = useState<Record<string, string>>({});
 
   const refreshDecks = async () => {
     if (!user) return;
@@ -74,13 +75,11 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     toast.success('Deck deleted!');
   };
 
-  const getDeck = async (id: string): Promise<Deck | null> => {
+  const getDeck = (id: string): Deck | null => {
     // First check local cache
     const cachedDeck = decks.find(deck => deck.id === id);
     if (cachedDeck) return cachedDeck;
-    
-    // If not found in cache, fetch from server
-    return await deckService.getDeck(id);
+    return null;
   };
 
   const addCardToDeck = async (deckId: string, card: CreateCardInput) => {
@@ -142,16 +141,35 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getDeckByShareCode = async (code: string): Promise<Deck | null> => {
-    const deckId = await getSharedDeckId(code);
-    if (!deckId) return null;
-    
-    return await getDeck(deckId);
+    try {
+      const deckId = await getSharedDeckId(code);
+      if (!deckId) return null;
+      
+      // Check if we have this deck in the local cache
+      const cachedDeck = decks.find(d => d.id === deckId);
+      if (cachedDeck) return cachedDeck;
+      
+      // If not, fetch it from the database
+      return await deckService.getDeck(deckId);
+    } catch (error) {
+      console.error('Error getting deck by share code:', error);
+      return null;
+    }
   };
 
-  const generateShareCode = async (deckId: string): Promise<string> => {
+  const generateShareCode = (deckId: string): string => {
     if (!user) throw new Error('User not authenticated');
     
-    return await genShareCode(deckId);
+    // First check if we have a cached share code
+    if (shareCodeCache[deckId]) {
+      return shareCodeCache[deckId];
+    }
+    
+    // Generate and cache a new code
+    // Note: This is now synchronous, but the actual saving to DB happens in background
+    const code = genShareCode(deckId);
+    setShareCodeCache(prev => ({...prev, [deckId]: code}));
+    return code;
   };
 
   const copyDeck = async (deckId: string): Promise<Deck> => {

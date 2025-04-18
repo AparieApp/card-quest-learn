@@ -1,43 +1,82 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useDeck } from '@/context/DeckContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import DeckEditForm from '@/components/deck/DeckEditForm';
 import DeckCardManager from '@/components/deck/DeckCardManager';
 import CardDialog from '@/components/deck/CardDialog';
 import { useDeckEditor } from '@/hooks/deck/useDeckEditor';
 import { useCardManager } from '@/hooks/deck/useCardManager';
+import { Deck } from '@/types/deck';
 
 const DeckEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getDeck } = useDeck();
+  const { getDeck, refreshDecks } = useDeck();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const [fetchedDeck, setFetchedDeck] = useState<Deck | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  if (!isAuthenticated) {
-    navigate('/auth');
-    return null;
-  }
-  
-  if (!id) {
-    navigate('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    
+    if (!id) {
+      navigate('/dashboard');
+      return;
+    }
+    
+    // Load the deck
+    const loadDeckData = async () => {
+      setIsLoading(true);
+      try {
+        await refreshDecks();
+        const deck = getDeck(id);
+        if (!deck) {
+          toast.error('Deck not found');
+          navigate('/dashboard');
+          return;
+        }
+        setFetchedDeck(deck);
+      } catch (error) {
+        console.error('Error loading deck:', error);
+        toast.error('Error loading deck');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDeckData();
+  }, [id, getDeck, navigate, isAuthenticated, refreshDecks]);
 
+  if (!isAuthenticated || !id) return null;
+  
+  if (isLoading || !fetchedDeck) {
+    return (
+      <Layout>
+        <div className="container py-12 flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-flashcard-primary" />
+          <p className="mt-4 text-muted-foreground">Loading deck...</p>
+        </div>
+      </Layout>
+    );
+  }
+  
   const {
     title,
     setTitle,
     description,
     setDescription,
     isSaving,
-    loadDeck,
     saveDeck
-  } = useDeckEditor(id);
+  } = useDeckEditor(id, fetchedDeck);
 
   const {
     isCardDialogOpen,
@@ -49,17 +88,6 @@ const DeckEdit = () => {
     handleDeleteCard,
     handleDeleteCurrentCard
   } = useCardManager(id);
-  
-  useEffect(() => {
-    const deck = loadDeck();
-    if (!deck) {
-      toast.error('Deck not found');
-      navigate('/dashboard');
-    }
-  }, [id]);
-  
-  const deck = getDeck(id);
-  if (!deck) return null;
 
   return (
     <Layout>
@@ -86,19 +114,20 @@ const DeckEdit = () => {
           />
           
           <DeckCardManager
-            cards={deck.cards}
+            cards={fetchedDeck.cards}
             onAddClick={() => {
               setCurrentCard(undefined);
               setIsCardDialogOpen(true);
             }}
             onEditCard={(cardId) => {
-              const card = deck.cards.find(c => c.id === cardId);
+              const card = fetchedDeck.cards.find(c => c.id === cardId);
               if (card) {
                 setCurrentCard(card);
                 setIsCardDialogOpen(true);
               }
             }}
             onDeleteCard={handleDeleteCard}
+            isLoading={isLoading}
           />
         </div>
         

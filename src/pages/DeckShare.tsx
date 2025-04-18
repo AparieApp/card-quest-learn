@@ -11,17 +11,21 @@ import {
   Share2,
   QrCode,
   ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCode from 'qrcode.react';
+import { Deck } from '@/types/deck';
 
 const DeckShare = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getDeck, generateShareCode } = useDeck();
+  const { getDeck, generateShareCode, refreshDecks } = useDeck();
   
   const [shareCode, setShareCode] = useState('');
   const [shareUrl, setShareUrl] = useState('');
+  const [deck, setDeck] = useState<Deck | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     if (!id) {
@@ -29,26 +33,48 @@ const DeckShare = () => {
       return;
     }
     
-    const deck = getDeck(id);
-    if (!deck) {
-      toast.error('Deck not found');
-      navigate('/dashboard');
-      return;
-    }
+    const loadDeckAndGenerateCode = async () => {
+      setIsLoading(true);
+      try {
+        await refreshDecks();
+        const fetchedDeck = getDeck(id);
+        if (!fetchedDeck) {
+          toast.error('Deck not found');
+          navigate('/dashboard');
+          return;
+        }
+        
+        setDeck(fetchedDeck);
+        
+        // Generate share code
+        const code = generateShareCode(id);
+        setShareCode(code);
+        
+        // Generate share URL
+        const baseUrl = window.location.origin;
+        setShareUrl(`${baseUrl}/shared/${code}`);
+      } catch (error) {
+        console.error('Error loading deck:', error);
+        toast.error('Error loading deck information');
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Generate share code
-    const code = generateShareCode(id);
-    setShareCode(code);
-    
-    // Generate share URL
-    const baseUrl = window.location.origin;
-    const shareUrl = `${baseUrl}/shared/${code}`;
-    setShareUrl(shareUrl);
-  }, [id, getDeck, navigate, generateShareCode]);
+    loadDeckAndGenerateCode();
+  }, [id, getDeck, navigate, generateShareCode, refreshDecks]);
   
-  if (!id) return null;
+  if (!id || isLoading) {
+    return (
+      <Layout>
+        <div className="container py-12 flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-flashcard-primary" />
+          <p className="mt-4 text-muted-foreground">Loading share information...</p>
+        </div>
+      </Layout>
+    );
+  }
   
-  const deck = getDeck(id);
   if (!deck) return null;
   
   const handleCopyCode = () => {

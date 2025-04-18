@@ -2,13 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const shareService = {
-  // Generate a random share code
-  generateShareCode: (): string => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  },
-  
-  // Save a share code to the database
-  async saveShareCode(deckId: string): Promise<string> {
+  // Save a share code to the database (accepts a pre-generated code)
+  async saveShareCode(deckId: string, code: string): Promise<void> {
     // First check if a share code already exists for this deck
     const { data: existingCode } = await supabase
       .from('share_codes')
@@ -17,11 +12,8 @@ export const shareService = {
       .single();
     
     if (existingCode) {
-      return existingCode.code;
+      return; // Code already exists
     }
-    
-    // Generate a new share code
-    const code = shareService.generateShareCode();
     
     // Save the share code
     const { error } = await supabase
@@ -32,8 +24,6 @@ export const shareService = {
       });
       
     if (error) throw error;
-    
-    return code;
   },
   
   // Get deck ID by share code

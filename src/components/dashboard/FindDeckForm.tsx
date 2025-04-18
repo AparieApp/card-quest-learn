@@ -13,7 +13,7 @@ const FindDeckForm: React.FC = () => {
   const { getDeckByShareCode } = useDeck();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!code.trim()) {
@@ -26,10 +26,10 @@ const FindDeckForm: React.FC = () => {
     try {
       // Clean up code (remove spaces, etc)
       const cleanCode = code.trim().toUpperCase();
-      const deck = getDeckByShareCode(cleanCode);
+      const deck = await getDeckByShareCode(cleanCode);
       
       if (deck) {
-        navigate(`/deck/${deck.id}`);
+        navigate(`/shared/${cleanCode}`);
       } else {
         toast.error('Deck not found. Please check the code and try again.');
       }

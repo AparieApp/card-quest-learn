@@ -1,31 +1,38 @@
 
 import { useState, useEffect } from 'react';
-import { UpdateDeckInput } from '@/types/deck';
+import { UpdateDeckInput, Deck } from '@/types/deck';
 import { useDeck } from '@/context/DeckContext';
 import { toast } from 'sonner';
 
-export const useDeckEditor = (deckId: string) => {
+export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
   const { getDeck, updateDeck } = useDeck();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialDeck);
 
-  const loadDeck = async () => {
+  const loadDeck = () => {
+    if (initialDeck) {
+      setTitle(initialDeck.title);
+      setDescription(initialDeck.description || '');
+      setIsLoading(false);
+      return initialDeck;
+    }
+    
     setIsLoading(true);
     try {
-      const deck = await getDeck(deckId);
+      const deck = getDeck(deckId);
       if (deck) {
         setTitle(deck.title);
         setDescription(deck.description || '');
       }
+      setIsLoading(false);
       return deck;
     } catch (error) {
       console.error('Error loading deck:', error);
       toast.error('Failed to load deck');
-      return null;
-    } finally {
       setIsLoading(false);
+      return null;
     }
   };
 
@@ -52,8 +59,14 @@ export const useDeckEditor = (deckId: string) => {
   };
 
   useEffect(() => {
-    loadDeck();
-  }, [deckId]);
+    if (initialDeck) {
+      setTitle(initialDeck.title);
+      setDescription(initialDeck.description || '');
+      setIsLoading(false);
+    } else {
+      loadDeck();
+    }
+  }, [deckId, initialDeck]);
 
   return {
     title,

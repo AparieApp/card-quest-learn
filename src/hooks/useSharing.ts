@@ -6,21 +6,27 @@ import { toast } from 'sonner';
 export const useSharing = () => {
   const [generatingCode, setGeneratingCode] = useState(false);
 
-  const generateShareCode = async (deckId: string): Promise<string> => {
+  // This function generates a share code and stores it in the database asynchronously
+  const generateShareCode = (deckId: string): string => {
+    // Generate a client-side code immediately
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    // Save it to the database in the background
     setGeneratingCode(true);
-    try {
-      const code = await shareService.saveShareCode(deckId);
-      return code;
-    } catch (error) {
-      console.error('Error generating share code:', error);
-      toast.error('Failed to generate share code');
-      throw error;
-    } finally {
-      setGeneratingCode(false);
-    }
+    shareService.saveShareCode(deckId, code)
+      .then(() => {
+        setGeneratingCode(false);
+      })
+      .catch((error) => {
+        console.error('Error generating share code:', error);
+        toast.error('Failed to save share code');
+        setGeneratingCode(false);
+      });
+    
+    return code;
   };
 
-  const getDeckByShareCode = async (code: string): Promise<string | null> => {
+  const getDeckIdByShareCode = async (code: string): Promise<string | null> => {
     try {
       return await shareService.getDeckIdByShareCode(code);
     } catch (error) {
@@ -29,5 +35,5 @@ export const useSharing = () => {
     }
   };
 
-  return { generateShareCode, getDeckByShareCode, generatingCode };
+  return { generateShareCode, getDeckIdByShareCode, generatingCode };
 };

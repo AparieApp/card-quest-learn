@@ -1,26 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDeck } from '@/context/DeckContext';
 import Layout from '@/components/layout/Layout';
 import FlashcardDisplay from '@/components/practice/FlashcardDisplay';
 import SummaryView from '@/components/practice/SummaryView';
-import { Flashcard } from '@/types/deck';
+import { Flashcard, Deck } from '@/types/deck';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Practice = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getDeck } = useDeck();
+  const { getDeck, refreshDecks } = useDeck();
   
   // States
+  const [deck, setDeck] = useState<Deck | null>(null);
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [reviewCards, setReviewCards] = useState<Flashcard[]>([]);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     initialCorrect: 0,
     overallCorrect: 0,
@@ -34,35 +36,58 @@ const Practice = () => {
       return;
     }
     
-    const deck = getDeck(id);
-    if (!deck || deck.cards.length === 0) {
-      navigate('/dashboard');
-      return;
-    }
+    const loadDeck = async () => {
+      setIsLoading(true);
+      try {
+        await refreshDecks();
+        const fetchedDeck = getDeck(id);
+        if (!fetchedDeck || fetchedDeck.cards.length === 0) {
+          toast.error('Deck not found or has no cards');
+          navigate('/dashboard');
+          return;
+        }
+        
+        setDeck(fetchedDeck);
+        
+        // Shuffle cards
+        const shuffledCards = [...fetchedDeck.cards];
+        for (let i = shuffledCards.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
+        }
+        
+        setCards(shuffledCards);
+        setCurrentCardIndex(0);
+        setReviewCards([]);
+        setIsReviewMode(false);
+        setShowSummary(false);
+        setStats({
+          initialCorrect: 0,
+          overallCorrect: 0,
+          totalAttempts: 0,
+        });
+      } catch (error) {
+        console.error('Error loading deck:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Shuffle cards
-    const shuffledCards = [...deck.cards];
-    for (let i = shuffledCards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
-    }
-    
-    setCards(shuffledCards);
-    setCurrentCardIndex(0);
-    setReviewCards([]);
-    setIsReviewMode(false);
-    setShowSummary(false);
-    setStats({
-      initialCorrect: 0,
-      overallCorrect: 0,
-      totalAttempts: 0,
-    });
-  }, [id, getDeck, navigate]);
+    loadDeck();
+  }, [id, getDeck, navigate, refreshDecks]);
   
-  if (!id || cards.length === 0) return null;
+  if (!id || isLoading) {
+    return (
+      <Layout>
+        <div className="container py-12 flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-flashcard-primary" />
+          <p className="mt-4 text-muted-foreground">Loading cards...</p>
+        </div>
+      </Layout>
+    );
+  }
   
-  const deck = getDeck(id);
-  if (!deck) return null;
+  if (!deck || cards.length === 0) return null;
   
   const currentCards = isReviewMode ? reviewCards : cards;
   const currentCard = currentCards[currentCardIndex];
