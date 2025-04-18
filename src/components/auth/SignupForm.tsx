@@ -16,6 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { debounce } from 'lodash';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 const signupSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -38,10 +40,13 @@ interface SignupFormProps {
   onSwitch: () => void;
 }
 
+const SIGNUP_TIMEOUT_MS = 20000; // 20 seconds
+
 const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
   const { signup, checkUsernameAvailability } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'checking' | 'available' | 'taken' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -68,12 +73,35 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
       return;
     }
     
+    // Clear previous errors
+    setError(null);
+    
     try {
       setIsSubmitting(true);
+      console.log('SignupForm: Attempting signup...');
+      
+      // Create a timeout for signup
+      const signupTimeout = setTimeout(() => {
+        if (isSubmitting) {
+          setIsSubmitting(false);
+          setError('Signup attempt timed out. Please try again.');
+          toast.error('Signup attempt timed out');
+          console.log('SignupForm: Signup timeout');
+        }
+      }, SIGNUP_TIMEOUT_MS);
+      
+      // Attempt signup
       await signup(values.email, values.username, values.password);
+      console.log('SignupForm: Signup successful');
+      
+      // Clear timeout as signup succeeded
+      clearTimeout(signupTimeout);
+      
+      // Call onSuccess callback
       onSuccess?.();
-    } catch (error) {
-      // Error is already handled in the auth context
+    } catch (error: any) {
+      console.log('SignupForm: Signup failed', error);
+      setError(error.message || 'An error occurred during signup');
     } finally {
       setIsSubmitting(false);
     }
@@ -85,6 +113,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
         <h1 className="text-2xl font-bold">Create an Account</h1>
         <p className="text-sm text-muted-foreground mt-2">Start creating and learning with flashcards</p>
       </div>
+      
+      {error && (
+        <Alert variant="destructive" className="bg-red-50">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -163,7 +197,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
             className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
             disabled={isSubmitting || usernameStatus === 'taken'}
           >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : 'Create Account'}
           </Button>
         </form>
       </Form>

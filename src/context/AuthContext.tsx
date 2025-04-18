@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -36,85 +36,125 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        setIsLoading(true);
-        
-        // First check for existing session
-        const { data: sessionData } = await supabase.auth.getSession();
-        setSession(sessionData.session);
-        
-        if (sessionData.session?.user) {
-          await refreshUser(sessionData.session.user);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        setSession(newSession);
-        
-        // Handle auth events appropriately
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
-          setIsLoading(true);
-          await refreshUser(newSession.user);
-          setIsLoading(false);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-      }
-    );
-
-    // Initialize auth
-    initializeAuth();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const refreshUser = async (supabaseUser: User | null) => {
-    if (!supabaseUser) {
-      setUser(null);
-      return;
-    }
-
+  // Safely fetch user profile without causing deadlocks
+  const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('username')
-        .eq('id', supabaseUser.id)
-        .single();
+        .eq('id', userId)
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        return null;
+      }
+
+      return profile;
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      return null;
+    }
+  }, []);
+
+  // Process user data and set states
+  const processUserData = useCallback(async (supabaseUser: User | null) => {
+    try {
+      if (!supabaseUser) {
         setUser(null);
         return;
       }
 
+      const profile = await fetchUserProfile(supabaseUser.id);
+      
       setUser({
         id: supabaseUser.id,
         email: supabaseUser.email || '',
         username: profile?.username || supabaseUser.email?.split('@')[0] || '',
       });
     } catch (error) {
-      console.error('Error in refreshUser:', error);
+      console.error('Error in processUserData:', error);
       setUser(null);
     }
-  };
+  }, [fetchUserProfile]);
+
+  // Initialize auth state
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth state...');
+        setIsLoading(true);
+
+        // First set up the auth state listener to ensure we don't miss any events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, newSession) => {
+            console.log('Auth state change event:', event);
+            setSession(newSession);
+            
+            // Important: Don't make Supabase calls here directly
+            // Use setTimeout to prevent deadlocks
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              setTimeout(() => {
+                processUserData(newSession?.user || null);
+              }, 0);
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null);
+            }
+          }
+        );
+
+        // After setting up listener, check for existing session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error getting session:', sessionError);
+          throw sessionError;
+        }
+
+        console.log('Session check complete:', !!sessionData.session);
+        setSession(sessionData.session);
+
+        if (sessionData.session?.user) {
+          await processUserData(sessionData.session.user);
+        } else {
+          setUser(null);
+        }
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setUser(null);
+        setSession(null);
+      } finally {
+        setIsLoading(false);
+        setAuthInitialized(true);
+      }
+    };
+
+    initializeAuth();
+  }, [processUserData]);
+
+  // Authentication timeout to prevent infinite loading
+  useEffect(() => {
+    if (!authInitialized) {
+      const authTimeout = setTimeout(() => {
+        if (isLoading) {
+          console.log('Authentication timed out. Resetting loading state.');
+          setIsLoading(false);
+        }
+      }, 5000); // 5 seconds timeout
+
+      return () => clearTimeout(authTimeout);
+    }
+  }, [authInitialized, isLoading]);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -125,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       toast.success('Logged in successfully!');
-      // We don't return the data anymore, as the function is typed to return Promise<void>
+      // We don't need to manually set user/session here as the auth state listener will handle it
     } catch (error: any) {
       console.error('Login error:', error);
       let message = 'Login failed. Please check your credentials and try again.';
@@ -143,11 +183,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       toast.error(message);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signup = async (email: string, username: string, password: string): Promise<void> => {
     try {
+      setIsLoading(true);
       // Check if username is available
       const isAvailable = await checkUsernameAvailability(username);
       if (!isAvailable) {
@@ -174,28 +217,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       toast.success('Account created successfully!');
-      // We don't return the authData anymore, as the function is typed to return Promise<void>
+      // We don't need to manually set user/session here as the auth state listener will handle it
     } catch (error: any) {
       console.error('Signup error:', error);
       const message = error.message || 'Signup failed';
       toast.error(message);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
         throw error;
       }
       
-      setUser(null);
-      setSession(null);
+      // The auth state listener will handle removing the user
       toast.success('Logged out successfully');
     } catch (error: any) {
       console.error('Logout error:', error);
       toast.error(error.message || 'Logout failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 

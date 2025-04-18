@@ -17,16 +17,20 @@ const Auth = () => {
   
   // If user is already authenticated, redirect to dashboard
   useEffect(() => {
+    console.log('Auth component: isAuthenticated =', isAuthenticated, 'isLoading =', isLoading);
+    
     if (!isLoading && isAuthenticated) {
+      console.log('Auth component: Redirecting to', redirectTo);
       navigate(redirectTo, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, redirectTo]);
   
   const handleAuthSuccess = () => {
+    console.log('Auth component: Auth success, redirecting to', redirectTo);
     navigate(redirectTo, { replace: true });
   };
 
-  // Show loading spinner while checking authentication
+  // Show loading spinner while checking authentication, but with a timeout
   if (isLoading) {
     return (
       <Layout>
@@ -40,7 +44,14 @@ const Auth = () => {
 
   // If already authenticated, don't render the auth form (prevents flash before redirect)
   if (isAuthenticated) {
-    return null;
+    return (
+      <Layout>
+        <div className="container py-12 flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-10 w-10 animate-spin text-flashcard-primary" />
+          <p className="mt-4 text-muted-foreground">Authentication successful, redirecting...</p>
+        </div>
+      </Layout>
+    );
   }
 
   return (

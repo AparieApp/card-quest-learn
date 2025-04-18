@@ -66,6 +66,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
     
     try {
       setIsSubmitting(true);
+      console.log('LoginForm: Attempting login...');
       
       // Set a timeout to prevent hanging on login indefinitely
       timeoutRef.current = setTimeout(() => {
@@ -74,11 +75,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
           setError('Login attempt timed out. Please try again.');
           toast.error('Login attempt timed out');
           timeoutRef.current = null;
+          console.log('LoginForm: Login timeout');
         }
       }, LOGIN_TIMEOUT_MS);
       
       // Attempt login
       await login(values.email, values.password);
+      console.log('LoginForm: Login successful');
       
       // Clear timeout as login succeeded
       if (timeoutRef.current) {
@@ -89,6 +92,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitch }) => {
       // Call onSuccess callback
       onSuccess?.();
     } catch (error: any) {
+      console.log('LoginForm: Login failed', error);
       // Error is handled in the auth context
       setError(error.message || 'An error occurred during login');
     } finally {

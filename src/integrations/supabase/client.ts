@@ -17,6 +17,22 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: false, // Disable auto detection from URL to avoid issues
     }
   }
 );
+
+// Add a debugging function that can be used to check auth state
+export const checkAuthState = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error getting session:', error);
+      return null;
+    }
+    return data.session;
+  } catch (err) {
+    console.error('Exception checking auth state:', err);
+    return null;
+  }
+};
