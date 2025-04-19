@@ -10,53 +10,127 @@ export const useCardOperations = (
   const addCardToDeck = async (deckId: string, card: CreateCardInput) => {
     if (!userId) throw new Error('User not authenticated');
     
-    const newCard = await deckService.addCard(deckId, card);
+    // Optimistically update the UI
+    const optimisticCard = {
+      id: crypto.randomUUID(),
+      deck_id: deckId,
+      created_at: new Date().toISOString(),
+      ...card,
+    };
+
     setDecks(prev => 
       prev.map(deck => 
         deck.id === deckId 
-          ? { ...deck, cards: [...deck.cards, newCard], updated_at: new Date().toISOString() } 
+          ? { 
+              ...deck, 
+              cards: [...deck.cards, optimisticCard],
+              updated_at: new Date().toISOString() 
+            } 
           : deck
       )
     );
-    toast.success('Card added!');
+
+    try {
+      const newCard = await deckService.addCard(deckId, card);
+      // Update with real card data
+      setDecks(prev => 
+        prev.map(deck => 
+          deck.id === deckId 
+            ? { 
+                ...deck, 
+                cards: deck.cards.map(c => 
+                  c.id === optimisticCard.id ? newCard : c
+                ),
+                updated_at: new Date().toISOString()
+              } 
+            : deck
+        )
+      );
+      toast.success('Card added successfully!');
+    } catch (error) {
+      // Rollback on error
+      setDecks(prev => 
+        prev.map(deck => 
+          deck.id === deckId 
+            ? { 
+                ...deck, 
+                cards: deck.cards.filter(c => c.id !== optimisticCard.id),
+                updated_at: new Date().toISOString()
+              } 
+            : deck
+        )
+      );
+      toast.error('Failed to add card. Please try again.');
+      throw error;
+    }
   };
 
   const updateCard = async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
     if (!userId) throw new Error('User not authenticated');
     
-    await deckService.updateCard(cardId, cardData);
-    setDecks(prev => 
-      prev.map(deck => 
+    // Store previous state for rollback
+    let previousState: Deck[] | null = null;
+    
+    setDecks(prev => {
+      previousState = prev;
+      return prev.map(deck => 
         deck.id === deckId 
           ? { 
               ...deck, 
-              updated_at: new Date().toISOString(),
               cards: deck.cards.map(card => 
-                card.id === cardId ? { ...card, ...cardData } : card
-              ) 
+                card.id === cardId 
+                  ? { ...card, ...cardData }
+                  : card
+              ),
+              updated_at: new Date().toISOString()
             } 
           : deck
-      )
-    );
-    toast.success('Card updated!');
+      );
+    });
+
+    try {
+      await deckService.updateCard(cardId, cardData);
+      toast.success('Card updated successfully!');
+    } catch (error) {
+      // Rollback on error
+      if (previousState) {
+        setDecks(previousState);
+      }
+      toast.error('Failed to update card. Please try again.');
+      throw error;
+    }
   };
 
   const deleteCard = async (deckId: string, cardId: string) => {
     if (!userId) throw new Error('User not authenticated');
     
-    await deckService.deleteCard(cardId);
-    setDecks(prev => 
-      prev.map(deck => 
+    // Store previous state for rollback
+    let previousState: Deck[] | null = null;
+    
+    setDecks(prev => {
+      previousState = prev;
+      return prev.map(deck => 
         deck.id === deckId 
           ? { 
               ...deck, 
-              updated_at: new Date().toISOString(),
-              cards: deck.cards.filter(card => card.id !== cardId) 
+              cards: deck.cards.filter(card => card.id !== cardId),
+              updated_at: new Date().toISOString()
             } 
           : deck
-      )
-    );
-    toast.success('Card deleted!');
+      );
+    });
+
+    try {
+      await deckService.deleteCard(cardId);
+      toast.success('Card deleted successfully!');
+    } catch (error) {
+      // Rollback on error
+      if (previousState) {
+        setDecks(previousState);
+      }
+      toast.error('Failed to delete card. Please try again.');
+      throw error;
+    }
   };
 
   return {

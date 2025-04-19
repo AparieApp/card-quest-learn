@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useDeck } from '@/context/DeckContext';
@@ -12,17 +11,17 @@ import DeckCardManager from '@/components/deck/DeckCardManager';
 import CardDialog from '@/components/deck/CardDialog';
 import { useDeckEditor } from '@/hooks/deck/useDeckEditor';
 import { useCardManager } from '@/hooks/deck/useCardManager';
+import { useCardRealtime } from '@/hooks/deck/useCardRealtime';
 import { Deck } from '@/types/deck';
 
 const DeckEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getDeck } = useDeck();
+  const { getDeck, refreshDecks } = useDeck();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [fetchedDeck, setFetchedDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Always initialize hooks at the top level, even with potential default values
   const deckId = id || '';
   
   const {
@@ -46,6 +45,10 @@ const DeckEdit = () => {
     handleDeleteCurrentCard
   } = useCardManager(deckId);
   
+  useCardRealtime(deckId, useCallback(() => {
+    refreshDecks();
+  }, [refreshDecks]));
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/auth');
@@ -57,9 +60,7 @@ const DeckEdit = () => {
       return;
     }
     
-    // Load the deck only once when the component mounts or id changes
     const loadDeckData = async () => {
-      // Skip if we're already loading or if we already have the deck
       if (!loading || fetchedDeck) return;
       
       setLoading(true);
