@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput, Flashcard } from '@/types/deck';
@@ -24,8 +25,9 @@ interface DeckContextType {
   getDeckByShareCode: (code: string) => Promise<Deck | null>;
   generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
-  refreshDecks: () => Promise<void>;
+  refreshDecks: (bypassThrottle?: boolean) => Promise<void>;
   isOptimisticUpdating: boolean;
+  setThrottlingPaused: (value: boolean) => void;
 }
 
 const DeckContext = createContext<DeckContextType>({
@@ -46,11 +48,12 @@ const DeckContext = createContext<DeckContextType>({
   copyDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
   refreshDecks: async () => {},
   isOptimisticUpdating: false,
+  setThrottlingPaused: () => {},
 });
 
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const { decks = [], loading, setDecks, refreshDecks: refreshStoredDecks } = useDeckStorage();
+  const { decks = [], loading, setDecks, refreshDecks: refreshStoredDecks, setBypassThrottle } = useDeckStorage();
   const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
   
   const userId = user?.id;
@@ -65,7 +68,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     setDecks(updater);
   }, [setDecks]);
 
-  const refreshDecks = useCallback(async () => {
+  const refreshDecks = useCallback(async (bypassThrottle?: boolean) => {
     console.log('Refreshing decks with user ID:', userId);
     if (!userId) {
       console.log('Cannot refresh decks: User not authenticated');
@@ -73,7 +76,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
-      await refreshStoredDecks();
+      await refreshStoredDecks(bypassThrottle);
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
@@ -83,7 +86,8 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     addCardToDeck,
     updateCard,
     deleteCard,
-    isOptimisticUpdating
+    isOptimisticUpdating,
+    setThrottlingPaused
   } = useCardOperations(handleDecksUpdate, userId, refreshDecks);
 
   const {
@@ -115,6 +119,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     copyDeck,
     refreshDecks,
     isOptimisticUpdating,
+    setThrottlingPaused,
   };
 
   return (
