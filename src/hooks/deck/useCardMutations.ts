@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { CreateCardInput, UpdateCardInput } from '@/types/deck';
 import { DecksUpdater, OptimisticUpdateState } from '@/types/cardOperations';
@@ -22,6 +23,8 @@ export const useCardMutations = (
       optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
     
+    console.log('Starting addCardToDeck operation with data:', card);
+    
     const optimisticCard = {
       id: crypto.randomUUID(),
       deck_id: deckId,
@@ -30,6 +33,8 @@ export const useCardMutations = (
     };
 
     try {
+      // Immediately update UI with optimistic data
+      console.log('Applying optimistic update with card:', optimisticCard);
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -42,11 +47,16 @@ export const useCardMutations = (
         )
       );
 
+      // Save the card to the database
+      console.log('Saving card to database with manual_incorrect_answers:', card.manual_incorrect_answers);
       const newCard = await deckService.addCard(deckId, {
         ...card,
         manual_incorrect_answers: card.manual_incorrect_answers || []
       });
       
+      console.log('Card saved successfully:', newCard);
+      
+      // Update with real data from server
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -62,11 +72,16 @@ export const useCardMutations = (
       );
 
       if (onOperationComplete) {
+        console.log('Calling operation complete callback');
         await onOperationComplete();
       }
       
       toast.success('Card added successfully!');
+      return newCard;
     } catch (error) {
+      console.error('Error adding card:', error);
+      
+      // Rollback optimistic update on error
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -79,6 +94,7 @@ export const useCardMutations = (
       );
       
       handleError(error, 'Failed to add card');
+      throw error;
     } finally {
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
@@ -98,7 +114,11 @@ export const useCardMutations = (
       optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
 
+    console.log('Starting updateCard operation:', { cardId, data: cardData });
+
     try {
+      // Optimistically update UI
+      console.log('Applying optimistic update for card:', cardId);
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -115,18 +135,34 @@ export const useCardMutations = (
         )
       );
 
+      // Save to database
+      console.log('Saving card update to database with manual_incorrect_answers:', cardData.manual_incorrect_answers);
       await deckService.updateCard(cardId, cardData);
+      
+      console.log('Card updated successfully in database');
       toast.success('Card updated successfully!');
-      if (onOperationComplete) onOperationComplete();
-    } catch (error) {
-      const originalDeck = await deckService.getDeck(deckId);
-      if (originalDeck) {
-        setDecks(prev => 
-          prev.map(deck => 
-            deck.id === deckId ? originalDeck : deck
-          )
-        );
+      
+      if (onOperationComplete) {
+        console.log('Calling operation complete callback');
+        await onOperationComplete();
       }
+    } catch (error) {
+      console.error('Error updating card:', error);
+      
+      // Rollback on error by fetching the original deck
+      try {
+        const originalDeck = await deckService.getDeck(deckId);
+        if (originalDeck) {
+          setDecks(prev => 
+            prev.map(deck => 
+              deck.id === deckId ? originalDeck : deck
+            )
+          );
+        }
+      } catch (rollbackError) {
+        console.error('Error rolling back deck state:', rollbackError);
+      }
+      
       handleError(error, 'Failed to update card');
     } finally {
       if (optimisticState) {
@@ -147,7 +183,11 @@ export const useCardMutations = (
       optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
 
+    console.log('Starting deleteCard operation for card:', cardId);
+
     try {
+      // Optimistically update UI
+      console.log('Applying optimistic delete for card:', cardId);
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -160,18 +200,33 @@ export const useCardMutations = (
         )
       );
 
+      // Delete from database
       await deckService.deleteCard(cardId);
+      console.log('Card deleted successfully from database');
+      
       toast.success('Card deleted successfully!');
-      if (onOperationComplete) onOperationComplete();
-    } catch (error) {
-      const originalDeck = await deckService.getDeck(deckId);
-      if (originalDeck) {
-        setDecks(prev => 
-          prev.map(deck => 
-            deck.id === deckId ? originalDeck : deck
-          )
-        );
+      
+      if (onOperationComplete) {
+        console.log('Calling operation complete callback');
+        await onOperationComplete();
       }
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      
+      // Rollback on error
+      try {
+        const originalDeck = await deckService.getDeck(deckId);
+        if (originalDeck) {
+          setDecks(prev => 
+            prev.map(deck => 
+              deck.id === deckId ? originalDeck : deck
+            )
+          );
+        }
+      } catch (rollbackError) {
+        console.error('Error rolling back deck state:', rollbackError);
+      }
+      
       handleError(error, 'Failed to delete card');
     } finally {
       if (optimisticState) {

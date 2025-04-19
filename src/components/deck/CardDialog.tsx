@@ -40,6 +40,7 @@ const CardDialog: React.FC<CardDialogProps> = ({
 
   const handleSubmit = async (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
     console.log('Card form submitted with data:', data);
+    console.log('Manual incorrect answers at dialog submission:', data.manual_incorrect_answers);
     await onSubmit(data);
   };
 

@@ -11,9 +11,11 @@ export const useCardForm = (
   card?: Flashcard,
   onSubmit?: (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => void
 ) => {
-  const [manualAnswers, setManualAnswers] = useState<string[]>(
-    card ? card.manual_incorrect_answers || [] : []
-  );
+  // Initialize manual answers from provided card or empty array
+  const initialManualAnswers = card?.manual_incorrect_answers || [];
+  const [manualAnswers, setManualAnswers] = useState<string[]>(initialManualAnswers);
+
+  console.log('Initializing card form with manual answers:', initialManualAnswers);
 
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
@@ -30,13 +32,19 @@ export const useCardForm = (
 
   const handleSubmit = async (values: CardFormValues) => {
     try {
-      await onSubmit?.({
+      console.log('Form submitted with values:', values);
+      console.log('Current manual answers list:', manualAnswers);
+      
+      // Prepare the submission data with the current manual answers
+      const submissionData = {
         front_text: values.front_text,
         correct_answer: values.correct_answer,
         manual_incorrect_answers: manualAnswers,
         incorrect_answers: [],
-      });
-      toast.success(card ? 'Card updated successfully' : 'Card added successfully');
+      };
+      
+      console.log('Submitting card with data:', submissionData);
+      await onSubmit?.(submissionData);
     } catch (error) {
       handleError(error, 'Failed to save card');
     }
@@ -45,13 +53,17 @@ export const useCardForm = (
   const addManualAnswer = (answer: string) => {
     if (manualAnswers.length < 3 && answer.trim() && !manualAnswers.includes(answer.trim())) {
       const newAnswers = [...manualAnswers, answer.trim()];
+      console.log('Adding manual answer:', answer.trim());
+      console.log('Updated manual answers list:', newAnswers);
       setManualAnswers(newAnswers);
       form.setValue('manual_incorrect_answers', newAnswers);
     }
   };
 
   const removeManualAnswer = (index: number) => {
+    console.log('Removing manual answer at index:', index);
     const newAnswers = manualAnswers.filter((_, i) => i !== index);
+    console.log('Updated manual answers list after removal:', newAnswers);
     setManualAnswers(newAnswers);
     form.setValue('manual_incorrect_answers', newAnswers);
   };

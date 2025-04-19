@@ -41,6 +41,10 @@ export const CardFormAnswers = ({
     }
   };
 
+  React.useEffect(() => {
+    console.log('Current manual answers in CardFormAnswers:', manualAnswers);
+  }, [manualAnswers]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">

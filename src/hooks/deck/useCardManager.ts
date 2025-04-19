@@ -14,29 +14,46 @@ export const useCardManager = (
   const [currentCard, setCurrentCard] = useState<Flashcard | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddCard = useCallback(async (cardData: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
+  // Ensure reliable refresh after operation
+  const performOperationAndRefresh = useCallback(async (operation: () => Promise<any>) => {
     setIsSubmitting(true);
     try {
-      console.log('Adding new card with data:', { ...cardData, deck_id: deckId });
+      await operation();
+      console.log('Operation completed successfully, closing dialog');
+      setIsCardDialogOpen(false);
+      setCurrentCard(undefined);
+      
+      // Wait a small delay to ensure the database operation completes
+      setTimeout(async () => {
+        console.log('Performing refresh after operation');
+        await refreshDecks();
+        
+        if (onOperationComplete) {
+          console.log('Calling operation complete callback from card manager');
+          await onOperationComplete();
+        }
+      }, 300);
+    } catch (error) {
+      console.error('Operation failed:', error);
+      handleError(error, 'Operation failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [refreshDecks, onOperationComplete]);
+
+  const handleAddCard = useCallback(async (cardData: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
+    console.log('Adding new card with data:', { ...cardData, deck_id: deckId });
+    console.log('Manual incorrect answers being sent:', cardData.manual_incorrect_answers);
+    
+    await performOperationAndRefresh(async () => {
       await addCardToDeck(deckId, {
         front_text: cardData.front_text,
         correct_answer: cardData.correct_answer,
         incorrect_answers: cardData.incorrect_answers || [],
         manual_incorrect_answers: cardData.manual_incorrect_answers || []
       });
-      setIsCardDialogOpen(false);
-      setCurrentCard(undefined);
-      await refreshDecks(); // Immediate refresh after adding
-      if (onOperationComplete) {
-        await onOperationComplete();
-      }
-    } catch (error) {
-      console.error('Error adding card:', error);
-      handleError(error, 'Failed to add card');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [deckId, addCardToDeck, onOperationComplete, refreshDecks]);
+    });
+  }, [deckId, addCardToDeck, performOperationAndRefresh]);
 
   const handleUpdateCard = useCallback(async (cardData: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
     if (!currentCard) {
@@ -44,40 +61,24 @@ export const useCardManager = (
       return;
     }
     
-    setIsSubmitting(true);
-    try {
-      console.log('Updating card with ID:', currentCard.id, 'and data:', cardData);
+    console.log('Updating card with ID:', currentCard.id, 'and data:', cardData);
+    console.log('Manual incorrect answers being updated:', cardData.manual_incorrect_answers);
+    
+    await performOperationAndRefresh(async () => {
       await updateCard(deckId, currentCard.id, cardData);
-      setIsCardDialogOpen(false);
-      setCurrentCard(undefined);
-      await refreshDecks(); // Immediate refresh after updating
-      if (onOperationComplete) {
-        await onOperationComplete();
-      }
-    } catch (error) {
-      console.error('Error updating card:', error);
-      handleError(error, 'Failed to update card');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [deckId, updateCard, currentCard, onOperationComplete, refreshDecks]);
+    });
+  }, [deckId, updateCard, currentCard, performOperationAndRefresh]);
 
   const handleDeleteCard = useCallback(async (cardId: string) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this card?');
     if (!confirmDelete) return;
     
-    try {
-      console.log('Deleting card with ID:', cardId);
+    console.log('Deleting card with ID:', cardId);
+    
+    await performOperationAndRefresh(async () => {
       await deleteCard(deckId, cardId);
-      await refreshDecks(); // Immediate refresh after deleting
-      if (onOperationComplete) {
-        await onOperationComplete();
-      }
-    } catch (error) {
-      console.error('Error deleting card:', error);
-      handleError(error, 'Failed to delete card');
-    }
-  }, [deckId, deleteCard, onOperationComplete, refreshDecks]);
+    });
+  }, [deckId, deleteCard, performOperationAndRefresh]);
 
   const handleDeleteCurrentCard = useCallback(async () => {
     if (!currentCard) {
@@ -85,24 +86,13 @@ export const useCardManager = (
       return;
     }
     
-    setIsSubmitting(true);
-    try {
-      console.log('Deleting current card with ID:', currentCard.id);
+    console.log('Deleting current card with ID:', currentCard.id);
+    
+    await performOperationAndRefresh(async () => {
       await deleteCard(deckId, currentCard.id);
-      setIsCardDialogOpen(false);
-      setCurrentCard(undefined);
-      await refreshDecks(); // Immediate refresh after deleting
       toast.success('Card deleted successfully');
-      if (onOperationComplete) {
-        await onOperationComplete();
-      }
-    } catch (error) {
-      console.error('Error deleting current card:', error);
-      handleError(error, 'Failed to delete card');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [deckId, deleteCard, currentCard, onOperationComplete, refreshDecks]);
+    });
+  }, [deckId, deleteCard, currentCard, performOperationAndRefresh]);
 
   const openAddCardDialog = useCallback(() => {
     setCurrentCard(undefined);
@@ -110,6 +100,7 @@ export const useCardManager = (
   }, []);
 
   const openEditCardDialog = useCallback((card: Flashcard) => {
+    console.log('Opening edit dialog for card:', card);
     setCurrentCard(card);
     setIsCardDialogOpen(true);
   }, []);

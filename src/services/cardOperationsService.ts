@@ -6,6 +6,7 @@ import { CardMapper } from '@/mappers/CardMapper';
 export const cardOperationsService = {
   async addCard(deckId: string, cardData: CreateCardInput): Promise<Flashcard> {
     console.log('Adding card with data:', cardData);
+    console.log('Manual incorrect answers to save:', cardData.manual_incorrect_answers);
     
     const { data, error } = await supabase
       .from('flashcards')
@@ -30,6 +31,7 @@ export const cardOperationsService = {
 
   async updateCard(cardId: string, cardData: UpdateCardInput): Promise<void> {
     console.log('Updating card with data:', cardData);
+    console.log('Manual incorrect answers to update:', cardData.manual_incorrect_answers);
     
     const updateData: any = {};
     
