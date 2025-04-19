@@ -11,7 +11,7 @@ import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
-  const { decks, favorites, loading } = useDeck();
+  const { decks = [], favorites = [], loading } = useDeck();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
 
@@ -31,14 +31,17 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  const favoritedDecks = decks.filter(deck => favorites.includes(deck.id));
+  // Safely filter favorited decks, ensuring decks and favorites are arrays
+  const favoritedDecks = Array.isArray(decks) && Array.isArray(favorites) 
+    ? decks.filter(deck => favorites.includes(deck.id))
+    : [];
 
   return (
     <Layout>
       <div className="container py-6 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Welcome, {user?.username}!</h1>
+            <h1 className="text-3xl font-bold">Welcome, {user?.username || 'User'}!</h1>
             <p className="text-muted-foreground">Manage your flashcard decks</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -58,11 +61,12 @@ const Dashboard = () => {
               <TabsContent value="decks">
                 {loading ? (
                   <div className="flex justify-center items-center p-8">
+                    <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
                     <p>Loading decks...</p>
                   </div>
                 ) : (
                   <DeckGrid 
-                    decks={decks} 
+                    decks={Array.isArray(decks) ? decks : []} 
                     emptyMessage="You haven't created any decks yet. Click 'Create Deck' to get started."
                   />
                 )}
@@ -71,6 +75,7 @@ const Dashboard = () => {
               <TabsContent value="favorites">
                 {loading ? (
                   <div className="flex justify-center items-center p-8">
+                    <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
                     <p>Loading favorites...</p>
                   </div>
                 ) : (

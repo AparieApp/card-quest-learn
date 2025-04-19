@@ -20,9 +20,10 @@ export const useFavorites = () => {
       setLoading(true);
       try {
         const fetchedFavorites = await favoriteService.getFavorites(user.id);
-        setFavorites(fetchedFavorites);
+        setFavorites(Array.isArray(fetchedFavorites) ? fetchedFavorites : []);
       } catch (error) {
         console.error('Error fetching favorites:', error);
+        setFavorites([]); // Reset to empty array on error
       } finally {
         setLoading(false);
       }
@@ -61,7 +62,7 @@ export const useFavorites = () => {
   };
 
   const isFavorite = (deckId: string): boolean => {
-    return favorites.includes(deckId);
+    return Array.isArray(favorites) ? favorites.includes(deckId) : false;
   };
 
   return { favorites, toggleFavorite, isFavorite, loading };

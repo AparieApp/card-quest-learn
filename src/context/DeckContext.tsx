@@ -28,18 +28,39 @@ interface DeckContextType {
   refreshDecks: () => Promise<void>;
 }
 
-const DeckContext = createContext<DeckContextType>({} as DeckContextType);
+// Create context with default values to prevent undefined errors
+const DeckContext = createContext<DeckContextType>({
+  decks: [],
+  favorites: [],
+  loading: true,
+  createDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
+  updateDeck: async () => {},
+  deleteDeck: async () => {},
+  getDeck: () => null,
+  addCardToDeck: async () => {},
+  updateCard: async () => {},
+  deleteCard: async () => {},
+  toggleFavorite: async () => {},
+  isFavorite: () => false,
+  getDeckByShareCode: async () => null,
+  generateShareCode: () => '',
+  copyDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
+  refreshDecks: async () => {},
+});
 
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const { decks, loading, setDecks } = useDeckStorage();
-  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { decks = [], loading, setDecks } = useDeckStorage();
+  const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
+  
+  // Only pass the user ID if it exists
+  const userId = user?.id;
   
   const {
     createDeck,
     updateDeck,
     deleteDeck,
-  } = useDeckOperations(setDecks, user?.id);
+  } = useDeckOperations(setDecks, userId);
 
   // Create a decks update callback to pass to useCardOperations
   const handleDecksUpdate = useCallback((updater: (prevDecks: Deck[]) => Deck[]) => {
@@ -50,22 +71,22 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     addCardToDeck,
     updateCard,
     deleteCard,
-  } = useCardOperations(handleDecksUpdate, user?.id);
+  } = useCardOperations(handleDecksUpdate, userId);
 
   const {
     getDeckByShareCode,
     generateShareCode,
     copyDeck,
-  } = useSharingOperations(decks, setDecks, user?.id);
+  } = useSharingOperations(decks, setDecks, userId);
   
   const getDeck = useCallback((id: string): Deck | null => {
     if (!id) return null;
-    return decks.find(deck => deck.id === id) || null;
+    return Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
   }, [decks]);
 
   const refreshDecks = useCallback(async () => {
-    console.log('Refreshing decks with user ID:', user?.id);
-    if (!user) {
+    console.log('Refreshing decks with user ID:', userId);
+    if (!userId) {
       console.log('Cannot refresh decks: User not authenticated');
       return;
     }
@@ -78,11 +99,11 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
-  }, [user, setDecks]);
+  }, [userId, setDecks]);
 
   const contextValue = {
-    decks,
-    favorites,
+    decks: Array.isArray(decks) ? decks : [],
+    favorites: Array.isArray(favorites) ? favorites : [],
     loading,
     createDeck,
     updateDeck,

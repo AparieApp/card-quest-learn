@@ -31,9 +31,11 @@ export const useDeckStorage = () => {
       setLoading(true);
       try {
         const fetchedDecks = await deckService.getDecks();
-        setDecks(fetchedDecks);
+        setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
+        console.log('Fetched decks:', fetchedDecks.length);
       } catch (error) {
         console.error('Error fetching decks:', error);
+        setDecks([]); // Reset to empty array on error
       } finally {
         setLoading(false);
       }
@@ -48,5 +50,18 @@ export const useDeckStorage = () => {
     fetchDecks();
   }, [isAuthenticated, user]);
 
-  return { decks, loading, setDecks };
+  return { 
+    decks, 
+    loading, 
+    setDecks: (newDecks: Deck[] | ((prev: Deck[]) => Deck[])) => {
+      if (typeof newDecks === 'function') {
+        setDecks(prev => {
+          const result = newDecks(prev);
+          return Array.isArray(result) ? result : [];
+        });
+      } else {
+        setDecks(Array.isArray(newDecks) ? newDecks : []);
+      }
+    }
+  };
 };
