@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/context/auth';
@@ -7,24 +7,45 @@ import { Loader2 } from 'lucide-react';
 import CardDialog from '@/components/deck/CardDialog';
 import { useDeckEditor } from '@/hooks/deck/useDeckEditor';
 import { useCardManager } from '@/hooks/deck/useCardManager';
-import { useCardRealtime } from '@/hooks/deck/useCardRealtime';
 import { useDeckData } from '@/hooks/deck/useDeckData';
-import { useVisibilityRefresh } from '@/hooks/deck/useVisibilityRefresh';
 import DeckEditHeader from '@/components/deck/edit/DeckEditHeader';
 import DeckEditLayout from '@/components/deck/edit/DeckEditLayout';
+import { toast } from 'sonner';
+import { useDeck } from '@/context/DeckContext';
 
 const DeckEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const deckId = id || '';
+  const { refreshDecks, getDeck } = useDeck();
   
+  // State to track if a manual refresh is in progress
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Manual refresh function
+  const manualRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      console.log('Manual refresh requested');
+      await refreshDecks();
+      toast.success('Deck refreshed successfully');
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+      toast.error('Failed to refresh deck');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshDecks, isRefreshing]);
+  
+  // Get initial deck data
   const {
     fetchedDeck,
     loading,
-    lastRefreshTime,
-    throttledRefresh
-  } = useDeckData(deckId);
+    refreshDeck
+  } = useDeckData(deckId, false); // Pass false to disable auto-refresh
   
   const {
     title,
@@ -36,6 +57,12 @@ const DeckEdit = () => {
     saveDeck
   } = useDeckEditor(deckId, fetchedDeck);
 
+  // Handle operations completion by refreshing the deck
+  const handleOperationComplete = useCallback(async () => {
+    console.log('Operation completed, refreshing deck data');
+    await refreshDeck();
+  }, [refreshDeck]);
+
   const {
     isCardDialogOpen,
     setIsCardDialogOpen,
@@ -46,17 +73,8 @@ const DeckEdit = () => {
     handleDeleteCard,
     handleDeleteCurrentCard,
     isSubmitting
-  } = useCardManager(deckId);
+  } = useCardManager(deckId, handleOperationComplete);
   
-  const handleCardChange = React.useCallback(() => {
-    console.log('Card change detected, triggering throttled refresh');
-    throttledRefresh();
-  }, [throttledRefresh]);
-  
-  const { isSubscribed } = useCardRealtime(deckId, handleCardChange);
-  
-  useVisibilityRefresh(throttledRefresh, lastRefreshTime);
-
   React.useEffect(() => {
     if (!isAuthenticated) {
       console.log('User not authenticated, redirecting to auth page');
@@ -107,7 +125,7 @@ const DeckEdit = () => {
             }
           }}
           onDeleteCard={handleDeleteCard}
-          onRefreshRequest={throttledRefresh}
+          onManualRefresh={manualRefresh}
         />
         
         <CardDialog

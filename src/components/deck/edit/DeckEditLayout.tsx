@@ -16,7 +16,7 @@ interface DeckEditLayoutProps {
   onAddCard: () => void;
   onEditCard: (cardId: string) => void;
   onDeleteCard: (cardId: string) => void;
-  onRefreshRequest: () => Promise<void>;
+  onManualRefresh: () => Promise<void>;
 }
 
 const DeckEditLayout: React.FC<DeckEditLayoutProps> = ({
@@ -31,7 +31,7 @@ const DeckEditLayout: React.FC<DeckEditLayoutProps> = ({
   onAddCard,
   onEditCard,
   onDeleteCard,
-  onRefreshRequest
+  onManualRefresh
 }) => {
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -51,7 +51,7 @@ const DeckEditLayout: React.FC<DeckEditLayoutProps> = ({
         onDeleteCard={onDeleteCard}
         isLoading={isLoading}
         deckId={deck.id}
-        onRefreshRequest={onRefreshRequest}
+        onRefreshRequest={onManualRefresh}
       />
     </div>
   );

@@ -7,7 +7,11 @@ import { toast } from 'sonner';
 import { handleError } from '@/utils/errorHandling';
 import { useOptimisticUpdates } from './useOptimisticUpdates';
 
-export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
+export const useCardMutations = (
+  setDecks: DecksUpdater, 
+  userId?: string, 
+  onOperationComplete?: () => void
+) => {
   const { 
     isOptimisticUpdating, 
     setOptimisticUpdatingWithTimeout, 
@@ -60,6 +64,7 @@ export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
       );
       
       toast.success('Card added successfully!');
+      if (onOperationComplete) onOperationComplete();
     } catch (error) {
       setDecks(prev => 
         prev.map(deck => 
@@ -77,7 +82,7 @@ export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
       clearOptimisticTimeout();
       setOptimisticUpdatingWithTimeout(false);
     }
-  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout]);
+  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout, onOperationComplete]);
 
   const updateCard = useCallback(async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
     if (!userId) {
@@ -108,6 +113,7 @@ export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
 
       await deckService.updateCard(cardId, cardData);
       toast.success('Card updated successfully!');
+      if (onOperationComplete) onOperationComplete();
     } catch (error) {
       setDecks(() => originalDeckState);
       handleError(error, 'Failed to update card');
@@ -115,7 +121,7 @@ export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
       clearOptimisticTimeout();
       setOptimisticUpdatingWithTimeout(false);
     }
-  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout]);
+  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout, onOperationComplete]);
 
   const deleteCard = useCallback(async (deckId: string, cardId: string) => {
     if (!userId) {
@@ -142,6 +148,7 @@ export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
 
       await deckService.deleteCard(cardId);
       toast.success('Card deleted successfully!');
+      if (onOperationComplete) onOperationComplete();
     } catch (error) {
       setDecks(() => originalDeckState);
       handleError(error, 'Failed to delete card');
@@ -149,7 +156,7 @@ export const useCardMutations = (setDecks: DecksUpdater, userId?: string) => {
       clearOptimisticTimeout();
       setOptimisticUpdatingWithTimeout(false);
     }
-  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout]);
+  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout, onOperationComplete]);
 
   return {
     addCardToDeck,

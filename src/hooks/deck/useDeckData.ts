@@ -5,36 +5,29 @@ import { useDeck } from '@/context/DeckContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-export const useDeckData = (deckId: string) => {
+export const useDeckData = (deckId: string, enableAutoRefresh: boolean = false) => {
   const { getDeck, refreshDecks } = useDeck();
   const [fetchedDeck, setFetchedDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastRefreshTime, setLastRefreshTime] = useState(0);
   const navigate = useNavigate();
 
-  const throttledRefresh = useCallback(async () => {
-    const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefreshTime;
-    
-    if (timeSinceLastRefresh < 3000) {
-      console.log('Throttling refresh, last refresh was', timeSinceLastRefresh, 'ms ago');
-      return;
-    }
-    
-    console.log('Executing throttled refresh');
-    setLastRefreshTime(now);
-    
+  // Simple refresh function without throttling
+  const refreshDeck = useCallback(async () => {
+    console.log('Refreshing deck data');
     try {
       await refreshDecks();
       const updatedDeck = getDeck(deckId);
       if (updatedDeck) {
         console.log('Updated deck data received:', updatedDeck.cards.length, 'cards');
         setFetchedDeck(updatedDeck);
+        return true;
       }
+      return false;
     } catch (error) {
-      console.error('Error during throttled refresh:', error);
+      console.error('Error refreshing deck data:', error);
+      return false;
     }
-  }, [deckId, refreshDecks, getDeck, lastRefreshTime]);
+  }, [deckId, refreshDecks, getDeck]);
 
   const loadDeckData = useCallback(async () => {
     if (!loading && fetchedDeck) {
@@ -57,7 +50,6 @@ export const useDeckData = (deckId: string) => {
       }
       
       setFetchedDeck(deck);
-      setLastRefreshTime(Date.now());
     } catch (error) {
       console.error('Error loading deck:', error);
       toast.error('Error loading deck');
@@ -74,7 +66,6 @@ export const useDeckData = (deckId: string) => {
   return {
     fetchedDeck,
     loading,
-    lastRefreshTime,
-    throttledRefresh
+    refreshDeck
   };
 };

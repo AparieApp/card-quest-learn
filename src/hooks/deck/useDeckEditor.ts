@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UpdateDeckInput, Deck } from '@/types/deck';
 import { useDeck } from '@/context/DeckContext';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
     }
   }, [deckId, initialDeck]);
 
-  const loadDeck = () => {
+  const loadDeck = useCallback(() => {
     setIsLoading(true);
     try {
       const deck = getDeck(deckId);
@@ -40,9 +40,9 @@ export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
     }
     
     return null;
-  };
+  }, [deckId, getDeck]);
 
-  const saveDeck = async () => {
+  const saveDeck = useCallback(async () => {
     if (!title) {
       toast.error('Title is required');
       return;
@@ -62,7 +62,7 @@ export const useDeckEditor = (deckId: string, initialDeck?: Deck | null) => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [deckId, title, description, updateDeck]);
 
   return {
     title,

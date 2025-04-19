@@ -4,14 +4,15 @@ import { useCardMutations } from './useCardMutations';
 
 export const useCardOperations = (
   setDecks: DecksUpdater,
-  userId?: string
+  userId?: string,
+  onOperationComplete?: () => void
 ) => {
   const {
     addCardToDeck,
     updateCard,
     deleteCard,
     isOptimisticUpdating
-  } = useCardMutations(setDecks, userId);
+  } = useCardMutations(setDecks, userId, onOperationComplete);
 
   return {
     addCardToDeck,

@@ -67,23 +67,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     setDecks(updater);
   }, [setDecks]);
 
-  const {
-    addCardToDeck,
-    updateCard,
-    deleteCard,
-  } = useCardOperations(handleDecksUpdate, userId);
-
-  const {
-    getDeckByShareCode,
-    generateShareCode,
-    copyDeck,
-  } = useSharingOperations(decks, setDecks, userId);
-  
-  const getDeck = useCallback((id: string): Deck | null => {
-    if (!id) return null;
-    return Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
-  }, [decks]);
-
   const refreshDecks = useCallback(async () => {
     console.log('Refreshing decks with user ID:', userId);
     if (!userId) {
@@ -97,6 +80,24 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error refreshing decks:', error);
     }
   }, [userId, refreshStoredDecks]);
+
+  const {
+    addCardToDeck,
+    updateCard,
+    deleteCard,
+    isOptimisticUpdating
+  } = useCardOperations(handleDecksUpdate, userId);
+
+  const {
+    getDeckByShareCode,
+    generateShareCode,
+    copyDeck,
+  } = useSharingOperations(decks, setDecks, userId);
+  
+  const getDeck = useCallback((id: string): Deck | null => {
+    if (!id) return null;
+    return Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
+  }, [decks]);
 
   const contextValue = {
     decks: Array.isArray(decks) ? decks : [],
