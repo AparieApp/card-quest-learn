@@ -1,10 +1,11 @@
 
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Flashcard } from '@/types/deck';
-import { CardMapper } from '@/mappers/CardMapper';
+import { useDeck } from '@/context/DeckContext';
 
 export const useCardRealtime = (deckId: string, onCardChange: () => void) => {
+  const { isOptimisticUpdating } = useDeck();
+
   useEffect(() => {
     const channel = supabase
       .channel('flashcards-changes')
@@ -17,8 +18,10 @@ export const useCardRealtime = (deckId: string, onCardChange: () => void) => {
           filter: `deck_id=eq.${deckId}`
         },
         () => {
-          // Trigger refresh when any change occurs
-          onCardChange();
+          // Only trigger refresh when not performing optimistic updates
+          if (!isOptimisticUpdating) {
+            onCardChange();
+          }
         }
       )
       .subscribe();
@@ -26,5 +29,5 @@ export const useCardRealtime = (deckId: string, onCardChange: () => void) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [deckId, onCardChange]);
+  }, [deckId, onCardChange, isOptimisticUpdating]);
 };

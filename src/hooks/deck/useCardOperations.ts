@@ -2,15 +2,19 @@
 import { Deck, CreateCardInput, UpdateCardInput } from '@/types/deck';
 import { deckService } from '@/services/deckService';
 import { toast } from 'sonner';
+import { useDeck } from '@/context/DeckContext';
 
 export const useCardOperations = (
   setDecks: React.Dispatch<React.SetStateAction<Deck[]>>,
   userId?: string
 ) => {
+  const { setIsOptimisticUpdating } = useDeck();
+
   const addCardToDeck = async (deckId: string, card: CreateCardInput) => {
     if (!userId) throw new Error('User not authenticated');
     
-    // Optimistically update the UI
+    setIsOptimisticUpdating(true);
+    
     const optimisticCard = {
       id: crypto.randomUUID(),
       deck_id: deckId,
@@ -32,7 +36,6 @@ export const useCardOperations = (
 
     try {
       const newCard = await deckService.addCard(deckId, card);
-      // Update with real card data
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -48,7 +51,6 @@ export const useCardOperations = (
       );
       toast.success('Card added successfully!');
     } catch (error) {
-      // Rollback on error
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -62,13 +64,15 @@ export const useCardOperations = (
       );
       toast.error('Failed to add card. Please try again.');
       throw error;
+    } finally {
+      setIsOptimisticUpdating(false);
     }
   };
 
   const updateCard = async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
     if (!userId) throw new Error('User not authenticated');
     
-    // Store previous state for rollback
+    setIsOptimisticUpdating(true);
     let previousState: Deck[] | null = null;
     
     setDecks(prev => {
@@ -92,19 +96,20 @@ export const useCardOperations = (
       await deckService.updateCard(cardId, cardData);
       toast.success('Card updated successfully!');
     } catch (error) {
-      // Rollback on error
       if (previousState) {
         setDecks(previousState);
       }
       toast.error('Failed to update card. Please try again.');
       throw error;
+    } finally {
+      setIsOptimisticUpdating(false);
     }
   };
 
   const deleteCard = async (deckId: string, cardId: string) => {
     if (!userId) throw new Error('User not authenticated');
     
-    // Store previous state for rollback
+    setIsOptimisticUpdating(true);
     let previousState: Deck[] | null = null;
     
     setDecks(prev => {
@@ -124,12 +129,13 @@ export const useCardOperations = (
       await deckService.deleteCard(cardId);
       toast.success('Card deleted successfully!');
     } catch (error) {
-      // Rollback on error
       if (previousState) {
         setDecks(previousState);
       }
       toast.error('Failed to delete card. Please try again.');
       throw error;
+    } finally {
+      setIsOptimisticUpdating(false);
     }
   };
 

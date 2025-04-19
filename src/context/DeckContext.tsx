@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState } from 'react';
 import { useAuth } from '@/context/auth';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
 import { useDeckStorage } from '@/hooks/useDeckStorage';
@@ -26,6 +25,8 @@ interface DeckContextType {
   generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
   refreshDecks: () => Promise<void>;
+  isOptimisticUpdating: boolean;
+  setIsOptimisticUpdating: (value: boolean) => void;
 }
 
 const DeckContext = createContext<DeckContextType>({} as DeckContextType);
@@ -34,12 +35,12 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { decks, loading, setDecks } = useDeckStorage();
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const [isOptimisticUpdating, setIsOptimisticUpdating] = useState(false);
   
   const {
     createDeck,
     updateDeck,
     deleteDeck,
-    // We'll override getDeck with our own implementation
   } = useDeckOperations(setDecks, user?.id);
 
   const {
@@ -54,7 +55,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     copyDeck,
   } = useSharingOperations(decks, setDecks, user?.id);
   
-  // Local implementation of getDeck using the actual decks state
   const getDeck = (id: string): Deck | null => {
     if (!id) return null;
     return decks.find(deck => deck.id === id) || null;
@@ -89,7 +89,9 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
         getDeckByShareCode,
         generateShareCode,
         copyDeck,
-        refreshDecks
+        refreshDecks,
+        isOptimisticUpdating,
+        setIsOptimisticUpdating
       }}
     >
       {children}
