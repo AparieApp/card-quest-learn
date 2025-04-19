@@ -4,15 +4,16 @@ import { CreateCardInput, UpdateCardInput, Flashcard } from '@/types/deck';
 import { CardMapper } from '@/mappers/CardMapper';
 
 export const cardOperationsService = {
-  // Add a card to a deck
   async addCard(deckId: string, cardData: CreateCardInput): Promise<Flashcard> {
+    console.log('Adding card with data:', cardData);
+    
     const { data, error } = await supabase
       .from('flashcards')
       .insert({
         deck_id: deckId,
         front_text: cardData.front_text,
         correct_answer: cardData.correct_answer,
-        incorrect_answers: cardData.incorrect_answers,
+        incorrect_answers: cardData.incorrect_answers || [],
         manual_incorrect_answers: cardData.manual_incorrect_answers || []
       })
       .select()
@@ -23,9 +24,9 @@ export const cardOperationsService = {
     return CardMapper.toDomain(data);
   },
 
-  // Update a card in a deck
   async updateCard(cardId: string, cardData: UpdateCardInput): Promise<void> {
-    // Create an update object with only the fields that are provided
+    console.log('Updating card with data:', cardData);
+    
     const updateData: any = {};
     
     if (cardData.front_text !== undefined) {
@@ -42,9 +43,6 @@ export const cardOperationsService = {
     
     if (cardData.manual_incorrect_answers !== undefined) {
       updateData.manual_incorrect_answers = cardData.manual_incorrect_answers;
-    } else {
-      // Ensure we always have an array for manual_incorrect_answers
-      updateData.manual_incorrect_answers = [];
     }
 
     const { error } = await supabase
@@ -55,7 +53,6 @@ export const cardOperationsService = {
     if (error) throw error;
   },
 
-  // Delete a card from a deck
   async deleteCard(cardId: string): Promise<void> {
     const { error } = await supabase
       .from('flashcards')

@@ -5,27 +5,18 @@ import { DecksUpdater } from '@/types/cardOperations';
 import { deckService } from '@/services/deckService';
 import { toast } from 'sonner';
 import { handleError } from '@/utils/errorHandling';
-import { useOptimisticUpdates } from './useOptimisticUpdates';
 
 export const useCardMutations = (
   setDecks: DecksUpdater, 
   userId?: string, 
   onOperationComplete?: () => void
 ) => {
-  const { 
-    isOptimisticUpdating, 
-    setOptimisticUpdatingWithTimeout, 
-    clearOptimisticTimeout 
-  } = useOptimisticUpdates();
-
   const addCardToDeck = useCallback(async (deckId: string, card: CreateCardInput) => {
     if (!userId) {
       console.error('Cannot add card: User not authenticated');
       toast.error('You must be logged in to add cards');
       throw new Error('User not authenticated');
     }
-    
-    setOptimisticUpdatingWithTimeout(true);
     
     const optimisticCard = {
       id: crypto.randomUUID(),
@@ -35,6 +26,7 @@ export const useCardMutations = (
     };
 
     try {
+      // Apply optimistic update
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -49,6 +41,7 @@ export const useCardMutations = (
 
       const newCard = await deckService.addCard(deckId, card);
       
+      // Update with real data
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -66,6 +59,7 @@ export const useCardMutations = (
       toast.success('Card added successfully!');
       if (onOperationComplete) onOperationComplete();
     } catch (error) {
+      // Revert optimistic update on error
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -78,11 +72,8 @@ export const useCardMutations = (
       );
       
       handleError(error, 'Failed to add card');
-    } finally {
-      clearOptimisticTimeout();
-      setOptimisticUpdatingWithTimeout(false);
     }
-  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout, onOperationComplete]);
+  }, [userId, setDecks, onOperationComplete]);
 
   const updateCard = useCallback(async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
     if (!userId) {
@@ -90,11 +81,9 @@ export const useCardMutations = (
       toast.error('You must be logged in to update cards');
       throw new Error('User not authenticated');
     }
-    
-    setOptimisticUpdatingWithTimeout(true);
-    const originalDeckState = [...(await deckService.getDecks())];
-    
+
     try {
+      // Apply optimistic update
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -115,13 +104,18 @@ export const useCardMutations = (
       toast.success('Card updated successfully!');
       if (onOperationComplete) onOperationComplete();
     } catch (error) {
-      setDecks(() => originalDeckState);
+      // Revert optimistic update on error
+      const originalDeck = await deckService.getDeck(deckId);
+      if (originalDeck) {
+        setDecks(prev => 
+          prev.map(deck => 
+            deck.id === deckId ? originalDeck : deck
+          )
+        );
+      }
       handleError(error, 'Failed to update card');
-    } finally {
-      clearOptimisticTimeout();
-      setOptimisticUpdatingWithTimeout(false);
     }
-  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout, onOperationComplete]);
+  }, [userId, setDecks, onOperationComplete]);
 
   const deleteCard = useCallback(async (deckId: string, cardId: string) => {
     if (!userId) {
@@ -129,11 +123,9 @@ export const useCardMutations = (
       toast.error('You must be logged in to delete cards');
       throw new Error('User not authenticated');
     }
-    
-    setOptimisticUpdatingWithTimeout(true);
-    const originalDeckState = [...(await deckService.getDecks())];
-    
+
     try {
+      // Apply optimistic update
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -150,18 +142,22 @@ export const useCardMutations = (
       toast.success('Card deleted successfully!');
       if (onOperationComplete) onOperationComplete();
     } catch (error) {
-      setDecks(() => originalDeckState);
+      // Revert optimistic update on error
+      const originalDeck = await deckService.getDeck(deckId);
+      if (originalDeck) {
+        setDecks(prev => 
+          prev.map(deck => 
+            deck.id === deckId ? originalDeck : deck
+          )
+        );
+      }
       handleError(error, 'Failed to delete card');
-    } finally {
-      clearOptimisticTimeout();
-      setOptimisticUpdatingWithTimeout(false);
     }
-  }, [userId, setDecks, setOptimisticUpdatingWithTimeout, clearOptimisticTimeout, onOperationComplete]);
+  }, [userId, setDecks, onOperationComplete]);
 
   return {
     addCardToDeck,
     updateCard,
-    deleteCard,
-    isOptimisticUpdating
+    deleteCard
   };
 };
