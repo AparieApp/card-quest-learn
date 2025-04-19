@@ -1,7 +1,7 @@
 
 import { useCallback } from 'react';
 import { CreateCardInput, UpdateCardInput } from '@/types/deck';
-import { DecksUpdater } from '@/types/cardOperations';
+import { DecksUpdater, OptimisticUpdateState } from '@/types/cardOperations';
 import { deckService } from '@/services/deckService';
 import { toast } from 'sonner';
 import { handleError } from '@/utils/errorHandling';
@@ -9,13 +9,19 @@ import { handleError } from '@/utils/errorHandling';
 export const useCardMutations = (
   setDecks: DecksUpdater, 
   userId?: string, 
-  onOperationComplete?: () => void
+  onOperationComplete?: () => void,
+  optimisticState?: OptimisticUpdateState
 ) => {
   const addCardToDeck = useCallback(async (deckId: string, card: CreateCardInput) => {
     if (!userId) {
       console.error('Cannot add card: User not authenticated');
       toast.error('You must be logged in to add cards');
       throw new Error('User not authenticated');
+    }
+    
+    // Set optimistic updating flag if available
+    if (optimisticState) {
+      optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
     
     const optimisticCard = {
@@ -72,14 +78,25 @@ export const useCardMutations = (
       );
       
       handleError(error, 'Failed to add card');
+    } finally {
+      // Clear optimistic updating flag if available
+      if (optimisticState) {
+        optimisticState.setOptimisticUpdatingWithTimeout(false);
+        optimisticState.clearOptimisticTimeout();
+      }
     }
-  }, [userId, setDecks, onOperationComplete]);
+  }, [userId, setDecks, onOperationComplete, optimisticState]);
 
   const updateCard = useCallback(async (deckId: string, cardId: string, cardData: UpdateCardInput) => {
     if (!userId) {
       console.error('Cannot update card: User not authenticated');
       toast.error('You must be logged in to update cards');
       throw new Error('User not authenticated');
+    }
+
+    // Set optimistic updating flag if available
+    if (optimisticState) {
+      optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
 
     try {
@@ -114,14 +131,25 @@ export const useCardMutations = (
         );
       }
       handleError(error, 'Failed to update card');
+    } finally {
+      // Clear optimistic updating flag if available
+      if (optimisticState) {
+        optimisticState.setOptimisticUpdatingWithTimeout(false);
+        optimisticState.clearOptimisticTimeout();
+      }
     }
-  }, [userId, setDecks, onOperationComplete]);
+  }, [userId, setDecks, onOperationComplete, optimisticState]);
 
   const deleteCard = useCallback(async (deckId: string, cardId: string) => {
     if (!userId) {
       console.error('Cannot delete card: User not authenticated');
       toast.error('You must be logged in to delete cards');
       throw new Error('User not authenticated');
+    }
+
+    // Set optimistic updating flag if available
+    if (optimisticState) {
+      optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
 
     try {
@@ -152,8 +180,14 @@ export const useCardMutations = (
         );
       }
       handleError(error, 'Failed to delete card');
+    } finally {
+      // Clear optimistic updating flag if available
+      if (optimisticState) {
+        optimisticState.setOptimisticUpdatingWithTimeout(false);
+        optimisticState.clearOptimisticTimeout();
+      }
     }
-  }, [userId, setDecks, onOperationComplete]);
+  }, [userId, setDecks, onOperationComplete, optimisticState]);
 
   return {
     addCardToDeck,

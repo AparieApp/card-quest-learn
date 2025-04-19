@@ -26,6 +26,7 @@ interface DeckContextType {
   generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
   refreshDecks: () => Promise<void>;
+  isOptimisticUpdating: boolean;
 }
 
 // Create context with default values to prevent undefined errors
@@ -46,6 +47,7 @@ const DeckContext = createContext<DeckContextType>({
   generateShareCode: () => '',
   copyDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
   refreshDecks: async () => {},
+  isOptimisticUpdating: false,
 });
 
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
@@ -86,7 +88,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     updateCard,
     deleteCard,
     isOptimisticUpdating
-  } = useCardOperations(handleDecksUpdate, userId);
+  } = useCardOperations(handleDecksUpdate, userId, refreshDecks);
 
   const {
     getDeckByShareCode,
@@ -116,6 +118,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     generateShareCode,
     copyDeck,
     refreshDecks,
+    isOptimisticUpdating,
   };
 
   return (

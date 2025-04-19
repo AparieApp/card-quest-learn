@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCardOperations } from '@/hooks/deck/useCardOperations';
+import { useOptimisticUpdates } from '@/hooks/deck/useOptimisticUpdates';
 
 export const useCardRealtime = (deckId: string, onCardChange: () => void) => {
-  const { isOptimisticUpdating } = useCardOperations(() => {}, undefined);
+  // Use optimistic update state directly to avoid dependency on useCardOperations
+  const { isOptimisticUpdating } = useOptimisticUpdates();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastUpdateTimestampRef = useRef<number>(0);
