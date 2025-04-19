@@ -2,6 +2,7 @@
 import { DecksUpdater } from '@/types/cardOperations';
 import { useCardMutations } from './useCardMutations';
 import { useOptimisticUpdates } from './useOptimisticUpdates';
+import { Flashcard } from '@/types/deck';
 
 export const useCardOperations = (
   setDecks: DecksUpdater,

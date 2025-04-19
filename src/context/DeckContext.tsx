@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
-import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
+import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput, Flashcard } from '@/types/deck';
 import { useDeckStorage } from '@/hooks/useDeckStorage';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDeckOperations } from '@/hooks/deck/useDeckOperations';
@@ -17,7 +17,7 @@ interface DeckContextType {
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
   deleteDeck: (id: string) => Promise<void>;
   getDeck: (id: string) => Deck | null;
-  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<void>;
+  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<Flashcard>; // Changed from Promise<void> to Promise<Flashcard>
   updateCard: (deckId: string, cardId: string, cardData: UpdateCardInput) => Promise<void>;
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
@@ -38,7 +38,7 @@ const DeckContext = createContext<DeckContextType>({
   updateDeck: async () => {},
   deleteDeck: async () => {},
   getDeck: () => null,
-  addCardToDeck: async () => {},
+  addCardToDeck: async () => ({ id: '', deck_id: '', front_text: '', correct_answer: '', incorrect_answers: [], created_at: '' }), // Update default return value
   updateCard: async () => {},
   deleteCard: async () => {},
   toggleFavorite: async () => {},

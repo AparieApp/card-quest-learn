@@ -10,7 +10,7 @@ export interface OptimisticUpdateState {
 }
 
 export interface CardMutationOperations {
-  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<void>;
+  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<Flashcard>;  // Updated return type
   updateCard: (deckId: string, cardId: string, cardData: UpdateCardInput) => Promise<void>;
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
 }
