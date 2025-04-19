@@ -45,12 +45,16 @@ export const cardOperationsService = {
       updateData.manual_incorrect_answers = cardData.manual_incorrect_answers;
     }
 
+    console.log('Sending update data to Supabase:', updateData);
     const { error } = await supabase
       .from('flashcards')
       .update(updateData)
       .eq('id', cardId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error updating card:', error);
+      throw error;
+    }
   },
 
   async deleteCard(cardId: string): Promise<void> {

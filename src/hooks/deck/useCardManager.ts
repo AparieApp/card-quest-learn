@@ -5,7 +5,10 @@ import { useDeck } from '@/context/DeckContext';
 import { toast } from 'sonner';
 import { handleError } from '@/utils/errorHandling';
 
-export const useCardManager = (deckId: string) => {
+export const useCardManager = (
+  deckId: string,
+  onOperationComplete?: () => void
+) => {
   const { addCardToDeck, updateCard, deleteCard } = useDeck();
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [currentCard, setCurrentCard] = useState<Flashcard | undefined>(undefined);
@@ -23,13 +26,16 @@ export const useCardManager = (deckId: string) => {
       });
       setIsCardDialogOpen(false);
       setCurrentCard(undefined);
+      if (onOperationComplete) {
+        onOperationComplete();
+      }
     } catch (error) {
       console.error('Error adding card:', error);
       handleError(error, 'Failed to add card');
     } finally {
       setIsSubmitting(false);
     }
-  }, [deckId, addCardToDeck]);
+  }, [deckId, addCardToDeck, onOperationComplete]);
 
   const handleUpdateCard = useCallback(async (cardData: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
     if (!currentCard) {
@@ -43,13 +49,16 @@ export const useCardManager = (deckId: string) => {
       await updateCard(deckId, currentCard.id, cardData);
       setIsCardDialogOpen(false);
       setCurrentCard(undefined);
+      if (onOperationComplete) {
+        onOperationComplete();
+      }
     } catch (error) {
       console.error('Error updating card:', error);
       handleError(error, 'Failed to update card');
     } finally {
       setIsSubmitting(false);
     }
-  }, [deckId, updateCard, currentCard]);
+  }, [deckId, updateCard, currentCard, onOperationComplete]);
 
   const handleDeleteCard = useCallback(async (cardId: string) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this card?');
@@ -58,11 +67,14 @@ export const useCardManager = (deckId: string) => {
     try {
       console.log('Deleting card with ID:', cardId);
       await deleteCard(deckId, cardId);
+      if (onOperationComplete) {
+        onOperationComplete();
+      }
     } catch (error) {
       console.error('Error deleting card:', error);
       handleError(error, 'Failed to delete card');
     }
-  }, [deckId, deleteCard]);
+  }, [deckId, deleteCard, onOperationComplete]);
 
   const handleDeleteCurrentCard = useCallback(async () => {
     if (!currentCard) {
@@ -77,13 +89,16 @@ export const useCardManager = (deckId: string) => {
       setIsCardDialogOpen(false);
       setCurrentCard(undefined);
       toast.success('Card deleted successfully');
+      if (onOperationComplete) {
+        onOperationComplete();
+      }
     } catch (error) {
       console.error('Error deleting current card:', error);
       handleError(error, 'Failed to delete card');
     } finally {
       setIsSubmitting(false);
     }
-  }, [deckId, deleteCard, currentCard]);
+  }, [deckId, deleteCard, currentCard, onOperationComplete]);
 
   const openAddCardDialog = useCallback(() => {
     setCurrentCard(undefined);

@@ -10,14 +10,12 @@ export const useCardOperations = (
   const {
     addCardToDeck,
     updateCard,
-    deleteCard,
-    isOptimisticUpdating
+    deleteCard
   } = useCardMutations(setDecks, userId, onOperationComplete);
 
   return {
     addCardToDeck,
     updateCard,
-    deleteCard,
-    isOptimisticUpdating
+    deleteCard
   };
 };
