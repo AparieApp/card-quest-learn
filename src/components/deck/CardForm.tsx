@@ -13,7 +13,6 @@ interface CardFormProps {
   onCancel?: () => void;
   onDelete?: () => void;
   isSubmitting?: boolean;
-  existingAnswers?: string[];
 }
 
 const CardForm: React.FC<CardFormProps> = ({ 
@@ -21,8 +20,7 @@ const CardForm: React.FC<CardFormProps> = ({
   onSubmit, 
   onCancel, 
   onDelete,
-  isSubmitting = false,
-  existingAnswers = []
+  isSubmitting = false
 }) => {
   const {
     form,
@@ -39,7 +37,6 @@ const CardForm: React.FC<CardFormProps> = ({
         
         <CardFormAnswers
           manualAnswers={manualAnswers}
-          existingAnswers={existingAnswers}
           isSubmitting={isSubmitting}
           correctAnswer={form.watch('correct_answer')}
           onAddAnswer={addManualAnswer}
