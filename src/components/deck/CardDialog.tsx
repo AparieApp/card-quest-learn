@@ -18,7 +18,6 @@ interface CardDialogProps {
   onCancel: () => void;
   onDelete?: () => void;
   isSubmitting?: boolean;
-  existingAnswers?: string[];
 }
 
 const CardDialog: React.FC<CardDialogProps> = ({
@@ -29,8 +28,12 @@ const CardDialog: React.FC<CardDialogProps> = ({
   onCancel,
   onDelete,
   isSubmitting = false,
-  existingAnswers = []
 }) => {
+  const handleSubmit = async (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
+    await onSubmit(data);
+    // Dialog will close automatically after submission due to isSubmitting state change
+  };
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       if (isSubmitting && !isOpen) return;
@@ -45,11 +48,10 @@ const CardDialog: React.FC<CardDialogProps> = ({
         </DialogHeader>
         <CardForm
           card={card}
-          onSubmit={onSubmit}
+          onSubmit={handleSubmit}
           onCancel={onCancel}
           onDelete={onDelete}
           isSubmitting={isSubmitting}
-          existingAnswers={existingAnswers}
         />
       </DialogContent>
     </Dialog>

@@ -5,13 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Flashcard } from '@/types/deck';
 import { cardSchema, CardFormValues } from '@/components/deck/card-form/types';
 import { handleError } from '@/utils/errorHandling';
+import { toast } from 'sonner';
 
 export const useCardForm = (
   card?: Flashcard,
   onSubmit?: (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => void
 ) => {
   const [manualAnswers, setManualAnswers] = useState<string[]>(
-    card ? card.manual_incorrect_answers : []
+    card ? card.manual_incorrect_answers || [] : []
   );
 
   const form = useForm<CardFormValues>({
@@ -19,7 +20,7 @@ export const useCardForm = (
     defaultValues: card ? {
       front_text: card.front_text,
       correct_answer: card.correct_answer,
-      manual_incorrect_answers: card.manual_incorrect_answers,
+      manual_incorrect_answers: card.manual_incorrect_answers || [],
     } : {
       front_text: '',
       correct_answer: '',
@@ -27,14 +28,15 @@ export const useCardForm = (
     },
   });
 
-  const handleSubmit = (values: CardFormValues) => {
+  const handleSubmit = async (values: CardFormValues) => {
     try {
-      onSubmit?.({
+      await onSubmit?.({
         front_text: values.front_text,
         correct_answer: values.correct_answer,
         manual_incorrect_answers: manualAnswers,
         incorrect_answers: [],
       });
+      toast.success(card ? 'Card updated successfully' : 'Card added successfully');
     } catch (error) {
       handleError(error, 'Failed to save card');
     }

@@ -3,12 +3,15 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormLabel } from '@/components/ui/form';
-import { X, Plus } from 'lucide-react';
-import { Combobox } from '@/components/ui/combobox';
+import { X, Plus, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CardFormAnswersProps {
   manualAnswers: string[];
-  existingAnswers: string[];
   isSubmitting: boolean;
   correctAnswer: string;
   onAddAnswer: (answer: string) => void;
@@ -17,19 +20,40 @@ interface CardFormAnswersProps {
 
 export const CardFormAnswers = ({
   manualAnswers,
-  existingAnswers,
   isSubmitting,
   correctAnswer,
   onAddAnswer,
   onRemoveAnswer,
 }: CardFormAnswersProps) => {
-  const filteredExistingAnswers = existingAnswers.filter(
-    answer => answer !== correctAnswer && !manualAnswers.includes(answer)
-  );
+  const [newAnswer, setNewAnswer] = React.useState('');
+
+  const handleAddAnswer = () => {
+    if (newAnswer.trim()) {
+      onAddAnswer(newAnswer);
+      setNewAnswer('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddAnswer();
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <FormLabel>Incorrect Answers (up to 3)</FormLabel>
+      <div className="flex items-center gap-2">
+        <FormLabel>Incorrect Answers</FormLabel>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>You can add up to 3 incorrect answers (optional)</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
       
       <div className="space-y-2">
         {manualAnswers.map((answer, index) => (
@@ -49,24 +73,19 @@ export const CardFormAnswers = ({
         
         {manualAnswers.length < 3 && (
           <div className="flex items-center gap-2">
-            <Combobox
-              options={filteredExistingAnswers}
-              emptyMessage="No matching answers"
-              placeholder="Add an incorrect answer"
-              onSelect={onAddAnswer}
+            <Input
+              value={newAnswer}
+              onChange={(e) => setNewAnswer(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type an incorrect answer"
+              disabled={isSubmitting}
             />
             <Button
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => {
-                const input = document.querySelector('input[role="combobox"]') as HTMLInputElement;
-                if (input && input.value.trim()) {
-                  onAddAnswer(input.value);
-                  input.value = '';
-                }
-              }}
-              disabled={isSubmitting || manualAnswers.length >= 3}
+              onClick={handleAddAnswer}
+              disabled={isSubmitting || manualAnswers.length >= 3 || !newAnswer.trim()}
             >
               <Plus className="h-4 w-4" />
             </Button>
