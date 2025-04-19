@@ -19,8 +19,12 @@ export const cardOperationsService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error adding card:', error);
+      throw error;
+    }
     
+    console.log('Successfully added card:', data);
     return CardMapper.toDomain(data);
   },
 
@@ -45,7 +49,6 @@ export const cardOperationsService = {
       updateData.manual_incorrect_answers = cardData.manual_incorrect_answers;
     }
 
-    console.log('Sending update data to Supabase:', updateData);
     const { error } = await supabase
       .from('flashcards')
       .update(updateData)
@@ -55,6 +58,8 @@ export const cardOperationsService = {
       console.error('Supabase error updating card:', error);
       throw error;
     }
+    
+    console.log('Card updated successfully');
   },
 
   async deleteCard(cardId: string): Promise<void> {

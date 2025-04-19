@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { CreateCardInput, UpdateCardInput } from '@/types/deck';
 import { DecksUpdater, OptimisticUpdateState } from '@/types/cardOperations';
@@ -19,7 +18,6 @@ export const useCardMutations = (
       throw new Error('User not authenticated');
     }
     
-    // Set optimistic updating flag if available
     if (optimisticState) {
       optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
@@ -28,11 +26,10 @@ export const useCardMutations = (
       id: crypto.randomUUID(),
       deck_id: deckId,
       created_at: new Date().toISOString(),
-      ...card,
+      ...card
     };
 
     try {
-      // Apply optimistic update
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -45,9 +42,11 @@ export const useCardMutations = (
         )
       );
 
-      const newCard = await deckService.addCard(deckId, card);
+      const newCard = await deckService.addCard(deckId, {
+        ...card,
+        manual_incorrect_answers: card.manual_incorrect_answers || []
+      });
       
-      // Update with real data
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -61,11 +60,13 @@ export const useCardMutations = (
             : deck
         )
       );
+
+      if (onOperationComplete) {
+        await onOperationComplete();
+      }
       
       toast.success('Card added successfully!');
-      if (onOperationComplete) onOperationComplete();
     } catch (error) {
-      // Revert optimistic update on error
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -79,7 +80,6 @@ export const useCardMutations = (
       
       handleError(error, 'Failed to add card');
     } finally {
-      // Clear optimistic updating flag if available
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
         optimisticState.clearOptimisticTimeout();
@@ -94,13 +94,11 @@ export const useCardMutations = (
       throw new Error('User not authenticated');
     }
 
-    // Set optimistic updating flag if available
     if (optimisticState) {
       optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
 
     try {
-      // Apply optimistic update
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -121,7 +119,6 @@ export const useCardMutations = (
       toast.success('Card updated successfully!');
       if (onOperationComplete) onOperationComplete();
     } catch (error) {
-      // Revert optimistic update on error
       const originalDeck = await deckService.getDeck(deckId);
       if (originalDeck) {
         setDecks(prev => 
@@ -132,7 +129,6 @@ export const useCardMutations = (
       }
       handleError(error, 'Failed to update card');
     } finally {
-      // Clear optimistic updating flag if available
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
         optimisticState.clearOptimisticTimeout();
@@ -147,13 +143,11 @@ export const useCardMutations = (
       throw new Error('User not authenticated');
     }
 
-    // Set optimistic updating flag if available
     if (optimisticState) {
       optimisticState.setOptimisticUpdatingWithTimeout(true);
     }
 
     try {
-      // Apply optimistic update
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -170,7 +164,6 @@ export const useCardMutations = (
       toast.success('Card deleted successfully!');
       if (onOperationComplete) onOperationComplete();
     } catch (error) {
-      // Revert optimistic update on error
       const originalDeck = await deckService.getDeck(deckId);
       if (originalDeck) {
         setDecks(prev => 
@@ -181,7 +174,6 @@ export const useCardMutations = (
       }
       handleError(error, 'Failed to delete card');
     } finally {
-      // Clear optimistic updating flag if available
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
         optimisticState.clearOptimisticTimeout();
