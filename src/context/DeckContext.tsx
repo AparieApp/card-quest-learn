@@ -1,4 +1,5 @@
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+
+import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput } from '@/types/deck';
 import { useDeckStorage } from '@/hooks/useDeckStorage';
@@ -40,11 +41,16 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     deleteDeck,
   } = useDeckOperations(setDecks, user?.id);
 
+  // Create a decks update callback to pass to useCardOperations
+  const handleDecksUpdate = useCallback((updater: (prevDecks: Deck[]) => Deck[]) => {
+    setDecks(updater);
+  }, [setDecks]);
+
   const {
     addCardToDeck,
     updateCard,
     deleteCard,
-  } = useCardOperations(setDecks, user?.id);
+  } = useCardOperations(handleDecksUpdate, user?.id);
 
   const {
     getDeckByShareCode,
@@ -52,43 +58,49 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     copyDeck,
   } = useSharingOperations(decks, setDecks, user?.id);
   
-  const getDeck = (id: string): Deck | null => {
+  const getDeck = useCallback((id: string): Deck | null => {
     if (!id) return null;
     return decks.find(deck => deck.id === id) || null;
-  };
+  }, [decks]);
 
-  const refreshDecks = async () => {
-    if (!user) return;
+  const refreshDecks = useCallback(async () => {
+    console.log('Refreshing decks with user ID:', user?.id);
+    if (!user) {
+      console.log('Cannot refresh decks: User not authenticated');
+      return;
+    }
     
     try {
+      console.log('Fetching fresh deck data from the server');
       const refreshedDecks = await deckService.getDecks();
+      console.log('Refreshed decks received:', refreshedDecks.length);
       setDecks(refreshedDecks);
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
+  }, [user, setDecks]);
+
+  const contextValue = {
+    decks,
+    favorites,
+    loading,
+    createDeck,
+    updateDeck,
+    deleteDeck,
+    getDeck,
+    addCardToDeck,
+    updateCard,
+    deleteCard,
+    toggleFavorite,
+    isFavorite,
+    getDeckByShareCode,
+    generateShareCode,
+    copyDeck,
+    refreshDecks,
   };
 
   return (
-    <DeckContext.Provider
-      value={{
-        decks,
-        favorites,
-        loading,
-        createDeck,
-        updateDeck,
-        deleteDeck,
-        getDeck,
-        addCardToDeck,
-        updateCard,
-        deleteCard,
-        toggleFavorite,
-        isFavorite,
-        getDeckByShareCode,
-        generateShareCode,
-        copyDeck,
-        refreshDecks,
-      }}
-    >
+    <DeckContext.Provider value={contextValue}>
       {children}
     </DeckContext.Provider>
   );

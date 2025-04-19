@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -42,35 +43,72 @@ const DeckEdit = () => {
     handleAddCard,
     handleUpdateCard,
     handleDeleteCard,
-    handleDeleteCurrentCard
+    handleDeleteCurrentCard,
+    isSubmitting
   } = useCardManager(deckId);
   
-  useCardRealtime(deckId, useCallback(() => {
-    refreshDecks();
-  }, [refreshDecks]));
+  // Callback to refresh deck data when cards change via realtime or direct operations
+  const handleCardChange = useCallback(() => {
+    console.log('Card change detected, refreshing deck data');
+    refreshDecks().then(() => {
+      // Update the local deck state after refresh
+      if (id) {
+        const updatedDeck = getDeck(id);
+        if (updatedDeck) {
+          console.log('Updated deck data received:', updatedDeck.cards.length, 'cards');
+          setFetchedDeck(updatedDeck);
+        }
+      }
+    });
+  }, [id, refreshDecks, getDeck]);
+  
+  // Set up realtime subscription
+  const { isSubscribed } = useCardRealtime(deckId, handleCardChange);
+  
+  // Log subscription status for debugging
+  useEffect(() => {
+    console.log('Realtime subscription status:', isSubscribed ? 'active' : 'inactive');
+  }, [isSubscribed]);
 
   useEffect(() => {
     if (!isAuthenticated) {
+      console.log('User not authenticated, redirecting to auth page');
       navigate('/auth');
       return;
     }
     
     if (!id) {
+      console.log('No deck ID provided, redirecting to dashboard');
       navigate('/dashboard');
       return;
     }
     
     const loadDeckData = async () => {
-      if (!loading || fetchedDeck) return;
+      if (!loading && fetchedDeck) {
+        console.log('Deck already loaded, skipping fetch');
+        return;
+      }
       
       setLoading(true);
       try {
-        const deck = getDeck(id);
+        console.log('Loading deck data for ID:', id);
+        // First try to get from context
+        let deck = getDeck(id);
+        
         if (!deck) {
+          console.log('Deck not in context, refreshing decks');
+          await refreshDecks();
+          deck = getDeck(id);
+        }
+        
+        if (!deck) {
+          console.log('Deck not found after refresh');
           toast.error('Deck not found');
           navigate('/dashboard');
           return;
         }
+        
+        console.log('Deck loaded successfully:', deck.title, 'with', deck.cards.length, 'cards');
         setFetchedDeck(deck);
       } catch (error) {
         console.error('Error loading deck:', error);
@@ -82,7 +120,37 @@ const DeckEdit = () => {
     };
     
     loadDeckData();
-  }, [id, getDeck, navigate, isAuthenticated]);
+  }, [id, getDeck, navigate, isAuthenticated, refreshDecks, loading, fetchedDeck]);
+
+  // Effect to refresh deck data when returning to the page
+  useEffect(() => {
+    const refreshDeckData = async () => {
+      if (id && isAuthenticated) {
+        console.log('Component mounted or focused, refreshing deck data');
+        await refreshDecks();
+        const updatedDeck = getDeck(id);
+        if (updatedDeck) {
+          setFetchedDeck(updatedDeck);
+        }
+      }
+    };
+    
+    refreshDeckData();
+    
+    // Add event listener for visibility change to refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Tab became visible, refreshing deck data');
+        refreshDeckData();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [id, isAuthenticated, refreshDecks, getDeck]);
 
   if (!isAuthenticated) {
     return null;
@@ -150,6 +218,7 @@ const DeckEdit = () => {
           onSubmit={currentCard ? handleUpdateCard : handleAddCard}
           onCancel={() => setIsCardDialogOpen(false)}
           onDelete={currentCard ? handleDeleteCurrentCard : undefined}
+          isSubmitting={isSubmitting}
         />
       </div>
     </Layout>
