@@ -22,6 +22,7 @@ const DeckEdit = () => {
   const { isAuthenticated, user } = useAuth();
   const [fetchedDeck, setFetchedDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
   
   const deckId = id || '';
   
@@ -47,20 +48,40 @@ const DeckEdit = () => {
     isSubmitting
   } = useCardManager(deckId);
   
+  // Throttled refresh function to prevent too many refreshes
+  const throttledRefresh = useCallback(async () => {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTime;
+    
+    // Only refresh if it's been at least 3 seconds since the last refresh
+    if (timeSinceLastRefresh < 3000) {
+      console.log('Throttling refresh, last refresh was', timeSinceLastRefresh, 'ms ago');
+      return;
+    }
+    
+    console.log('Executing throttled refresh');
+    setLastRefreshTime(now);
+    
+    if (!deckId) return;
+    
+    try {
+      await refreshDecks();
+      // Update the local deck state after refresh
+      const updatedDeck = getDeck(deckId);
+      if (updatedDeck) {
+        console.log('Updated deck data received:', updatedDeck.cards.length, 'cards');
+        setFetchedDeck(updatedDeck);
+      }
+    } catch (error) {
+      console.error('Error during throttled refresh:', error);
+    }
+  }, [deckId, refreshDecks, getDeck, lastRefreshTime]);
+  
   // Callback to refresh deck data when cards change via realtime or direct operations
   const handleCardChange = useCallback(() => {
-    console.log('Card change detected, refreshing deck data');
-    refreshDecks().then(() => {
-      // Update the local deck state after refresh
-      if (id) {
-        const updatedDeck = getDeck(id);
-        if (updatedDeck) {
-          console.log('Updated deck data received:', updatedDeck.cards.length, 'cards');
-          setFetchedDeck(updatedDeck);
-        }
-      }
-    });
-  }, [id, refreshDecks, getDeck]);
+    console.log('Card change detected, triggering throttled refresh');
+    throttledRefresh();
+  }, [throttledRefresh]);
   
   // Set up realtime subscription
   const { isSubscribed } = useCardRealtime(deckId, handleCardChange);
@@ -110,6 +131,7 @@ const DeckEdit = () => {
         
         console.log('Deck loaded successfully:', deck.title, 'with', deck.cards.length, 'cards');
         setFetchedDeck(deck);
+        setLastRefreshTime(Date.now());
       } catch (error) {
         console.error('Error loading deck:', error);
         toast.error('Error loading deck');
@@ -122,26 +144,20 @@ const DeckEdit = () => {
     loadDeckData();
   }, [id, getDeck, navigate, isAuthenticated, refreshDecks, loading, fetchedDeck]);
 
-  // Effect to refresh deck data when returning to the page
+  // Optimize the effect for refreshing when returning to the page
   useEffect(() => {
-    const refreshDeckData = async () => {
-      if (id && isAuthenticated) {
-        console.log('Component mounted or focused, refreshing deck data');
-        await refreshDecks();
-        const updatedDeck = getDeck(id);
-        if (updatedDeck) {
-          setFetchedDeck(updatedDeck);
-        }
-      }
-    };
-    
-    refreshDeckData();
-    
-    // Add event listener for visibility change to refresh when tab becomes visible
+    // Only add the visibility change listener, don't refresh on mount
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('Tab became visible, refreshing deck data');
-        refreshDeckData();
+        const timeSinceLastRefresh = Date.now() - lastRefreshTime;
+        
+        // Only refresh if it's been more than 30 seconds since the last refresh
+        if (timeSinceLastRefresh > 30000) {
+          console.log('Tab became visible and refresh needed (last refresh was over 30s ago)');
+          throttledRefresh();
+        } else {
+          console.log('Tab became visible but refresh not needed (last refresh was', timeSinceLastRefresh, 'ms ago)');
+        }
       }
     };
     
@@ -150,7 +166,7 @@ const DeckEdit = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [id, isAuthenticated, refreshDecks, getDeck]);
+  }, [throttledRefresh, lastRefreshTime]);
 
   if (!isAuthenticated) {
     return null;
@@ -208,6 +224,8 @@ const DeckEdit = () => {
             }}
             onDeleteCard={handleDeleteCard}
             isLoading={isPageLoading}
+            deckId={deckId}
+            onRefreshRequest={throttledRefresh}
           />
         </div>
         

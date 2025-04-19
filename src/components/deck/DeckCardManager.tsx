@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, RefreshCw } from 'lucide-react';
 import CardList from './CardList';
@@ -13,6 +13,7 @@ interface DeckCardManagerProps {
   onDeleteCard: (cardId: string) => void;
   isLoading?: boolean;
   deckId?: string;
+  onRefreshRequest?: () => Promise<void>;
 }
 
 const DeckCardManager: React.FC<DeckCardManagerProps> = ({
@@ -22,8 +23,10 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
   onDeleteCard,
   isLoading = false,
   deckId,
+  onRefreshRequest,
 }) => {
   const { refreshDecks } = useDeck();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Collect all unique answers from the deck
   const existingAnswers = Array.from(new Set(cards.flatMap(card => [
@@ -33,9 +36,20 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
   ])));
 
   const handleRefresh = async () => {
-    if (deckId) {
-      console.log('Manually refreshing deck data');
-      await refreshDecks();
+    if (isRefreshing || !deckId) return;
+    
+    setIsRefreshing(true);
+    try {
+      console.log('Manual refresh requested');
+      if (onRefreshRequest) {
+        await onRefreshRequest();
+      } else {
+        await refreshDecks();
+      }
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -51,10 +65,10 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
             variant="outline" 
             size="icon"
             onClick={handleRefresh}
-            disabled={isLoading}
+            disabled={isLoading || isRefreshing}
             title="Refresh cards"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
           <Button 
             onClick={onAddClick}

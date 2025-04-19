@@ -12,6 +12,8 @@ export const useDeckStorage = () => {
     isAuthenticated: false,
     userId: undefined
   });
+  const lastFetchTimeRef = useRef<number>(0);
+  const isFetchingRef = useRef<boolean>(false);
   
   useEffect(() => {
     // Only fetch decks if auth state meaningfully changed
@@ -28,16 +30,34 @@ export const useDeckStorage = () => {
         return;
       }
 
+      // Prevent concurrent fetches
+      if (isFetchingRef.current) {
+        console.log('Fetch already in progress, skipping');
+        return;
+      }
+      
+      // Add a minimum interval between fetches (2 seconds)
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTimeRef.current;
+      if (timeSinceLastFetch < 2000) {
+        console.log('Skipping fetch - last fetch was only', timeSinceLastFetch, 'ms ago');
+        return;
+      }
+      
+      isFetchingRef.current = true;
       setLoading(true);
       try {
+        console.log('Fetching decks with auth state change');
         const fetchedDecks = await deckService.getDecks();
         setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
         console.log('Fetched decks:', fetchedDecks.length);
+        lastFetchTimeRef.current = Date.now();
       } catch (error) {
         console.error('Error fetching decks:', error);
         setDecks([]); // Reset to empty array on error
       } finally {
         setLoading(false);
+        isFetchingRef.current = false;
       }
       
       // Update the previous auth state
@@ -50,9 +70,42 @@ export const useDeckStorage = () => {
     fetchDecks();
   }, [isAuthenticated, user]);
 
+  const refreshDecksWithThrottle = async () => {
+    if (!isAuthenticated || !user) {
+      return;
+    }
+    
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      console.log('Refresh already in progress, skipping');
+      return;
+    }
+    
+    // Add a minimum interval between fetches (2 seconds)
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchTimeRef.current;
+    if (timeSinceLastFetch < 2000) {
+      console.log('Throttling refresh - last fetch was only', timeSinceLastFetch, 'ms ago');
+      return;
+    }
+    
+    isFetchingRef.current = true;
+    try {
+      console.log('Manual refresh of decks requested');
+      const fetchedDecks = await deckService.getDecks();
+      setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
+      lastFetchTimeRef.current = Date.now();
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+    } finally {
+      isFetchingRef.current = false;
+    }
+  };
+
   return { 
     decks, 
-    loading, 
+    loading,
+    refreshDecks: refreshDecksWithThrottle,
     setDecks: (newDecks: Deck[] | ((prev: Deck[]) => Deck[])) => {
       if (typeof newDecks === 'function') {
         setDecks(prev => {

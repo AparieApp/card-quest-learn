@@ -50,7 +50,7 @@ const DeckContext = createContext<DeckContextType>({
 
 export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const { decks = [], loading, setDecks } = useDeckStorage();
+  const { decks = [], loading, setDecks, refreshDecks: refreshStoredDecks } = useDeckStorage();
   const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
   
   // Only pass the user ID if it exists
@@ -92,14 +92,11 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
-      console.log('Fetching fresh deck data from the server');
-      const refreshedDecks = await deckService.getDecks();
-      console.log('Refreshed decks received:', refreshedDecks.length);
-      setDecks(refreshedDecks);
+      await refreshStoredDecks();
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
-  }, [userId, setDecks]);
+  }, [userId, refreshStoredDecks]);
 
   const contextValue = {
     decks: Array.isArray(decks) ? decks : [],
