@@ -1,71 +1,77 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Flashcard } from '@/types/deck';
 import { cardSchema, CardFormValues } from '@/components/deck/card-form/types';
-import { handleError } from '@/utils/errorHandling';
-import { toast } from 'sonner';
 
 export const useCardForm = (
   card?: Flashcard,
   onSubmit?: (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => void
 ) => {
-  // Initialize manual answers from provided card or empty array
-  const initialManualAnswers = card?.manual_incorrect_answers || [];
-  const [manualAnswers, setManualAnswers] = useState<string[]>(initialManualAnswers);
+  const [manualAnswers, setManualAnswers] = useState<string[]>([]);
 
-  console.log('Initializing card form with manual answers:', initialManualAnswers);
-
+  // Initialize form with default values
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
-    defaultValues: card ? {
-      front_text: card.front_text,
-      correct_answer: card.correct_answer,
-      manual_incorrect_answers: card.manual_incorrect_answers || [],
-    } : {
-      front_text: '',
-      correct_answer: '',
-      manual_incorrect_answers: [],
-    },
+    defaultValues: {
+      front_text: card?.front_text || '',
+      correct_answer: card?.correct_answer || '',
+      manual_incorrect_answers: []
+    }
   });
 
-  const handleSubmit = async (values: CardFormValues) => {
-    try {
-      console.log('Form submitted with values:', values);
-      console.log('Current manual answers list:', manualAnswers);
-      
-      // Prepare the submission data with the current manual answers
+  // Initialize manual answers from existing card if editing
+  useEffect(() => {
+    if (card?.manual_incorrect_answers && Array.isArray(card.manual_incorrect_answers)) {
+      console.log('Initializing manual answers from card:', card.manual_incorrect_answers);
+      setManualAnswers([...card.manual_incorrect_answers]);
+    } else {
+      console.log('Initializing card form with manual answers: []');
+    }
+  }, [card]);
+
+  // Add a manual incorrect answer
+  const addManualAnswer = (answer: string) => {
+    if (manualAnswers.length >= 3) return;
+    
+    const trimmedAnswer = answer.trim();
+    if (!trimmedAnswer) return;
+    
+    console.log('Adding manual answer:', trimmedAnswer);
+    setManualAnswers(prev => {
+      const newAnswers = [...prev, trimmedAnswer];
+      console.log('Updated manual answers list:', newAnswers);
+      return newAnswers;
+    });
+  };
+
+  // Remove a manual incorrect answer
+  const removeManualAnswer = (index: number) => {
+    setManualAnswers(prev => {
+      const newAnswers = [...prev];
+      newAnswers.splice(index, 1);
+      console.log('Removed answer at index', index, 'new list:', newAnswers);
+      return newAnswers;
+    });
+  };
+
+  // Handle form submission
+  const handleSubmit = (formData: CardFormValues) => {
+    console.log('Form submitted with values:', formData);
+    console.log('Current manual answers list:', manualAnswers);
+    
+    if (onSubmit) {
       const submissionData = {
-        front_text: values.front_text,
-        correct_answer: values.correct_answer,
-        manual_incorrect_answers: manualAnswers,
+        front_text: formData.front_text,
+        correct_answer: formData.correct_answer,
         incorrect_answers: [],
+        manual_incorrect_answers: [...manualAnswers]
       };
       
       console.log('Submitting card with data:', submissionData);
-      await onSubmit?.(submissionData);
-    } catch (error) {
-      handleError(error, 'Failed to save card');
+      onSubmit(submissionData);
     }
-  };
-
-  const addManualAnswer = (answer: string) => {
-    if (manualAnswers.length < 3 && answer.trim() && !manualAnswers.includes(answer.trim())) {
-      const newAnswers = [...manualAnswers, answer.trim()];
-      console.log('Adding manual answer:', answer.trim());
-      console.log('Updated manual answers list:', newAnswers);
-      setManualAnswers(newAnswers);
-      form.setValue('manual_incorrect_answers', newAnswers);
-    }
-  };
-
-  const removeManualAnswer = (index: number) => {
-    console.log('Removing manual answer at index:', index);
-    const newAnswers = manualAnswers.filter((_, i) => i !== index);
-    console.log('Updated manual answers list after removal:', newAnswers);
-    setManualAnswers(newAnswers);
-    form.setValue('manual_incorrect_answers', newAnswers);
   };
 
   return {
@@ -73,6 +79,6 @@ export const useCardForm = (
     manualAnswers,
     addManualAnswer,
     removeManualAnswer,
-    handleSubmit,
+    handleSubmit
   };
 };

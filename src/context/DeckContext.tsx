@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput, Flashcard } from '@/types/deck';
@@ -17,7 +16,7 @@ interface DeckContextType {
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
   deleteDeck: (id: string) => Promise<void>;
   getDeck: (id: string) => Deck | null;
-  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<Flashcard>; // Changed from Promise<void> to Promise<Flashcard>
+  addCardToDeck: (deckId: string, card: CreateCardInput) => Promise<Flashcard>;
   updateCard: (deckId: string, cardId: string, cardData: UpdateCardInput) => Promise<void>;
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
@@ -29,7 +28,6 @@ interface DeckContextType {
   isOptimisticUpdating: boolean;
 }
 
-// Create context with default values to prevent undefined errors
 const DeckContext = createContext<DeckContextType>({
   decks: [],
   favorites: [],
@@ -38,7 +36,7 @@ const DeckContext = createContext<DeckContextType>({
   updateDeck: async () => {},
   deleteDeck: async () => {},
   getDeck: () => null,
-  addCardToDeck: async () => ({ id: '', deck_id: '', front_text: '', correct_answer: '', incorrect_answers: [], created_at: '' }), // Update default return value
+  addCardToDeck: async () => ({ id: '', deck_id: '', front_text: '', correct_answer: '', incorrect_answers: [], created_at: '' }),
   updateCard: async () => {},
   deleteCard: async () => {},
   toggleFavorite: async () => {},
@@ -55,7 +53,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { decks = [], loading, setDecks, refreshDecks: refreshStoredDecks } = useDeckStorage();
   const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
   
-  // Only pass the user ID if it exists
   const userId = user?.id;
   
   const {
@@ -64,7 +61,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     deleteDeck,
   } = useDeckOperations(setDecks, userId);
 
-  // Create a decks update callback to pass to useCardOperations
   const handleDecksUpdate = useCallback((updater: (prevDecks: Deck[]) => Deck[]) => {
     setDecks(updater);
   }, [setDecks]);

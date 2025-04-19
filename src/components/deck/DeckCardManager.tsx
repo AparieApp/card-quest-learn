@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, RefreshCw } from 'lucide-react';
 import CardList from './CardList';
@@ -26,26 +26,30 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
   onRefreshRequest,
 }) => {
   const { refreshDecks } = useDeck();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   
   // Collect all unique answers from the deck
-  const existingAnswers = Array.from(new Set(cards.flatMap(card => [
-    card.correct_answer,
-    ...card.incorrect_answers,
-    ...card.manual_incorrect_answers || []
-  ])));
+  const existingAnswers = React.useMemo(() => {
+    return Array.from(new Set(cards.flatMap(card => [
+      card.correct_answer,
+      ...(card.incorrect_answers || []),
+      ...(card.manual_incorrect_answers || [])
+    ])));
+  }, [cards]);
 
   const handleRefresh = async () => {
     if (isRefreshing || !deckId) return;
     
     setIsRefreshing(true);
     try {
-      console.log('Manual refresh requested');
+      console.log('Manual refresh requested from DeckCardManager');
       if (onRefreshRequest) {
         await onRefreshRequest();
       } else {
-        await refreshDecks();
+        // Force bypass throttling for this manual refresh
+        await refreshDecks(true);
       }
+      console.log('Manual refresh completed');
     } catch (error) {
       console.error('Error during manual refresh:', error);
     } finally {

@@ -20,6 +20,7 @@ export const useCardOperations = (
     addCardToDeck,
     updateCard,
     deleteCard,
-    isOptimisticUpdating: optimisticState.isOptimisticUpdating
+    isOptimisticUpdating: optimisticState.isOptimisticUpdating,
+    setThrottlingPaused: optimisticState.setIsThrottlingPaused
   };
 };

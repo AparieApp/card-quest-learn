@@ -4,6 +4,7 @@ import { OptimisticUpdateState } from '@/types/cardOperations';
 
 export const useOptimisticUpdates = (): OptimisticUpdateState => {
   const [isOptimisticUpdating, setIsOptimisticUpdating] = useState(false);
+  const [isThrottlingPaused, setIsThrottlingPaused] = useState(false);
   const optimisticTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const clearOptimisticTimeout = () => {
@@ -27,6 +28,8 @@ export const useOptimisticUpdates = (): OptimisticUpdateState => {
 
   return {
     isOptimisticUpdating,
+    isThrottlingPaused,
+    setIsThrottlingPaused,
     setOptimisticUpdatingWithTimeout,
     clearOptimisticTimeout
   };

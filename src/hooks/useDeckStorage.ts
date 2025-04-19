@@ -14,6 +14,7 @@ export const useDeckStorage = () => {
   });
   const lastFetchTimeRef = useRef<number>(0);
   const isFetchingRef = useRef<boolean>(false);
+  const bypassThrottleRef = useRef<boolean>(false);
   
   useEffect(() => {
     // Only fetch decks if auth state meaningfully changed
@@ -62,7 +63,7 @@ export const useDeckStorage = () => {
     fetchDecks();
   }, [isAuthenticated, user]);
 
-  const refreshDecksWithThrottle = async () => {
+  const refreshDecksWithThrottle = async (bypassThrottle = false) => {
     if (!isAuthenticated || !user) {
       console.log('Cannot refresh decks: Not authenticated');
       return;
@@ -74,13 +75,16 @@ export const useDeckStorage = () => {
       return;
     }
     
-    // Reduce throttling from 2000ms to 500ms to make refreshes more responsive
+    // Check if we should bypass throttling
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTimeRef.current;
-    if (timeSinceLastFetch < 500) {
+    
+    if (!bypassThrottle && timeSinceLastFetch < 500) {
       console.log('Throttling refresh - last fetch was only', timeSinceLastFetch, 'ms ago');
       return;
     }
+    
+    console.log(`${bypassThrottle ? 'Bypassing throttle' : 'Normal refresh'} - fetching latest data`);
     
     isFetchingRef.current = true;
     try {
@@ -98,10 +102,21 @@ export const useDeckStorage = () => {
     }
   };
 
+  // Allow external components to control throttle behavior
+  const setBypassThrottle = (bypass: boolean) => {
+    bypassThrottleRef.current = bypass;
+    if (bypass) {
+      console.log('Throttling disabled for immediate refresh');
+    } else {
+      console.log('Normal throttling restored');
+    }
+  };
+
   return { 
     decks, 
     loading,
-    refreshDecks: refreshDecksWithThrottle,
+    refreshDecks: (bypassThrottle = bypassThrottleRef.current) => refreshDecksWithThrottle(bypassThrottle),
+    setBypassThrottle,
     setDecks: (newDecks: Deck[] | ((prev: Deck[]) => Deck[])) => {
       if (typeof newDecks === 'function') {
         setDecks(prev => {

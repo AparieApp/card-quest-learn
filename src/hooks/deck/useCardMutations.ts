@@ -19,11 +19,13 @@ export const useCardMutations = (
       throw new Error('User not authenticated');
     }
     
+    console.log('Starting addCardToDeck operation with data:', card);
+    console.log('Manual incorrect answers being sent:', card.manual_incorrect_answers);
+    
     if (optimisticState) {
       optimisticState.setOptimisticUpdatingWithTimeout(true);
+      optimisticState.setIsThrottlingPaused(true);
     }
-    
-    console.log('Starting addCardToDeck operation with data:', card);
     
     const optimisticCard = {
       id: crypto.randomUUID(),
@@ -49,12 +51,21 @@ export const useCardMutations = (
 
       // Save the card to the database
       console.log('Saving card to database with manual_incorrect_answers:', card.manual_incorrect_answers);
-      const newCard = await deckService.addCard(deckId, {
-        ...card,
-        manual_incorrect_answers: card.manual_incorrect_answers || []
-      });
+      
+      // Make a deep copy of the card data to prevent any reference issues
+      const cardToSave = {
+        front_text: card.front_text,
+        correct_answer: card.correct_answer,
+        incorrect_answers: [...(card.incorrect_answers || [])],
+        manual_incorrect_answers: [...(card.manual_incorrect_answers || [])]
+      };
+      
+      console.log('Card data prepared for saving:', cardToSave);
+      
+      const newCard = await deckService.addCard(deckId, cardToSave);
       
       console.log('Card saved successfully:', newCard);
+      console.log('Saved manual incorrect answers:', newCard.manual_incorrect_answers);
       
       // Update with real data from server
       setDecks(prev => 
@@ -71,12 +82,13 @@ export const useCardMutations = (
         )
       );
 
+      toast.success('Card added successfully!');
+      
       if (onOperationComplete) {
         console.log('Calling operation complete callback');
         await onOperationComplete();
       }
-      
-      toast.success('Card added successfully!');
+
       return newCard;
     } catch (error) {
       console.error('Error adding card:', error);
@@ -99,6 +111,12 @@ export const useCardMutations = (
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
         optimisticState.clearOptimisticTimeout();
+        
+        // Restore throttling after a small delay to ensure all operations complete
+        setTimeout(() => {
+          optimisticState.setIsThrottlingPaused(false);
+          console.log('Throttling restored after card operation');
+        }, 1000);
       }
     }
   }, [userId, setDecks, onOperationComplete, optimisticState]);
@@ -110,11 +128,13 @@ export const useCardMutations = (
       throw new Error('User not authenticated');
     }
 
+    console.log('Starting updateCard operation:', { cardId, data: cardData });
+    console.log('Manual incorrect answers being updated:', cardData.manual_incorrect_answers);
+
     if (optimisticState) {
       optimisticState.setOptimisticUpdatingWithTimeout(true);
+      optimisticState.setIsThrottlingPaused(true);
     }
-
-    console.log('Starting updateCard operation:', { cardId, data: cardData });
 
     try {
       // Optimistically update UI
@@ -135,9 +155,18 @@ export const useCardMutations = (
         )
       );
 
+      // Create a deep copy of the data to prevent reference issues
+      const dataToSave = {
+        ...(cardData.front_text !== undefined ? { front_text: cardData.front_text } : {}),
+        ...(cardData.correct_answer !== undefined ? { correct_answer: cardData.correct_answer } : {}),
+        ...(cardData.incorrect_answers !== undefined ? { incorrect_answers: [...cardData.incorrect_answers] } : {}),
+        ...(cardData.manual_incorrect_answers !== undefined ? { manual_incorrect_answers: [...cardData.manual_incorrect_answers] } : {})
+      };
+      
+      console.log('Card data prepared for update:', dataToSave);
+      
       // Save to database
-      console.log('Saving card update to database with manual_incorrect_answers:', cardData.manual_incorrect_answers);
-      await deckService.updateCard(cardId, cardData);
+      await deckService.updateCard(cardId, dataToSave);
       
       console.log('Card updated successfully in database');
       toast.success('Card updated successfully!');
@@ -168,6 +197,12 @@ export const useCardMutations = (
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
         optimisticState.clearOptimisticTimeout();
+        
+        // Restore throttling after a small delay
+        setTimeout(() => {
+          optimisticState.setIsThrottlingPaused(false);
+          console.log('Throttling restored after card operation');
+        }, 1000);
       }
     }
   }, [userId, setDecks, onOperationComplete, optimisticState]);
@@ -179,11 +214,12 @@ export const useCardMutations = (
       throw new Error('User not authenticated');
     }
 
+    console.log('Starting deleteCard operation for card:', cardId);
+
     if (optimisticState) {
       optimisticState.setOptimisticUpdatingWithTimeout(true);
+      optimisticState.setIsThrottlingPaused(true);
     }
-
-    console.log('Starting deleteCard operation for card:', cardId);
 
     try {
       // Optimistically update UI
@@ -232,6 +268,12 @@ export const useCardMutations = (
       if (optimisticState) {
         optimisticState.setOptimisticUpdatingWithTimeout(false);
         optimisticState.clearOptimisticTimeout();
+        
+        // Restore throttling after a small delay
+        setTimeout(() => {
+          optimisticState.setIsThrottlingPaused(false);
+          console.log('Throttling restored after card operation');
+        }, 1000);
       }
     }
   }, [userId, setDecks, onOperationComplete, optimisticState]);

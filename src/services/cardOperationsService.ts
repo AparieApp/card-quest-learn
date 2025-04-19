@@ -8,14 +8,21 @@ export const cardOperationsService = {
     console.log('Adding card with data:', cardData);
     console.log('Manual incorrect answers to save:', cardData.manual_incorrect_answers);
     
+    // Ensure we have arrays, not undefined
+    const incorrectAnswers = cardData.incorrect_answers || [];
+    const manualIncorrectAnswers = cardData.manual_incorrect_answers || [];
+    
+    console.log('Processed incorrect_answers:', incorrectAnswers);
+    console.log('Processed manual_incorrect_answers:', manualIncorrectAnswers);
+    
     const { data, error } = await supabase
       .from('flashcards')
       .insert({
         deck_id: deckId,
         front_text: cardData.front_text,
         correct_answer: cardData.correct_answer,
-        incorrect_answers: cardData.incorrect_answers || [],
-        manual_incorrect_answers: cardData.manual_incorrect_answers || []
+        incorrect_answers: incorrectAnswers,
+        manual_incorrect_answers: manualIncorrectAnswers
       })
       .select()
       .single();
@@ -44,12 +51,14 @@ export const cardOperationsService = {
     }
     
     if (cardData.incorrect_answers !== undefined) {
-      updateData.incorrect_answers = cardData.incorrect_answers;
+      updateData.incorrect_answers = [...cardData.incorrect_answers];
     }
     
     if (cardData.manual_incorrect_answers !== undefined) {
-      updateData.manual_incorrect_answers = cardData.manual_incorrect_answers;
+      updateData.manual_incorrect_answers = [...cardData.manual_incorrect_answers];
     }
+
+    console.log('Final update data being sent to Supabase:', updateData);
 
     const { error } = await supabase
       .from('flashcards')
