@@ -25,8 +25,6 @@ interface DeckContextType {
   generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
   refreshDecks: () => Promise<void>;
-  isOptimisticUpdating: boolean;
-  setIsOptimisticUpdating: (value: boolean) => void;
 }
 
 const DeckContext = createContext<DeckContextType>({} as DeckContextType);
@@ -35,7 +33,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { decks, loading, setDecks } = useDeckStorage();
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
-  const [isOptimisticUpdating, setIsOptimisticUpdating] = useState(false);
   
   const {
     createDeck,
@@ -90,8 +87,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
         generateShareCode,
         copyDeck,
         refreshDecks,
-        isOptimisticUpdating,
-        setIsOptimisticUpdating
       }}
     >
       {children}
