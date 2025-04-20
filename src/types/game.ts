@@ -11,4 +11,5 @@ export interface GameProgress {
   cardsCompleted: number;
   totalCards: number;
   percentageComplete: number;
+  currentCycle: number;
 }

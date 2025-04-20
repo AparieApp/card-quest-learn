@@ -4,9 +4,10 @@ import GameHeader from './GameHeader';
 import ProgressBar from './ProgressBar';
 import { Flashcard, Deck } from '@/types/deck';
 import FlashcardDisplay from './FlashcardDisplay';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Power } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import SummaryView from './SummaryView';
+import { Button } from '../ui/button';
 
 interface GameLayoutProps {
   isLoading: boolean;
@@ -26,8 +27,13 @@ interface GameLayoutProps {
   incorrectCards: Flashcard[];
   reviewCards?: Flashcard[];
   previousCycles?: Flashcard[];
+  currentCycle: number;
   onAnswer: (isCorrect: boolean) => void;
   onReviewMode: () => void;
+  onEndPractice?: () => void;
+  onContinuePractice?: () => void;
+  onEndReviewMode?: () => void;
+  onRestartPractice?: () => void;
   onRemoveCardPrompt?: (shouldRemove: boolean) => void;
   onBack: () => void;
 }
@@ -46,8 +52,13 @@ const GameLayout = ({
   incorrectCards,
   reviewCards = [],
   previousCycles = [],
+  currentCycle,
   onAnswer,
   onReviewMode,
+  onEndPractice,
+  onContinuePractice,
+  onEndReviewMode,
+  onRestartPractice,
   onRemoveCardPrompt,
   onBack,
 }: GameLayoutProps) => {
@@ -74,18 +85,48 @@ const GameLayout = ({
             overallAttempts={stats.totalAttempts}
             incorrectCards={incorrectCards}
             isTestMode={mode === 'test'}
+            isReviewMode={isReviewMode}
             onReviewMode={onReviewMode}
+            onContinuePractice={onContinuePractice}
+            onRestartPractice={onRestartPractice}
           />
         ) : (
           <div className="flex flex-col items-center max-w-3xl mx-auto">
             <div className="w-full mb-8">
               <GameHeader
                 title={deck.title}
-                mode={`${isReviewMode ? 'Review' : mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`}
+                mode={`${isReviewMode ? 'Review' : mode.charAt(0).toUpperCase() + mode.slice(1)} Mode (Cycle ${currentCycle})`}
                 onBack={onBack}
               />
               <ProgressBar currentIndex={currentCardIndex} total={totalCards} />
             </div>
+            
+            {/* Control buttons for Practice and Review modes */}
+            {mode === 'practice' && !isReviewMode && onEndPractice && (
+              <div className="w-full mb-6 flex justify-center">
+                <Button 
+                  onClick={onEndPractice}
+                  variant="outline" 
+                  className="bg-white border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <Power className="mr-2 h-4 w-4" />
+                  End Practice
+                </Button>
+              </div>
+            )}
+            
+            {mode === 'practice' && isReviewMode && onEndReviewMode && (
+              <div className="w-full mb-6 flex justify-center">
+                <Button 
+                  onClick={onEndReviewMode}
+                  variant="outline" 
+                  className="bg-white border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <Power className="mr-2 h-4 w-4" />
+                  End Review
+                </Button>
+              </div>
+            )}
             
             {currentCard && (
               <FlashcardDisplay

@@ -12,7 +12,8 @@ import {
   RotateCcw,
   Home,
   Star,
-  Play
+  Play,
+  Repeat
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -25,7 +26,10 @@ interface SummaryViewProps {
   overallAttempts: number;
   incorrectCards: Flashcard[];
   isTestMode: boolean;
+  isReviewMode?: boolean;
   onReviewMode: () => void;
+  onContinuePractice?: () => void;
+  onRestartPractice?: () => void;
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
@@ -36,9 +40,12 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   overallAttempts,
   incorrectCards,
   isTestMode,
+  isReviewMode = false,
   onReviewMode,
+  onContinuePractice,
+  onRestartPractice,
 }) => {
-  const { toggleFavorite, isFavorite } = useDeck();
+  const { toggleFavorite, isFavorite, copyDeck } = useDeck();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -47,8 +54,12 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
-      toast.error('You need to log in to favorite decks');
-      navigate('/auth');
+      toast.error('You need to log in to favorite decks', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/auth'),
+        },
+      });
       return;
     }
     
@@ -59,16 +70,35 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     navigate('/dashboard');
   };
 
-  const handleStartAgain = () => {
-    navigate(isTestMode ? `/deck/${deckId}/test` : `/deck/${deckId}/practice`);
+  const handleAddToDeck = async () => {
+    if (!isAuthenticated) {
+      toast.error('You need to log in to save this deck to your collection', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/auth'),
+        },
+      });
+      return;
+    }
+    
+    try {
+      const copiedDeck = await copyDeck(deckId);
+      toast.success('Deck saved to your collection!');
+      navigate(`/deck/${copiedDeck.id}`);
+    } catch (error) {
+      console.error('Error copying deck:', error);
+      toast.error('Failed to save deck to your collection');
+    }
   };
+
+  const isSharedDeck = window.location.pathname.includes('/shared/');
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Summary</h1>
         <p className="text-muted-foreground">
-          Your {isTestMode ? 'test' : 'practice'} results
+          Your {isReviewMode ? 'review' : isTestMode ? 'test' : 'practice'} results
         </p>
       </div>
       
@@ -132,19 +162,33 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           <Home className="mr-2 h-4 w-4" /> Return Home
         </Button>
         
-        {incorrectCards.length > 0 && (
+        {!isTestMode && !isReviewMode && incorrectCards.length > 0 && (
           <Button variant="default" onClick={onReviewMode} className="bg-flashcard-primary hover:bg-flashcard-secondary">
             <RotateCcw className="mr-2 h-4 w-4" /> Review Incorrect
           </Button>
         )}
         
-        <Button 
-          variant="default"
-          onClick={handleStartAgain}
-        >
-          <Play className="mr-2 h-4 w-4" />
-          {isTestMode ? 'Test Again' : 'Practice Again'}
-        </Button>
+        {!isTestMode && isReviewMode && onContinuePractice && (
+          <Button variant="default" onClick={onContinuePractice} className="bg-flashcard-primary hover:bg-flashcard-secondary">
+            <Repeat className="mr-2 h-4 w-4" /> Continue Review
+          </Button>
+        )}
+        
+        {!isTestMode && !isReviewMode && onContinuePractice && (
+          <Button variant="default" onClick={onContinuePractice} className="bg-flashcard-primary hover:bg-flashcard-secondary">
+            <Repeat className="mr-2 h-4 w-4" /> Continue Practice
+          </Button>
+        )}
+        
+        {onRestartPractice && (
+          <Button 
+            variant="default"
+            onClick={onRestartPractice}
+          >
+            <Play className="mr-2 h-4 w-4" />
+            {isTestMode ? 'Test Again' : 'Practice Again'}
+          </Button>
+        )}
         
         <Button 
           variant={isFavorite(deckId) ? "outline" : "default"}
@@ -154,6 +198,17 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           <Heart className={`mr-2 h-4 w-4 ${isFavorite(deckId) ? "fill-red-500 text-red-500" : "text-white"}`} />
           {isFavorite(deckId) ? 'Favorited' : 'Add to Favorites'}
         </Button>
+        
+        {isSharedDeck && (
+          <Button 
+            variant="default"
+            onClick={handleAddToDeck}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            <Star className="mr-2 h-4 w-4" />
+            Add to My Decks
+          </Button>
+        )}
       </div>
     </div>
   );

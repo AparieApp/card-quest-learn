@@ -21,6 +21,8 @@ export interface GameState {
   currentCardStreak: Record<string, number>;
   streakThreshold: number;
   stats: GameStats;
+  currentCycle: number;
+  completedCycles: number[];
 }
 
 export const useGameState = (initialState?: Partial<GameState>) => {
@@ -41,6 +43,8 @@ export const useGameState = (initialState?: Partial<GameState>) => {
       overallCorrect: 0,
       totalAttempts: 0,
     },
+    currentCycle: 1,
+    completedCycles: [],
     ...initialState,
   });
 

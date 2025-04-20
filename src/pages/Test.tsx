@@ -19,9 +19,11 @@ const Test = () => {
     showRemovePrompt,
     isLoading,
     stats,
+    currentCycle,
     handleAnswer,
     startReviewMode,
     handleRemoveCardPrompt,
+    restartPractice,
   } = useGameMode(id, 'test');
   
   const handleBackClick = () => {
@@ -44,9 +46,11 @@ const Test = () => {
       stats={stats}
       incorrectCards={incorrectCards}
       reviewCards={reviewCards}
+      currentCycle={currentCycle}
       onAnswer={handleAnswer}
       onReviewMode={startReviewMode}
       onRemoveCardPrompt={handleRemoveCardPrompt}
+      onRestartPractice={restartPractice}
       onBack={handleBackClick}
     />
   );

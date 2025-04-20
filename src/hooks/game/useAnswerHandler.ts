@@ -33,11 +33,10 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         if (!incorrectCards.some(c => c.id === currentCard.id)) {
           newIncorrectCards = [...newIncorrectCards, currentCard];
         }
-        if (!reviewCards.some(c => c.id === currentCard.id)) {
-          newReviewCards = [...newReviewCards, currentCard];
-        }
       }
-    } else if (isReviewMode && mode === 'test') {
+    } 
+    // For test mode, we remove correct answers from review cards
+    else if (isReviewMode && mode === 'test') {
       newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
     }
     
@@ -68,7 +67,8 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         
         // Update statistics
         const newStats = {
-          initialCorrect: prev.isReviewMode ? 
+          // Only update initialCorrect on first cycle and not in review mode
+          initialCorrect: prev.isReviewMode || prev.currentCycle > 1 ? 
             prev.stats.initialCorrect : 
             prev.stats.initialCorrect + (isCorrect ? 1 : 0),
           overallCorrect: prev.stats.overallCorrect + (isCorrect ? 1 : 0),
@@ -90,6 +90,8 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
             return {
               ...prev,
               stats: newStats,
+              incorrectCards: newIncorrectCards,
+              reviewCards: newReviewCards,
               currentCardStreak: newStreak,
               showRemovePrompt: true,
             };
@@ -101,20 +103,27 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         // Logic for determining game state based on mode and progress
         let nextShowSummary = prev.showSummary;
         let nextIsReviewMode = prev.isReviewMode;
+        let nextCurrentCycle = prev.currentCycle;
+        let completedCycles = [...prev.completedCycles];
         
         if (isLastCard) {
           if (mode === 'test') {
             if (!prev.isReviewMode) {
-              nextShowSummary = true;
-              nextIsReviewMode = false;
+              nextShowSummary = true; // Show summary after initial cycle in test mode
             } else if (newReviewCards.length === 0) {
-              nextShowSummary = true;
+              nextShowSummary = true; // Show final summary when no more review cards in test mode
+            } else {
+              // Start a new review cycle in test mode with remaining incorrect cards
+              nextCurrentCycle = prev.currentCycle + 1;
             }
-          } else { // practice mode
-            if (prev.isReviewMode && newReviewCards.length === 0) {
-              nextShowSummary = true;
-            } else if (!prev.isReviewMode && newReviewCards.length > 0) {
-              nextIsReviewMode = true;
+          } else { // practice mode - now continues until user manually ends
+            if (isLastCard) {
+              // Add current cycle to completed cycles
+              if (!completedCycles.includes(prev.currentCycle)) {
+                completedCycles.push(prev.currentCycle);
+              }
+              // Increment cycle counter for continuous practice
+              nextCurrentCycle = prev.currentCycle + 1;
             }
           }
         }
@@ -128,6 +137,8 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           isReviewMode: nextIsReviewMode,
           showSummary: nextShowSummary,
           currentCardStreak: newStreak,
+          currentCycle: nextCurrentCycle,
+          completedCycles: completedCycles,
         };
       });
     } catch (error) {
