@@ -13,12 +13,15 @@ const Practice = () => {
     cards,
     currentCardIndex,
     incorrectCards,
+    reviewCards,
     isReviewMode,
     showSummary,
+    showRemovePrompt,
     isLoading,
     stats,
     handleAnswer,
     startReviewMode,
+    handleRemoveCardPrompt,
   } = useGameMode(id, 'practice');
   
   const handleBackClick = () => {
@@ -37,10 +40,13 @@ const Practice = () => {
       totalCards={cards.length}
       mode="practice"
       isReviewMode={isReviewMode}
+      showRemovePrompt={showRemovePrompt}
       stats={stats}
       incorrectCards={incorrectCards}
+      reviewCards={reviewCards}
       onAnswer={handleAnswer}
       onReviewMode={startReviewMode}
+      onRemoveCardPrompt={handleRemoveCardPrompt}
       onBack={handleBackClick}
     />
   );

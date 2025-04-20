@@ -13,6 +13,9 @@ interface GameModeState {
   isReviewMode: boolean;
   showSummary: boolean;
   isLoading: boolean;
+  showRemovePrompt: boolean;
+  currentCardStreak: Record<string, number>;
+  streakThreshold: number;
   stats: {
     initialCorrect: number;
     overallCorrect: number;
@@ -32,6 +35,9 @@ export const useGameMode = (deckId: string | undefined, mode: 'practice' | 'test
     isReviewMode: false,
     showSummary: false,
     isLoading: true,
+    showRemovePrompt: false,
+    currentCardStreak: {},
+    streakThreshold: 3,
     stats: {
       initialCorrect: 0,
       overallCorrect: 0,
@@ -76,6 +82,17 @@ export const useGameMode = (deckId: string | undefined, mode: 'practice' | 'test
   const handleAnswer = (isCorrect: boolean) => {
     setState(prev => {
       const currentCard = prev.cards[prev.currentCardIndex];
+      
+      // Update streaks for correct answers in review mode
+      const newStreak = { ...prev.currentCardStreak };
+      if (prev.isReviewMode && isCorrect) {
+        newStreak[currentCard.id] = (newStreak[currentCard.id] || 0) + 1;
+      } else if (!isCorrect) {
+        // Reset streak on wrong answer
+        newStreak[currentCard.id] = 0;
+      }
+      
+      // Stats update logic
       const newStats = {
         initialCorrect: prev.isReviewMode ? 
           prev.stats.initialCorrect : 
@@ -84,27 +101,75 @@ export const useGameMode = (deckId: string | undefined, mode: 'practice' | 'test
         totalAttempts: prev.stats.totalAttempts + 1,
       };
 
+      // Card management - incorrect cards and review cards
       let newIncorrectCards = [...prev.incorrectCards];
       let newReviewCards = [...prev.reviewCards];
 
       if (!isCorrect) {
         if (prev.isReviewMode) {
-          // In review mode, if they get it wrong again, keep it in the review cards
-          newReviewCards = [...newReviewCards.filter(c => c.id !== currentCard.id), currentCard];
+          // Keep in review cards if they get it wrong again
+          if (!newReviewCards.some(c => c.id === currentCard.id)) {
+            newReviewCards = [...newReviewCards, currentCard];
+          }
         } else {
-          // In initial mode, add to both incorrect and review lists
-          newIncorrectCards = [...newIncorrectCards, currentCard];
-          newReviewCards = [...newReviewCards, currentCard];
+          // Add to both lists in initial mode
+          if (!newIncorrectCards.some(c => c.id === currentCard.id)) {
+            newIncorrectCards = [...newIncorrectCards, currentCard];
+          }
+          if (!newReviewCards.some(c => c.id === currentCard.id)) {
+            newReviewCards = [...newReviewCards, currentCard];
+          }
         }
       } else if (prev.isReviewMode) {
-        // Remove correctly answered cards from review in review mode
-        newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
+        // For Test mode - remove card from review if correct
+        if (mode === 'test') {
+          newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
+        }
+        // For Practice mode - check streak against threshold for potential removal
+        else if (newStreak[currentCard.id] >= prev.streakThreshold) {
+          return {
+            ...prev,
+            stats: newStats,
+            currentCardStreak: newStreak,
+            showRemovePrompt: true,
+          };
+        }
       }
 
       const isLastCard = prev.currentCardIndex >= prev.cards.length - 1;
-      const hasCardsToReview = mode === 'test' ? 
-        newReviewCards.length > 0 : 
-        !prev.isReviewMode && newReviewCards.length > 0;
+      
+      // Different logic for test vs practice mode
+      let nextShowSummary = false;
+      let nextIsReviewMode = prev.isReviewMode;
+      
+      if (isLastCard) {
+        if (mode === 'test') {
+          if (!prev.isReviewMode) {
+            // Test mode always shows summary after first cycle
+            nextShowSummary = true;
+            nextIsReviewMode = false;
+          } else if (newReviewCards.length === 0) {
+            // If no more review cards in review mode, show final summary
+            nextShowSummary = true;
+          } else {
+            // Continue with remaining review cards
+            nextShowSummary = false;
+          }
+        } else {
+          // Practice mode logic
+          if (prev.isReviewMode && newReviewCards.length === 0) {
+            // If no more review cards in review mode, show summary
+            nextShowSummary = true;
+          } else if (!prev.isReviewMode && newReviewCards.length > 0) {
+            // Auto start review mode if there are incorrect cards
+            nextIsReviewMode = true;
+            nextShowSummary = false;
+          } else {
+            // Continue practicing
+            nextShowSummary = false;
+          }
+        }
+      }
 
       return {
         ...prev,
@@ -112,27 +177,57 @@ export const useGameMode = (deckId: string | undefined, mode: 'practice' | 'test
         incorrectCards: newIncorrectCards,
         reviewCards: newReviewCards,
         currentCardIndex: isLastCard ? 0 : prev.currentCardIndex + 1,
-        isReviewMode: isLastCard ? hasCardsToReview : prev.isReviewMode,
-        showSummary: isLastCard && (!hasCardsToReview || prev.isReviewMode),
+        isReviewMode: nextIsReviewMode,
+        showSummary: nextShowSummary,
+        currentCardStreak: newStreak,
       };
     });
   };
 
   const startReviewMode = () => {
     if (state.incorrectCards.length > 0) {
+      // Shuffle the review cards for variety
+      const shuffledReviewCards = [...state.incorrectCards].sort(() => Math.random() - 0.5);
+      
       setState(prev => ({
         ...prev,
-        reviewCards: [...prev.incorrectCards],
+        reviewCards: shuffledReviewCards,
         isReviewMode: true,
         currentCardIndex: 0,
         showSummary: false,
+        showRemovePrompt: false,
       }));
     }
+  };
+
+  const handleRemoveCardPrompt = (shouldRemove: boolean) => {
+    setState(prev => {
+      const currentCard = prev.cards[prev.currentCardIndex];
+      
+      // Remove card from review if user confirms
+      const newReviewCards = shouldRemove 
+        ? prev.reviewCards.filter(c => c.id !== currentCard.id)
+        : prev.reviewCards;
+      
+      // Update streak threshold for future prompts
+      const newStreakThreshold = shouldRemove
+        ? prev.streakThreshold
+        : prev.streakThreshold + 2;
+
+      return {
+        ...prev,
+        reviewCards: newReviewCards,
+        showRemovePrompt: false,
+        streakThreshold: newStreakThreshold,
+        currentCardIndex: prev.currentCardIndex + 1 >= prev.cards.length ? 0 : prev.currentCardIndex + 1,
+      };
+    });
   };
 
   return {
     ...state,
     handleAnswer,
     startReviewMode,
+    handleRemoveCardPrompt,
   };
 };

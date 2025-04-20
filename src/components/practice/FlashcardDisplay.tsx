@@ -11,30 +11,36 @@ interface FlashcardDisplayProps {
   card: Flashcard;
   deck: Deck;
   currentCycle?: Flashcard[];
+  previousCycles?: Flashcard[];
   onAnswer: (isCorrect: boolean) => void;
   mode: 'practice' | 'test';
+  showRemovePrompt?: boolean;
+  onRemoveCardPrompt?: (shouldRemove: boolean) => void;
 }
 
 const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({ 
   card, 
   deck, 
   currentCycle = [], 
+  previousCycles = [],
   onAnswer, 
-  mode 
+  mode,
+  showRemovePrompt = false,
+  onRemoveCardPrompt,
 }) => {
   const [options, setOptions] = useState<AnswerOption[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   
   useEffect(() => {
-    const answerOptions = generateAnswerOptions(card, deck, currentCycle);
+    const answerOptions = generateAnswerOptions(card, deck, currentCycle, previousCycles);
     setOptions(answerOptions);
     setSelectedAnswer(null);
     setShowFeedback(false);
-  }, [card, deck, currentCycle]);
+  }, [card, deck, currentCycle, previousCycles]);
   
   const handleOptionClick = (option: AnswerOption) => {
-    if (selectedAnswer !== null) return;
+    if (selectedAnswer !== null || showRemovePrompt) return;
     
     setSelectedAnswer(option.text);
     setShowFeedback(true);
@@ -46,6 +52,54 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
       onAnswer(option.isCorrect);
     }, feedbackDelay);
   };
+  
+  if (showRemovePrompt) {
+    return (
+      <motion.div
+        key={`${card.id}-prompt`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-lg mx-auto"
+      >
+        <Card className="shadow-lg">
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-xl font-medium">Great progress!</h3>
+                <p className="text-muted-foreground mt-2">
+                  You've gotten this card correct multiple times in a row. Remove it from practice?
+                </p>
+              </div>
+              
+              <div className="flex justify-center items-center gap-4">
+                <Button
+                  variant="default"
+                  onClick={() => onRemoveCardPrompt?.(true)}
+                  className="w-32"
+                >
+                  Yes, remove
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => onRemoveCardPrompt?.(false)}
+                  className="w-32"
+                >
+                  No, continue
+                </Button>
+              </div>
+              
+              <div className="p-4 bg-muted rounded-md">
+                <p className="font-medium text-sm mb-1">Card:</p>
+                <p>{card.front_text}</p>
+                <p className="font-medium text-sm mt-3 mb-1">Correct answer:</p>
+                <p className="text-green-600">{card.correct_answer}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
   
   return (
     <AnimatePresence mode="wait">

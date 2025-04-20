@@ -17,14 +17,18 @@ interface GameLayoutProps {
   totalCards: number;
   mode: 'practice' | 'test';
   isReviewMode: boolean;
+  showRemovePrompt?: boolean;
   stats: {
     initialCorrect: number;
     overallCorrect: number;
     totalAttempts: number;
   };
   incorrectCards: Flashcard[];
+  reviewCards?: Flashcard[];
+  previousCycles?: Flashcard[];
   onAnswer: (isCorrect: boolean) => void;
   onReviewMode: () => void;
+  onRemoveCardPrompt?: (shouldRemove: boolean) => void;
   onBack: () => void;
 }
 
@@ -37,10 +41,14 @@ const GameLayout = ({
   totalCards,
   mode,
   isReviewMode,
+  showRemovePrompt = false,
   stats,
   incorrectCards,
+  reviewCards = [],
+  previousCycles = [],
   onAnswer,
   onReviewMode,
+  onRemoveCardPrompt,
   onBack,
 }: GameLayoutProps) => {
   if (isLoading || !deck) {
@@ -65,6 +73,7 @@ const GameLayout = ({
             overallCorrect={stats.overallCorrect}
             overallAttempts={stats.totalAttempts}
             incorrectCards={incorrectCards}
+            isTestMode={mode === 'test'}
             onReviewMode={onReviewMode}
           />
         ) : (
@@ -80,12 +89,15 @@ const GameLayout = ({
             
             {currentCard && (
               <FlashcardDisplay
-                key={`${currentCard.id}-${currentCardIndex}`}
+                key={`${currentCard.id}-${currentCardIndex}-${showRemovePrompt}`}
                 card={currentCard}
                 deck={deck}
-                currentCycle={deck.cards}
+                currentCycle={reviewCards.length > 0 ? reviewCards : deck.cards}
+                previousCycles={previousCycles}
                 onAnswer={onAnswer}
                 mode={mode}
+                showRemovePrompt={showRemovePrompt}
+                onRemoveCardPrompt={onRemoveCardPrompt}
               />
             )}
           </div>

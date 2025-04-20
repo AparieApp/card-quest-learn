@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Home,
   Star,
+  Play
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ interface SummaryViewProps {
   overallCorrect: number;
   overallAttempts: number;
   incorrectCards: Flashcard[];
+  isTestMode: boolean;
   onReviewMode: () => void;
 }
 
@@ -33,6 +35,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   overallCorrect,
   overallAttempts,
   incorrectCards,
+  isTestMode,
   onReviewMode,
 }) => {
   const { toggleFavorite, isFavorite } = useDeck();
@@ -56,11 +59,17 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     navigate('/dashboard');
   };
 
+  const handleStartAgain = () => {
+    navigate(isTestMode ? `/deck/${deckId}/test` : `/deck/${deckId}/practice`);
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto p-4 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Summary</h1>
-        <p className="text-muted-foreground">Your flashcard practice results</p>
+        <p className="text-muted-foreground">
+          Your {isTestMode ? 'test' : 'practice'} results
+        </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -128,6 +137,14 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <RotateCcw className="mr-2 h-4 w-4" /> Review Incorrect
           </Button>
         )}
+        
+        <Button 
+          variant="default"
+          onClick={handleStartAgain}
+        >
+          <Play className="mr-2 h-4 w-4" />
+          {isTestMode ? 'Test Again' : 'Practice Again'}
+        </Button>
         
         <Button 
           variant={isFavorite(deckId) ? "outline" : "default"}

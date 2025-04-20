@@ -9,7 +9,8 @@ export interface AnswerOption {
 export const generateAnswerOptions = (
   currentCard: Flashcard,
   deck: Deck,
-  currentCycle: Flashcard[] = []
+  currentCycle: Flashcard[] = [],
+  previousCycles: Flashcard[] = []
 ): AnswerOption[] => {
   console.log('Generating answer options for card:', currentCard.id);
   
@@ -47,6 +48,21 @@ export const generateAnswerOptions = (
       .map(card => card.correct_answer);
       
     for (const answer of cycleAnswers) {
+      if (options.length >= 4) break;
+      if (!options.some(opt => opt.text === answer)) {
+        options.push({ text: answer, isCorrect: false });
+      }
+    }
+  }
+  
+  // If we still need more, add answers from previous cycles
+  if (options.length < 4 && previousCycles.length > 0) {
+    console.log('Adding answers from previous cycles');
+    const previousAnswers = previousCycles
+      .filter(card => card.id !== currentCard.id)
+      .map(card => card.correct_answer);
+      
+    for (const answer of previousAnswers) {
       if (options.length >= 4) break;
       if (!options.some(opt => opt.text === answer)) {
         options.push({ text: answer, isCorrect: false });
