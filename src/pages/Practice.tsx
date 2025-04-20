@@ -177,6 +177,8 @@ const Practice = () => {
               <FlashcardDisplay
                 key={currentCardIndex}
                 card={currentCard}
+                deck={deck}
+                currentCycle={cards}
                 onAnswer={handleAnswer}
                 mode="practice"
               />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDeck } from '@/context/DeckContext';
@@ -193,6 +192,8 @@ const Test = () => {
               <FlashcardDisplay
                 key={`${currentCard.id}-${currentCardIndex}`}
                 card={currentCard}
+                deck={deck}
+                currentCycle={currentCards}
                 onAnswer={handleAnswer}
                 mode="test"
               />

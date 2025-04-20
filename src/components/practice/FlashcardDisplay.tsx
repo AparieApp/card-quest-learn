@@ -2,78 +2,50 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Flashcard } from '@/types/deck';
+import { Flashcard, Deck } from '@/types/deck';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateAnswerOptions, AnswerOption } from '@/services/answerGenerationService';
 
 interface FlashcardDisplayProps {
   card: Flashcard;
+  deck: Deck;
+  currentCycle?: Flashcard[];
   onAnswer: (isCorrect: boolean) => void;
   mode: 'practice' | 'test';
 }
 
-const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({ card, onAnswer, mode }) => {
-  const [options, setOptions] = useState<string[]>([]);
+const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({ 
+  card, 
+  deck, 
+  currentCycle = [], 
+  onAnswer, 
+  mode 
+}) => {
+  const [options, setOptions] = useState<AnswerOption[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   
   useEffect(() => {
-    // Prioritized answer selection
-    const generateOptions = () => {
-      // Start with the correct answer and manual incorrect answers
-      const baseAnswers = [
-        card.correct_answer,
-        ...card.manual_incorrect_answers
-      ];
-      
-      // Add other incorrect answers from the pool
-      const remainingAnswers = card.incorrect_answers.filter(
-        answer => !baseAnswers.includes(answer)
-      );
-      
-      // Shuffle remaining answers
-      for (let i = remainingAnswers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [remainingAnswers[i], remainingAnswers[j]] = [remainingAnswers[j], remainingAnswers[i]];
-      }
-      
-      // Combine all answers and ensure we have exactly 4 options
-      const allAnswers = [...baseAnswers, ...remainingAnswers];
-      const finalAnswers = allAnswers.slice(0, 4);
-      
-      // Shuffle the final array to randomize position
-      for (let i = finalAnswers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [finalAnswers[i], finalAnswers[j]] = [finalAnswers[j], finalAnswers[i]];
-      }
-      
-      setOptions(finalAnswers);
-    };
-    
-    generateOptions();
+    const answerOptions = generateAnswerOptions(card, deck, currentCycle);
+    setOptions(answerOptions);
     setSelectedAnswer(null);
     setShowFeedback(false);
-  }, [card]);
+  }, [card, deck, currentCycle]);
   
-  const handleOptionClick = (option: string) => {
-    if (selectedAnswer !== null) return; // Prevent multiple selections
+  const handleOptionClick = (option: AnswerOption) => {
+    if (selectedAnswer !== null) return;
     
-    setSelectedAnswer(option);
-    const isCorrect = option === card.correct_answer;
-    
+    setSelectedAnswer(option.text);
     setShowFeedback(true);
     
-    // In practice mode, show feedback for longer
-    const feedbackDelay = mode === 'practice' ? (isCorrect ? 1000 : 2000) : 1000;
+    const feedbackDelay = mode === 'practice' ? (option.isCorrect ? 1000 : 2000) : 1000;
     
     setTimeout(() => {
       setShowFeedback(false);
-      onAnswer(isCorrect);
+      onAnswer(option.isCorrect);
     }, feedbackDelay);
   };
-  
-  const isOptionSelected = (option: string) => selectedAnswer === option;
-  const isOptionCorrect = (option: string) => option === card.correct_answer;
   
   return (
     <AnimatePresence mode="wait">
@@ -95,21 +67,21 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({ card, onAnswer, mod
                 {options.map((option, index) => (
                   <Button
                     key={index}
-                    variant={isOptionSelected(option) ? (isOptionCorrect(option) ? "default" : "destructive") : "outline"}
+                    variant={selectedAnswer === option.text ? (option.isCorrect ? "default" : "destructive") : "outline"}
                     className={`w-full justify-start text-left p-4 h-auto ${
-                      showFeedback && isOptionCorrect(option) ? "bg-green-100 text-green-800 hover:bg-green-200" : ""
+                      showFeedback && option.isCorrect ? "bg-green-100 text-green-800 hover:bg-green-200" : ""
                     } ${
-                      showFeedback && selectedAnswer === option && !isOptionCorrect(option) ? "bg-red-100 text-red-800 hover:bg-red-200" : ""
+                      showFeedback && selectedAnswer === option.text && !option.isCorrect ? "bg-red-100 text-red-800 hover:bg-red-200" : ""
                     }`}
                     onClick={() => handleOptionClick(option)}
                     disabled={selectedAnswer !== null}
                   >
                     <div className="flex items-center w-full">
-                      <span className="flex-1">{option}</span>
-                      {showFeedback && isOptionCorrect(option) && (
+                      <span className="flex-1">{option.text}</span>
+                      {showFeedback && option.isCorrect && (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       )}
-                      {showFeedback && selectedAnswer === option && !isOptionCorrect(option) && (
+                      {showFeedback && selectedAnswer === option.text && !option.isCorrect && (
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
                     </div>
