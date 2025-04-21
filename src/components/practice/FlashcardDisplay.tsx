@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,6 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
   const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
-    // Use the correct card pool to generate answer options
     const answerOptions = generateAnswerOptions(card, deck, cards, previousCycles);
     setOptions(answerOptions);
     setSelectedAnswer(null);
@@ -166,4 +164,3 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
 };
 
 export default FlashcardDisplay;
-
