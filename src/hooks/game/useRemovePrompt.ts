@@ -4,7 +4,8 @@ import { useGameError } from './useGameError';
 
 export const useRemovePrompt = (setState: Function) => {
   const { handleGameError } = useGameError();
-  
+
+  // Each card streak threshold is tracked per card now
   const handleRemoveCardPrompt = useCallback((shouldRemove: boolean) => {
     try {
       setState(prev => {
@@ -13,17 +14,27 @@ export const useRemovePrompt = (setState: Function) => {
           console.warn('Current card not found');
           return prev;
         }
-        
+
         // Remove card from review if user confirms
         const newReviewCards = shouldRemove 
           ? prev.reviewCards.filter(c => c.id !== currentCard.id)
           : prev.reviewCards;
-        
-        // Update streak threshold for future prompts
-        const newStreakThreshold = shouldRemove
-          ? prev.streakThreshold
-          : prev.streakThreshold + 2;
-        
+
+        // Get or initialize streak thresholds per card
+        const perCardThresholds = { ...(prev.perCardThresholds || {}) };
+
+        const cardId = currentCard.id;
+        if (!perCardThresholds[cardId]) {
+          perCardThresholds[cardId] = prev.streakThreshold; // usually 3
+        }
+
+        if (!shouldRemove) {
+          perCardThresholds[cardId] = (perCardThresholds[cardId] || prev.streakThreshold) + 1;
+        } else {
+          // reset threshold to default for this card if removed
+          delete perCardThresholds[cardId];
+        }
+
         // Ensure valid next card index
         const nextCardIndex = prev.currentCardIndex + 1 >= prev.cards.length 
           ? 0 
@@ -33,7 +44,7 @@ export const useRemovePrompt = (setState: Function) => {
           ...prev,
           reviewCards: newReviewCards,
           showRemovePrompt: false,
-          streakThreshold: newStreakThreshold,
+          perCardThresholds,
           currentCardIndex: nextCardIndex,
         };
       });

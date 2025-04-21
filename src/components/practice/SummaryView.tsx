@@ -62,7 +62,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       });
       return;
     }
-    
+
     await toggleFavorite(deckId);
   };
   
@@ -162,12 +162,21 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           <Home className="mr-2 h-4 w-4" /> Return Home
         </Button>
         
+        {/* TEST MODE: Show Review Incorrect button if there are incorrectCards */}
+        {isTestMode && incorrectCards.length > 0 && (
+          <Button variant="default" onClick={onReviewMode} className="bg-flashcard-primary hover:bg-flashcard-secondary">
+            <RotateCcw className="mr-2 h-4 w-4" /> Review Incorrect
+          </Button>
+        )}
+        
+        {/* PRACTICE MODE: Show Review Incorrect button when available */}
         {!isTestMode && !isReviewMode && incorrectCards.length > 0 && (
           <Button variant="default" onClick={onReviewMode} className="bg-flashcard-primary hover:bg-flashcard-secondary">
             <RotateCcw className="mr-2 h-4 w-4" /> Review Incorrect
           </Button>
         )}
         
+        {/* PRACTICE/REVIEW MODE: Continue Review/Practice */}
         {!isTestMode && isReviewMode && onContinuePractice && (
           <Button variant="default" onClick={onContinuePractice} className="bg-flashcard-primary hover:bg-flashcard-secondary">
             <Repeat className="mr-2 h-4 w-4" /> Continue Review

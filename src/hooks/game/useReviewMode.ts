@@ -4,7 +4,7 @@ import { useGameError } from './useGameError';
 
 export const useReviewMode = (setState: Function) => {
   const { handleGameError } = useGameError();
-  
+
   // Optimized Fisher-Yates shuffle algorithm
   const shuffleArray = useCallback(<T,>(array: T[]): T[] => {
     const shuffled = [...array];
@@ -14,17 +14,16 @@ export const useReviewMode = (setState: Function) => {
     }
     return shuffled;
   }, []);
-  
-  const startReviewMode = useCallback(() => {
+
+  const startReviewMode = useCallback((options?: { mode?: 'test' | 'practice', incorrectCards?: any[] }) => {
     try {
       setState(prev => {
-        if (prev.incorrectCards.length === 0) {
-          return prev; // No cards to review
-        }
-        
-        // Shuffle the review cards for variety
-        const shuffledReviewCards = shuffleArray(prev.incorrectCards);
-        
+        // For test mode, use incorrectCards if provided (those from last test), else use prev.incorrectCards
+        const useCards = options?.incorrectCards || prev.incorrectCards;
+        if (!useCards || useCards.length === 0) return prev; // No cards to review
+
+        const shuffledReviewCards = shuffleArray(useCards);
+
         return {
           ...prev,
           reviewCards: shuffledReviewCards,

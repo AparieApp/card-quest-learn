@@ -8,7 +8,9 @@ interface ProgressBarProps {
 }
 
 const ProgressBar = ({ currentIndex, total }: ProgressBarProps) => {
-  const progress = Math.round(((currentIndex + 1) / total) * 100);
+  // Show 0% complete on first card, bar fills up AFTER each card is completed.
+  const completedCards = Math.max(0, currentIndex);
+  const progress = total === 0 ? 0 : Math.round((completedCards / total) * 100);
 
   return (
     <div className="space-y-2">

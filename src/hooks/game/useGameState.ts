@@ -20,6 +20,7 @@ export interface GameState {
   showRemovePrompt: boolean;
   currentCardStreak: Record<string, number>;
   streakThreshold: number;
+  perCardThresholds?: Record<string, number>; // per-card thresholds for remove prompt
   stats: GameStats;
   currentCycle: number;
   completedCycles: number[];
@@ -38,6 +39,7 @@ export const useGameState = (initialState?: Partial<GameState>) => {
     showRemovePrompt: false,
     currentCardStreak: {},
     streakThreshold: 3,
+    perCardThresholds: {},
     stats: {
       initialCorrect: 0,
       overallCorrect: 0,
