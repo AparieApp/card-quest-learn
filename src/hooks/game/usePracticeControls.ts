@@ -1,9 +1,7 @@
 
 import { useCallback } from 'react';
 import { useGameError } from './useGameError';
-import { useReviewMode } from './useReviewMode';
 import { GameMode } from '@/types/game';
-import { Flashcard } from '@/types/deck';
 
 interface PracticeControlsProps {
   mode: GameMode;
@@ -13,7 +11,6 @@ interface PracticeControlsProps {
 
 export const usePracticeControls = ({ mode, setState, shuffleArray }: PracticeControlsProps) => {
   const { handleGameError } = useGameError();
-  const startReviewMode = useReviewMode(setState);
   
   const endPractice = useCallback(() => {
     try {
@@ -81,7 +78,6 @@ export const usePracticeControls = ({ mode, setState, shuffleArray }: PracticeCo
     endPractice,
     endReviewMode,
     continuePractice,
-    restartPractice,
-    startReviewMode
+    restartPractice
   };
 };

@@ -1,5 +1,6 @@
 
 export type GameMode = 'practice' | 'test';
+export type ReviewState = 'initial' | 'review' | 'completed';
 
 export interface GameError {
   message: string;

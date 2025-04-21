@@ -4,10 +4,11 @@ import { GameMode } from '@/types/game';
 import { useGameState } from './game/useGameState';
 import { useDeckLoader } from './game/useDeckLoader';
 import { useAnswerHandler } from './game/useAnswerHandler';
-import { useReviewMode } from './game/useReviewMode';
 import { useRemovePrompt } from './game/useRemovePrompt';
 import { useGameError } from './game/useGameError';
 import { usePracticeControls } from './game/usePracticeControls';
+import { usePracticeMode } from './game/modes/usePracticeMode';
+import { useTestMode } from './game/modes/useTestMode';
 
 export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
   // Initialize game state
@@ -19,7 +20,7 @@ export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
   // Initialize deck loading
   const { loadDeck } = useDeckLoader(deckId, setState);
 
-  // Fisher-Yates shuffle algorithm - moved here so it can be shared
+  // Fisher-Yates shuffle algorithm
   const shuffleArray = useCallback(<T,>(array: T[]): T[] => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -29,62 +30,40 @@ export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
     return shuffled;
   }, []);
 
-  // Review mode handler now supports custom cards (for test mode review cycles)
-  const handleAnswer = useAnswerHandler({ mode, setState });
-  const handleRemoveCardPrompt = useRemovePrompt(setState);
+  // Initialize mode-specific handlers
+  const { startPracticeReview } = usePracticeMode(setState);
+  const { startTestReview } = useTestMode(setState);
 
-  // New: Give startReviewMode an override for test mode
+  // Review mode handlers based on game mode
   const startReviewMode = useCallback(() => {
     if (mode === 'test') {
-      // For test mode, review uses all incorrect cards at end of test session
-      setState(prev => {
-        if (!prev.incorrectCards.length) return prev;
-        const shuffled = shuffleArray(prev.incorrectCards);
-        return {
-          ...prev,
-          reviewCards: shuffled,
-          isReviewMode: true,
-          currentCardIndex: 0,
-          showSummary: false,
-          showRemovePrompt: false,
-          currentCardStreak: {},
-          perCardThresholds: {},
-          currentCycle: 1,
-        };
-      });
+      // For test mode, review uses all incorrect cards from the session
+      startTestReview(state.incorrectCards);
     } else {
-      // Practice mode fallback: only incorrect cards from this session
-      setState(prev => {
-        if (!prev.incorrectCards.length) return prev;
-        const shuffled = shuffleArray(prev.incorrectCards);
-        return {
-          ...prev,
-          reviewCards: shuffled,
-          isReviewMode: true,
-          currentCardIndex: 0,
-          showSummary: false,
-          showRemovePrompt: false,
-          currentCardStreak: {},
-          perCardThresholds: {},
-          currentCycle: 1,
-        };
-      });
+      // For practice mode, use specialized review logic
+      startPracticeReview(state.incorrectCards);
     }
-  }, [setState, shuffleArray, mode]);
+  }, [mode, state.incorrectCards, startTestReview, startPracticeReview]);
 
+  // Answer handler
+  const handleAnswer = useAnswerHandler({ mode, setState });
+  
+  // Remove card prompt handler
+  const handleRemoveCardPrompt = useRemovePrompt(setState);
+
+  // Practice mode controls
   const {
     endPractice,
     endReviewMode,
     continuePractice,
     restartPractice,
-    startReviewMode: origStartReviewMode
   } = usePracticeControls({ mode, setState, shuffleArray });
 
   // Memoized derived state
   const gameProgress = useMemo(() => {
     if (state.cards.length === 0) return 0;
     if (state.showSummary) return 100;
-    // PROGRESS FIX: show percentage of *completed* cards, not "currentCardIndex+1"
+    // Show percentage of *completed* cards
     return Math.round((Math.max(0, state.currentCardIndex) / state.cards.length) * 100);
   }, [state.cards.length, state.currentCardIndex, state.showSummary]);
 
@@ -97,7 +76,7 @@ export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
     errorMessage: errorState.errorMessage,
     clearError,
     handleAnswer,
-    startReviewMode, // use new handler for review
+    startReviewMode,
     handleRemoveCardPrompt,
     endPractice: mode === 'practice' ? endPractice : undefined,
     endReviewMode: mode === 'practice' ? endReviewMode : undefined,

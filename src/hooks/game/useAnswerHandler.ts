@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { Flashcard } from '@/types/deck';
 import { useGameError } from './useGameError';
+import { usePracticeMode } from './modes/usePracticeMode';
+import { useTestMode } from './modes/useTestMode';
 
 interface AnswerHandlerOptions {
   mode: GameMode;
@@ -10,38 +12,8 @@ interface AnswerHandlerOptions {
 
 export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
   const { handleGameError } = useGameError();
-
-  // Helper function to update card collections efficiently
-  const updateCardCollections = useCallback((
-    isCorrect: boolean,
-    currentCard: Flashcard,
-    isReviewMode: boolean,
-    incorrectCards: Flashcard[],
-    reviewCards: Flashcard[]
-  ) => {
-    let newIncorrectCards = [...incorrectCards];
-    let newReviewCards = [...reviewCards];
-
-    if (!isCorrect) {
-      // Add to incorrect cards if not already there
-      if (isReviewMode) {
-        if (!reviewCards.some(c => c.id === currentCard.id)) {
-          newReviewCards = [...newReviewCards, currentCard];
-        }
-      } else {
-        if (!incorrectCards.some(c => c.id === currentCard.id)) {
-          newIncorrectCards = [...newIncorrectCards, currentCard];
-        }
-      }
-    }
-    // For test mode, we remove correct answers from review cards after each correct answer in review
-    else if (isReviewMode && mode === 'test') {
-      newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
-    }
-
-    return { newIncorrectCards, newReviewCards };
-  }, [mode]);
-
+  const { processPracticeAnswer, shouldShowRemovePrompt } = usePracticeMode(setState);
+  const { processTestAnswer } = useTestMode(setState);
 
   const handleAnswer = useCallback((isCorrect: boolean) => {
     try {
@@ -57,6 +29,7 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           return prev;
         }
 
+        // Track streaks per card (mostly for practice mode)
         let newStreak = { ...prev.currentCardStreak };
         let perCardThresholds = { ...(prev.perCardThresholds || {}) };
         const cardId = currentCard.id;
@@ -66,23 +39,21 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           perCardThresholds[cardId] = prev.streakThreshold; // initial is 3
         }
 
-        // --- ADJUSTED REMOVE PROMPT LOGIC (3→4→5→...) ---
-
-        // If wrong, reset streak for this card
+        // Update streaks based on answer correctness
         if (!isCorrect) {
+          // Reset streak for incorrect answers
           newStreak[cardId] = 0;
-          // When user gets a card wrong after having said "No" to the prompt, we want to prompt again at the *current* threshold (e.g., 4 or 5).
-          // So, the next time the user gets the streak up to current threshold count, prompt again.
-          // No change to threshold counter, just streak reset.
         } else if (prev.isReviewMode) {
+          // Increment streak for correct answers in review mode
           newStreak[cardId] = (newStreak[cardId] || 0) + 1;
         }
 
-        // Prompt logic: prompt at *each* value where streak equals the card's threshold (3, 4, 5, etc)
-        if (isCorrect && prev.isReviewMode && mode === 'practice') {
+        // Determine if we should show remove prompt (practice mode only)
+        if (mode === 'practice') {
           const streak = newStreak[cardId] || 0;
           const threshold = perCardThresholds[cardId] || prev.streakThreshold;
-          if (streak >= threshold) {
+          
+          if (shouldShowRemovePrompt(isCorrect, prev.isReviewMode, streak, threshold)) {
             return {
               ...prev,
               currentCardStreak: newStreak,
@@ -101,16 +72,24 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           totalAttempts: prev.stats.totalAttempts + 1,
         };
 
-        // Card management - optimized with helper function
-        const { newIncorrectCards, newReviewCards } = updateCardCollections(
-          isCorrect,
-          currentCard,
-          prev.isReviewMode,
-          prev.incorrectCards,
-          prev.reviewCards
-        );
+        // Process cards based on game mode
+        const { newIncorrectCards, newReviewCards } = mode === 'practice'
+          ? processPracticeAnswer(
+              isCorrect,
+              currentCard,
+              prev.isReviewMode,
+              prev.incorrectCards,
+              prev.reviewCards
+            )
+          : processTestAnswer(
+              isCorrect,
+              currentCard,
+              prev.isReviewMode,
+              prev.incorrectCards,
+              prev.reviewCards
+            );
 
-        // REVIEW/TEST MODE CARD FLOW ...
+        // Handle card flow and cycle management
         let nextIsReviewMode = prev.isReviewMode;
         let nextShowSummary = prev.showSummary;
         let nextCurrentCycle = prev.currentCycle;
@@ -118,34 +97,35 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
 
         const isLastCard = prev.currentCardIndex >= prev.cards.length - 1;
         let nextCurrentCardIndex = isLastCard ? 0 : prev.currentCardIndex + 1;
-        let nextReviewCards = newReviewCards;
 
+        // Mode-specific end conditions
         if (mode === 'test' && prev.isReviewMode) {
+          // In test review mode, check if we're done after last card
           if (isLastCard) {
             if (newReviewCards.length === 0) {
+              // All cards answered correctly, show summary
               nextShowSummary = true;
             } else {
+              // Start a new cycle with remaining incorrect cards
               nextCurrentCycle = prev.currentCycle + 1;
             }
           }
-        } else if (mode === 'test') {
-          if (isLastCard && !prev.isReviewMode) {
-            nextShowSummary = true;
+        } else if (mode === 'test' && isLastCard) {
+          // In normal test mode, show summary after going through all cards once
+          nextShowSummary = true;
+        } else if (mode === 'practice' && isLastCard) {
+          // In practice mode, keep cycling
+          if (!completedCycles.includes(prev.currentCycle)) {
+            completedCycles.push(prev.currentCycle);
           }
-        } else {
-          if (isLastCard) {
-            if (!completedCycles.includes(prev.currentCycle)) {
-              completedCycles.push(prev.currentCycle);
-            }
-            nextCurrentCycle = prev.currentCycle + 1;
-          }
+          nextCurrentCycle = prev.currentCycle + 1;
         }
 
         return {
           ...prev,
           stats: newStats,
           incorrectCards: newIncorrectCards,
-          reviewCards: nextReviewCards,
+          reviewCards: newReviewCards,
           currentCardIndex: nextCurrentCardIndex,
           isReviewMode: nextIsReviewMode,
           showSummary: nextShowSummary,
@@ -158,7 +138,7 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
     } catch (error) {
       handleGameError(error, 'process answer');
     }
-  }, [setState, updateCardCollections, handleGameError, mode]);
+  }, [setState, mode, processPracticeAnswer, processTestAnswer, shouldShowRemovePrompt, handleGameError]);
 
   return handleAnswer;
 };
