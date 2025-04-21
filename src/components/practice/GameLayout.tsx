@@ -1,4 +1,3 @@
-
 import React from 'react';
 import GameHeader from './GameHeader';
 import ProgressBar from './ProgressBar';
@@ -73,6 +72,11 @@ const GameLayout = ({
     );
   }
 
+  // Recalculate the cycleCards array for the FlashcardDisplay pool depending on mode
+  // In review mode, show only reviewCards (which are a clone of incorrectCards).
+  // Otherwise show the whole deck.
+  const cycleCards = isReviewMode ? reviewCards : deck.cards;
+
   return (
     <Layout>
       <div className="container py-6">
@@ -133,7 +137,8 @@ const GameLayout = ({
                 key={`${currentCard.id}-${currentCardIndex}-${showRemovePrompt}`}
                 card={currentCard}
                 deck={deck}
-                currentCycle={reviewCards.length > 0 ? reviewCards : deck.cards}
+                // --- THE KEY LINE: Only pass incorrect cards in review ---
+                currentCycle={cycleCards}
                 previousCycles={previousCycles}
                 onAnswer={onAnswer}
                 mode={mode}
