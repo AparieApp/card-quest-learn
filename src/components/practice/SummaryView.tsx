@@ -1,22 +1,9 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useDeck } from '@/context/DeckContext';
-import { useAuth } from '@/context/auth';
-import { Flashcard } from '@/types/deck';
-import {
-  BarChart,
-  CheckCircle,
-  Heart,
-  XCircle,
-  RotateCcw,
-  Home,
-  Star,
-  Play,
-  Repeat
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import React from "react";
+import SummaryStatsCard from "./SummaryStatsCard";
+import SummaryIncorrectList from "./SummaryIncorrectList";
+import SummaryActions from "./SummaryActions";
+import { Flashcard } from "@/types/deck";
 
 interface SummaryViewProps {
   deckId: string;
@@ -45,180 +32,52 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   onContinuePractice,
   onRestartPractice,
 }) => {
-  const { toggleFavorite, isFavorite, copyDeck } = useDeck();
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  
-  const initialAccuracy = Math.round((initialCorrect / totalCards) * 100);
-  const overallAccuracy = Math.round((overallCorrect / overallAttempts) * 100);
-  
-  const handleToggleFavorite = async () => {
-    if (!isAuthenticated) {
-      toast.error('You need to log in to favorite decks', {
-        action: {
-          label: 'Login',
-          onClick: () => navigate('/auth'),
-        },
-      });
-      return;
-    }
-
-    await toggleFavorite(deckId);
-  };
-  
-  const handleReturnHome = () => {
-    navigate('/dashboard');
-  };
-
-  const handleAddToDeck = async () => {
-    if (!isAuthenticated) {
-      toast.error('You need to log in to save this deck to your collection', {
-        action: {
-          label: 'Login',
-          onClick: () => navigate('/auth'),
-        },
-      });
-      return;
-    }
-    
-    try {
-      const copiedDeck = await copyDeck(deckId);
-      toast.success('Deck saved to your collection!');
-      navigate(`/deck/${copiedDeck.id}`);
-    } catch (error) {
-      console.error('Error copying deck:', error);
-      toast.error('Failed to save deck to your collection');
-    }
-  };
-
-  const isSharedDeck = window.location.pathname.includes('/shared/');
+  const initialAccuracy =
+    totalCards > 0 ? Math.round((initialCorrect / totalCards) * 100) : 0;
+  const overallAccuracy =
+    overallAttempts > 0
+      ? Math.round((overallCorrect / overallAttempts) * 100)
+      : 0;
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Summary</h1>
         <p className="text-muted-foreground">
-          Your {isReviewMode ? 'review' : isTestMode ? 'test' : 'practice'} results
+          Your {isReviewMode ? "review" : isTestMode ? "test" : "practice"} results
         </p>
       </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg p-6 shadow-md flex flex-col items-center justify-center">
-          <div className="text-flashcard-primary mb-2">
-            <BarChart className="h-8 w-8" />
-          </div>
-          <h2 className="text-xl font-semibold">Initial Accuracy</h2>
-          <p className="text-4xl font-bold">{initialAccuracy}%</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            {initialCorrect} of {totalCards} cards correct
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-lg p-6 shadow-md flex flex-col items-center justify-center">
-          <div className="text-flashcard-primary mb-2">
-            <BarChart className="h-8 w-8" />
-          </div>
-          <h2 className="text-xl font-semibold">Overall Accuracy</h2>
-          <p className="text-4xl font-bold">{overallAccuracy}%</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            {overallCorrect} of {overallAttempts} answers correct
-          </p>
-        </div>
+        <SummaryStatsCard
+          title="Initial Accuracy"
+          value={initialAccuracy}
+          correct={initialCorrect}
+          total={totalCards}
+        />
+        <SummaryStatsCard
+          title="Overall Accuracy"
+          value={overallAccuracy}
+          correct={overallCorrect}
+          total={overallAttempts}
+        />
       </div>
-      
       <div className="bg-white rounded-lg p-6 shadow-md">
         <h2 className="text-xl font-semibold mb-4">
-          {incorrectCards.length > 0 
+          {incorrectCards.length > 0
             ? `Review These Cards (${incorrectCards.length})`
-            : 'Perfect Score! 🎉'}
+            : "Perfect Score! 🎉"}
         </h2>
-        
-        {incorrectCards.length > 0 ? (
-          <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-            {incorrectCards.map(card => (
-              <div key={card.id} className="flex items-start p-3 border rounded-md">
-                <XCircle className="h-5 w-5 text-red-500 shrink-0 mr-2 mt-0.5" />
-                <div>
-                  <p className="font-medium">{card.front_text}</p>
-                  <p className="text-sm text-green-600">
-                    <span className="font-medium">Correct answer:</span> {card.correct_answer}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex justify-center items-center py-8">
-            <div className="flex flex-col items-center">
-              <Star className="h-12 w-12 text-yellow-400 mb-2" />
-              <p className="text-lg">You answered all cards correctly!</p>
-            </div>
-          </div>
-        )}
+        <SummaryIncorrectList incorrectCards={incorrectCards} />
       </div>
-      
-      <div className="flex flex-wrap gap-3 justify-center">
-        <Button variant="outline" onClick={handleReturnHome}>
-          <Home className="mr-2 h-4 w-4" /> Return Home
-        </Button>
-        
-        {/* TEST MODE: Show Review Incorrect button if there are incorrectCards */}
-        {isTestMode && incorrectCards.length > 0 && (
-          <Button variant="default" onClick={onReviewMode} className="bg-flashcard-primary hover:bg-flashcard-secondary">
-            <RotateCcw className="mr-2 h-4 w-4" /> Review Incorrect
-          </Button>
-        )}
-        
-        {/* PRACTICE MODE: Show Review Incorrect button when available */}
-        {!isTestMode && !isReviewMode && incorrectCards.length > 0 && (
-          <Button variant="default" onClick={onReviewMode} className="bg-flashcard-primary hover:bg-flashcard-secondary">
-            <RotateCcw className="mr-2 h-4 w-4" /> Review Incorrect
-          </Button>
-        )}
-        
-        {/* PRACTICE/REVIEW MODE: Continue Review/Practice */}
-        {!isTestMode && isReviewMode && onContinuePractice && (
-          <Button variant="default" onClick={onContinuePractice} className="bg-flashcard-primary hover:bg-flashcard-secondary">
-            <Repeat className="mr-2 h-4 w-4" /> Continue Review
-          </Button>
-        )}
-        
-        {!isTestMode && !isReviewMode && onContinuePractice && (
-          <Button variant="default" onClick={onContinuePractice} className="bg-flashcard-primary hover:bg-flashcard-secondary">
-            <Repeat className="mr-2 h-4 w-4" /> Continue Practice
-          </Button>
-        )}
-        
-        {onRestartPractice && (
-          <Button 
-            variant="default"
-            onClick={onRestartPractice}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            {isTestMode ? 'Test Again' : 'Practice Again'}
-          </Button>
-        )}
-        
-        <Button 
-          variant={isFavorite(deckId) ? "outline" : "default"}
-          className={isFavorite(deckId) ? "border-red-400" : "bg-red-500 hover:bg-red-600"}
-          onClick={handleToggleFavorite}
-        >
-          <Heart className={`mr-2 h-4 w-4 ${isFavorite(deckId) ? "fill-red-500 text-red-500" : "text-white"}`} />
-          {isFavorite(deckId) ? 'Favorited' : 'Add to Favorites'}
-        </Button>
-        
-        {isSharedDeck && (
-          <Button 
-            variant="default"
-            onClick={handleAddToDeck}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            <Star className="mr-2 h-4 w-4" />
-            Add to My Decks
-          </Button>
-        )}
-      </div>
+      <SummaryActions
+        deckId={deckId}
+        incorrectCardsLength={incorrectCards.length}
+        isTestMode={isTestMode}
+        isReviewMode={isReviewMode}
+        onReviewMode={onReviewMode}
+        onContinuePractice={onContinuePractice}
+        onRestartPractice={onRestartPractice}
+      />
     </div>
   );
 };
