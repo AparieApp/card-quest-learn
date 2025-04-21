@@ -1,3 +1,4 @@
+
 import React from 'react';
 import GameHeader from './GameHeader';
 import ProgressBar from './ProgressBar';
@@ -72,10 +73,11 @@ const GameLayout = ({
     );
   }
 
-  // Recalculate the cycleCards array for the FlashcardDisplay pool depending on mode
-  // In review mode, show only reviewCards (which are a clone of incorrectCards).
-  // Otherwise show the whole deck.
+  // Compute the card pool for the current step (review pool vs full deck)
   const cycleCards = isReviewMode ? reviewCards : deck.cards;
+  if (isReviewMode) {
+    console.log(`GameLayout: Rendering Review Mode with ${cycleCards.length} cards.`);
+  }
 
   return (
     <Layout>
@@ -104,7 +106,7 @@ const GameLayout = ({
               />
               <ProgressBar currentIndex={currentCardIndex} total={totalCards} />
             </div>
-            
+
             {/* Control buttons for Practice and Review modes */}
             {mode === 'practice' && !isReviewMode && onEndPractice && (
               <div className="w-full mb-6 flex justify-center">
@@ -118,7 +120,7 @@ const GameLayout = ({
                 </Button>
               </div>
             )}
-            
+
             {mode === 'practice' && isReviewMode && onEndReviewMode && (
               <div className="w-full mb-6 flex justify-center">
                 <Button 
@@ -131,14 +133,13 @@ const GameLayout = ({
                 </Button>
               </div>
             )}
-            
+
             {currentCard && (
               <FlashcardDisplay
                 key={`${currentCard.id}-${currentCardIndex}-${showRemovePrompt}`}
                 card={currentCard}
                 deck={deck}
-                // --- THE KEY LINE: Only pass incorrect cards in review ---
-                currentCycle={cycleCards}
+                cards={cycleCards}
                 previousCycles={previousCycles}
                 onAnswer={onAnswer}
                 mode={mode}
