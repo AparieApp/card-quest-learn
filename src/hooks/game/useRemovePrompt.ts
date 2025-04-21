@@ -29,7 +29,9 @@ export const useRemovePrompt = (setState: Function) => {
         }
 
         if (!shouldRemove) {
+          // User said no, so increment threshold for future prompts
           perCardThresholds[cardId] = (perCardThresholds[cardId] || prev.streakThreshold) + 1;
+          // The next prompt for this card will occur after another +1 streak count
         } else {
           // reset threshold to default for this card if removed
           delete perCardThresholds[cardId];
@@ -55,3 +57,4 @@ export const useRemovePrompt = (setState: Function) => {
 
   return handleRemoveCardPrompt;
 };
+

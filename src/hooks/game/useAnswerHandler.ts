@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { Flashcard } from '@/types/deck';
@@ -58,22 +57,28 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           return prev;
         }
 
-        // Update streaks per card in review mode
         let newStreak = { ...prev.currentCardStreak };
         let perCardThresholds = { ...(prev.perCardThresholds || {}) };
         const cardId = currentCard.id;
+
+        // Set initial threshold to 3, or keep as-is
         if (!perCardThresholds[cardId]) {
-          perCardThresholds[cardId] = prev.streakThreshold;
+          perCardThresholds[cardId] = prev.streakThreshold; // initial is 3
         }
+
+        // --- ADJUSTED REMOVE PROMPT LOGIC (3→4→5→...) ---
 
         // If wrong, reset streak for this card
         if (!isCorrect) {
           newStreak[cardId] = 0;
+          // When user gets a card wrong after having said "No" to the prompt, we want to prompt again at the *current* threshold (e.g., 4 or 5).
+          // So, the next time the user gets the streak up to current threshold count, prompt again.
+          // No change to threshold counter, just streak reset.
         } else if (prev.isReviewMode) {
           newStreak[cardId] = (newStreak[cardId] || 0) + 1;
         }
 
-        // If the answer is correct and in review mode (practice) prompt with 3 (+1)s
+        // Prompt logic: prompt at *each* value where streak equals the card's threshold (3, 4, 5, etc)
         if (isCorrect && prev.isReviewMode && mode === 'practice') {
           const streak = newStreak[cardId] || 0;
           const threshold = perCardThresholds[cardId] || prev.streakThreshold;
@@ -89,7 +94,6 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
 
         // Update statistics
         const newStats = {
-          // Only update initialCorrect on first cycle and not in review mode
           initialCorrect: prev.isReviewMode || prev.currentCycle > 1 ?
             prev.stats.initialCorrect :
             prev.stats.initialCorrect + (isCorrect ? 1 : 0),
@@ -106,7 +110,7 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           prev.reviewCards
         );
 
-        // TEST MODE: In review, if answer is correct remove from reviewCards immediately; show summary when no more
+        // REVIEW/TEST MODE CARD FLOW ...
         let nextIsReviewMode = prev.isReviewMode;
         let nextShowSummary = prev.showSummary;
         let nextCurrentCycle = prev.currentCycle;
@@ -117,24 +121,19 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         let nextReviewCards = newReviewCards;
 
         if (mode === 'test' && prev.isReviewMode) {
-          // Only cards currently in review are being rotated (newReviewCards already filtered)
           if (isLastCard) {
-            // If no incorrect left, end review
             if (newReviewCards.length === 0) {
               nextShowSummary = true;
             } else {
-              // Start a new cycle with the remaining review cards not yet answered correctly
               nextCurrentCycle = prev.currentCycle + 1;
             }
           }
         } else if (mode === 'test') {
-          // Initial test session: at last card, go to summary
           if (isLastCard && !prev.isReviewMode) {
             nextShowSummary = true;
           }
-        } else { // practice mode - continuous cycles
+        } else {
           if (isLastCard) {
-            // Add current cycle to completed cycles
             if (!completedCycles.includes(prev.currentCycle)) {
               completedCycles.push(prev.currentCycle);
             }
