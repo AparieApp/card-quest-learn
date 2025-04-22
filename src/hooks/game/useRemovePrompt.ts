@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { useGameError } from './useGameError';
 
@@ -57,4 +56,3 @@ export const useRemovePrompt = (setState: Function) => {
 
   return handleRemoveCardPrompt;
 };
-

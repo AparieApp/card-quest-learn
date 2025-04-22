@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { Flashcard } from '@/types/deck';
@@ -23,11 +24,20 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           return prev;
         }
 
-        const currentCard = prev.cards[prev.currentCardIndex];
-        if (!currentCard) {
-          console.warn('Current card not found');
+        // Important: Get the current card from the active card pool (review cards or main deck)
+        const activeCardPool = prev.isReviewMode ? prev.reviewCards : prev.cards;
+        if (activeCardPool.length === 0) {
+          console.warn('Active card pool is empty');
           return prev;
         }
+        
+        const currentCard = activeCardPool[prev.currentCardIndex];
+        if (!currentCard) {
+          console.warn('Current card not found in active pool');
+          return prev;
+        }
+
+        console.log(`Processing answer for card ${currentCard.id}, correct: ${isCorrect}, review mode: ${prev.isReviewMode}`);
 
         // Track streaks per card (mostly for practice mode)
         let newStreak = { ...prev.currentCardStreak };
@@ -95,8 +105,21 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         let nextCurrentCycle = prev.currentCycle;
         let completedCycles = [...prev.completedCycles];
 
-        const isLastCard = prev.currentCardIndex >= prev.cards.length - 1;
+        // Determine if this is the last card in the active card pool
+        const isLastCard = prev.currentCardIndex >= activeCardPool.length - 1;
+        
+        // For test review mode, we might need to update the card pool for the next index
+        let nextActivePool = prev.isReviewMode ? newReviewCards : prev.cards;
+        
+        // Calculate next card index based on active pool
         let nextCurrentCardIndex = isLastCard ? 0 : prev.currentCardIndex + 1;
+        
+        // Avoid index out of bounds
+        if (nextCurrentCardIndex >= nextActivePool.length && nextActivePool.length > 0) {
+          nextCurrentCardIndex = 0;
+        }
+
+        console.log(`Card transition: index ${prev.currentCardIndex} -> ${nextCurrentCardIndex}, isLastCard: ${isLastCard}`);
 
         // Mode-specific end conditions
         if (mode === 'test' && prev.isReviewMode) {
@@ -105,20 +128,24 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
             if (newReviewCards.length === 0) {
               // All cards answered correctly, show summary
               nextShowSummary = true;
+              console.log('Test review complete - all cards correct, showing summary');
             } else {
               // Start a new cycle with remaining incorrect cards
               nextCurrentCycle = prev.currentCycle + 1;
+              console.log(`Starting new test review cycle: ${nextCurrentCycle}`);
             }
           }
         } else if (mode === 'test' && isLastCard) {
           // In normal test mode, show summary after going through all cards once
           nextShowSummary = true;
+          console.log('Test complete - showing summary');
         } else if (mode === 'practice' && isLastCard) {
           // In practice mode, keep cycling
           if (!completedCycles.includes(prev.currentCycle)) {
             completedCycles.push(prev.currentCycle);
           }
           nextCurrentCycle = prev.currentCycle + 1;
+          console.log(`Completed practice cycle ${prev.currentCycle}, starting cycle ${nextCurrentCycle}`);
         }
 
         return {

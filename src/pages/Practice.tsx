@@ -11,6 +11,7 @@ const Practice = () => {
   const {
     deck,
     cards,
+    currentCard,
     currentCardIndex,
     incorrectCards,
     reviewCards,
@@ -35,12 +36,15 @@ const Practice = () => {
     }
   };
 
+  // In practice mode we may show cards from multiple cycles, so pass previousCycles
+  const previousCycles = cards.filter(card => !reviewCards.some(rc => rc.id === card.id));
+
   return (
     <GameLayout
       isLoading={isLoading}
       showSummary={showSummary}
       deck={deck}
-      currentCard={cards[currentCardIndex]}
+      currentCard={currentCard}
       currentCardIndex={currentCardIndex}
       totalCards={cards.length}
       mode="practice"
@@ -49,6 +53,7 @@ const Practice = () => {
       stats={stats}
       incorrectCards={incorrectCards}
       reviewCards={reviewCards}
+      previousCycles={previousCycles}
       currentCycle={currentCycle}
       onAnswer={handleAnswer}
       onReviewMode={startReviewMode}

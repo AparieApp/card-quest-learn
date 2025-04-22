@@ -11,6 +11,7 @@ const Test = () => {
   const {
     deck,
     cards,
+    currentCard,
     currentCardIndex,
     incorrectCards,
     reviewCards,
@@ -37,7 +38,7 @@ const Test = () => {
       isLoading={isLoading}
       showSummary={showSummary}
       deck={deck}
-      currentCard={cards[currentCardIndex]}
+      currentCard={currentCard}
       currentCardIndex={currentCardIndex}
       totalCards={cards.length}
       mode="test"

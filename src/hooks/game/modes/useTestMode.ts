@@ -21,6 +21,8 @@ export const useTestMode = (setState: Function) => {
         // Shuffle the incorrect cards for review
         const shuffledCards = [...incorrectCards].sort(() => Math.random() - 0.5);
         
+        console.log(`Starting test review with ${shuffledCards.length} incorrect cards`);
+        
         return {
           ...prev,
           reviewCards: shuffledCards,
@@ -52,11 +54,13 @@ export const useTestMode = (setState: Function) => {
     if (isReviewMode) {
       // In review mode, remove cards that are answered correctly
       if (isCorrect) {
+        console.log(`Test review: removing card ${currentCard.id} after correct answer`);
         newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
       }
     } else {
       // In main test mode, collect incorrect answers
       if (!isCorrect && !incorrectCards.some(c => c.id === currentCard.id)) {
+        console.log(`Test: adding card ${currentCard.id} to incorrect cards`);
         newIncorrectCards = [...newIncorrectCards, currentCard];
       }
     }

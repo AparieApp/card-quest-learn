@@ -61,15 +61,22 @@ export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
 
   // Memoized derived state
   const gameProgress = useMemo(() => {
-    if (state.cards.length === 0) return 0;
+    const totalCards = state.isReviewMode ? state.reviewCards.length : state.cards.length;
+    if (totalCards === 0) return 0;
     if (state.showSummary) return 100;
-    // Show percentage of *completed* cards
-    return Math.round((Math.max(0, state.currentCardIndex) / state.cards.length) * 100);
-  }, [state.cards.length, state.currentCardIndex, state.showSummary]);
+    // Show percentage of completed cards
+    return Math.round((Math.max(0, state.currentCardIndex) / totalCards) * 100);
+  }, [state.cards.length, state.reviewCards.length, state.currentCardIndex, state.isReviewMode, state.showSummary]);
+
+  // Get the active cards (review cards or full deck)
+  const activeCards = useMemo(() => {
+    return state.isReviewMode ? state.reviewCards : state.cards;
+  }, [state.isReviewMode, state.reviewCards, state.cards]);
 
   // Expose state and handlers
   return {
     ...state,
+    cards: activeCards,
     currentCard: selectors.currentCard,
     gameProgress,
     hasError: errorState.hasError,
