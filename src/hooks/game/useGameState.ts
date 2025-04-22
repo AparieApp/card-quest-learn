@@ -52,14 +52,20 @@ export const useGameState = (initialState?: Partial<GameState>) => {
 
   // Memoized selectors for frequently accessed state
   const currentCard = useMemo(() => {
-    if (state.cards.length === 0) return null;
-    return state.cards[state.currentCardIndex];
-  }, [state.cards, state.currentCardIndex]);
+    if (state.isReviewMode) {
+      if (state.reviewCards.length === 0) return null;
+      return state.reviewCards[state.currentCardIndex];
+    } else {
+      if (state.cards.length === 0) return null;
+      return state.cards[state.currentCardIndex];
+    }
+  }, [state.cards, state.reviewCards, state.currentCardIndex, state.isReviewMode]);
 
   const progress = useMemo(() => {
-    if (state.cards.length === 0) return 0;
-    return ((state.currentCardIndex + 1) / state.cards.length) * 100;
-  }, [state.cards.length, state.currentCardIndex]);
+    const totalCards = state.isReviewMode ? state.reviewCards.length : state.cards.length;
+    if (totalCards === 0) return 0;
+    return ((state.currentCardIndex + 1) / totalCards) * 100;
+  }, [state.cards.length, state.reviewCards.length, state.currentCardIndex, state.isReviewMode]);
   
   const isComplete = useMemo(() => {
     return state.showSummary && (!state.isReviewMode || state.reviewCards.length === 0);
@@ -70,9 +76,11 @@ export const useGameState = (initialState?: Partial<GameState>) => {
     setRawState(prevState => {
       const nextState = typeof updater === 'function' ? updater(prevState) : updater;
       
-      // Validate state transition
-      if (nextState.currentCardIndex >= nextState.cards.length && nextState.cards.length > 0) {
-        console.warn('Invalid card index detected, resetting to 0');
+      // Validate state transition based on active card pool
+      const totalCards = nextState.isReviewMode ? nextState.reviewCards.length : nextState.cards.length;
+      
+      if (nextState.currentCardIndex >= totalCards && totalCards > 0) {
+        console.warn(`Invalid card index ${nextState.currentCardIndex} for ${totalCards} cards, resetting to 0`);
         nextState.currentCardIndex = 0;
       }
       

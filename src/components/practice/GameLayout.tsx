@@ -1,4 +1,3 @@
-
 import React from 'react';
 import GameHeader from './GameHeader';
 import ProgressBar from './ProgressBar';
@@ -73,10 +72,11 @@ const GameLayout = ({
     );
   }
 
-  // Compute the card pool for the current step (review pool vs full deck)
   const cycleCards = isReviewMode ? reviewCards : deck.cards;
+  const totalCardCount = cycleCards.length;
+  
   if (isReviewMode) {
-    console.log(`GameLayout: Rendering Review Mode with ${cycleCards.length} cards.`);
+    console.log(`GameLayout: Rendering Review Mode with ${totalCardCount} cards.`);
   }
 
   return (
@@ -104,7 +104,7 @@ const GameLayout = ({
                 mode={`${isReviewMode ? 'Review' : mode.charAt(0).toUpperCase() + mode.slice(1)} Mode (Cycle ${currentCycle})`}
                 onBack={onBack}
               />
-              <ProgressBar currentIndex={currentCardIndex} total={totalCards} />
+              <ProgressBar currentIndex={currentCardIndex} total={totalCardCount} />
             </div>
 
             {/* Control buttons for Practice and Review modes */}
