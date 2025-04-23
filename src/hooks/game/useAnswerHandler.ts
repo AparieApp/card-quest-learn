@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { Flashcard } from '@/types/deck';
@@ -14,7 +13,7 @@ interface AnswerHandlerOptions {
 export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
   const { handleGameError } = useGameError();
   const { processPracticeAnswer, shouldShowRemovePrompt } = usePracticeMode(setState);
-  const { processTestAnswer } = useTestMode(setState);
+  const { processTestAnswer, isTestReviewCycleComplete } = useTestMode(setState);
 
   const handleAnswer = useCallback((isCorrect: boolean) => {
     try {
@@ -31,13 +30,19 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           return prev;
         }
         
-        const currentCard = activeCardPool[prev.currentCardIndex];
+        // Ensure index is valid
+        const validIndex = Math.min(prev.currentCardIndex, activeCardPool.length - 1);
+        if (validIndex !== prev.currentCardIndex) {
+          console.warn(`Correcting index from ${prev.currentCardIndex} to ${validIndex}`);
+        }
+        
+        const currentCard = activeCardPool[validIndex];
         if (!currentCard) {
           console.warn('Current card not found in active pool');
           return prev;
         }
 
-        console.log(`Processing answer for card ${currentCard.id}, correct: ${isCorrect}, review mode: ${prev.isReviewMode}`);
+        console.log(`Processing answer for card ${currentCard.id}, correct: ${isCorrect}, review mode: ${prev.isReviewMode}, index: ${validIndex}/${activeCardPool.length-1}`);
 
         // Track streaks per card (mostly for practice mode)
         let newStreak = { ...prev.currentCardStreak };
@@ -56,31 +61,8 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         } else if (prev.isReviewMode) {
           // Increment streak for correct answers in review mode
           newStreak[cardId] = (newStreak[cardId] || 0) + 1;
+          console.log(`Card ${cardId} streak increased to ${newStreak[cardId]}`);
         }
-
-        // Determine if we should show remove prompt (practice mode only)
-        if (mode === 'practice') {
-          const streak = newStreak[cardId] || 0;
-          const threshold = perCardThresholds[cardId] || prev.streakThreshold;
-          
-          if (shouldShowRemovePrompt(isCorrect, prev.isReviewMode, streak, threshold)) {
-            return {
-              ...prev,
-              currentCardStreak: newStreak,
-              showRemovePrompt: true,
-              perCardThresholds,
-            };
-          }
-        }
-
-        // Update statistics
-        const newStats = {
-          initialCorrect: prev.isReviewMode || prev.currentCycle > 1 ?
-            prev.stats.initialCorrect :
-            prev.stats.initialCorrect + (isCorrect ? 1 : 0),
-          overallCorrect: prev.stats.overallCorrect + (isCorrect ? 1 : 0),
-          totalAttempts: prev.stats.totalAttempts + 1,
-        };
 
         // Process cards based on game mode
         const { newIncorrectCards, newReviewCards } = mode === 'practice'
@@ -99,53 +81,88 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
               prev.reviewCards
             );
 
+        // Determine if we should show remove prompt (practice mode only)
+        if (mode === 'practice') {
+          const streak = newStreak[cardId] || 0;
+          const threshold = perCardThresholds[cardId] || prev.streakThreshold;
+          
+          if (shouldShowRemovePrompt(isCorrect, prev.isReviewMode, cardId, streak, threshold)) {
+            return {
+              ...prev,
+              currentCardStreak: newStreak,
+              showRemovePrompt: true,
+              perCardThresholds,
+              currentCardIndex: validIndex, // Use validated index
+            };
+          }
+        }
+
+        // Update statistics
+        const newStats = {
+          initialCorrect: prev.isReviewMode || prev.currentCycle > 1 ?
+            prev.stats.initialCorrect :
+            prev.stats.initialCorrect + (isCorrect ? 1 : 0),
+          overallCorrect: prev.stats.overallCorrect + (isCorrect ? 1 : 0),
+          totalAttempts: prev.stats.totalAttempts + 1,
+        };
+
         // Handle card flow and cycle management
         let nextIsReviewMode = prev.isReviewMode;
         let nextShowSummary = prev.showSummary;
         let nextCurrentCycle = prev.currentCycle;
         let completedCycles = [...prev.completedCycles];
-
-        // Determine if this is the last card in the active card pool
-        const isLastCard = prev.currentCardIndex >= activeCardPool.length - 1;
         
         // For test review mode, we might need to update the card pool for the next index
         let nextActivePool = prev.isReviewMode ? newReviewCards : prev.cards;
         
+        // Determine if this is the last card in the active card pool
+        const isLastCard = validIndex >= activeCardPool.length - 1;
+        
         // Calculate next card index based on active pool
-        let nextCurrentCardIndex = isLastCard ? 0 : prev.currentCardIndex + 1;
+        let nextCurrentCardIndex = isLastCard ? 0 : validIndex + 1;
         
         // Avoid index out of bounds
         if (nextCurrentCardIndex >= nextActivePool.length && nextActivePool.length > 0) {
           nextCurrentCardIndex = 0;
         }
 
-        console.log(`Card transition: index ${prev.currentCardIndex} -> ${nextCurrentCardIndex}, isLastCard: ${isLastCard}`);
+        console.log(`Card transition: index ${validIndex} -> ${nextCurrentCardIndex}, isLastCard: ${isLastCard}`);
 
-        // Mode-specific end conditions
+        // Test mode: in review mode, when we complete a cycle, if there are still cards, start new cycle
         if (mode === 'test' && prev.isReviewMode) {
-          // In test review mode, check if we're done after last card
-          if (isLastCard) {
-            if (newReviewCards.length === 0) {
-              // All cards answered correctly, show summary
-              nextShowSummary = true;
-              console.log('Test review complete - all cards correct, showing summary');
-            } else {
-              // Start a new cycle with remaining incorrect cards
-              nextCurrentCycle = prev.currentCycle + 1;
-              console.log(`Starting new test review cycle: ${nextCurrentCycle}`);
+            if (isLastCard) {
+                if (newReviewCards.length === 0) {
+                    // All cards answered correctly, show summary
+                    nextShowSummary = true;
+                    console.log('Test review complete - all cards correct, showing summary');
+                } else {
+                    // Start a new cycle with remaining incorrect cards
+                    nextCurrentCycle = prev.currentCycle + 1;
+                    console.log(`Starting new test review cycle: ${nextCurrentCycle} with ${newReviewCards.length} cards`);
+                }
             }
-          }
         } else if (mode === 'test' && isLastCard) {
-          // In normal test mode, show summary after going through all cards once
-          nextShowSummary = true;
-          console.log('Test complete - showing summary');
+            // In normal test mode, show summary after going through all cards once
+            nextShowSummary = true;
+            console.log('Test complete - showing summary');
         } else if (mode === 'practice' && isLastCard) {
-          // In practice mode, keep cycling
-          if (!completedCycles.includes(prev.currentCycle)) {
-            completedCycles.push(prev.currentCycle);
-          }
-          nextCurrentCycle = prev.currentCycle + 1;
-          console.log(`Completed practice cycle ${prev.currentCycle}, starting cycle ${nextCurrentCycle}`);
+            // In practice mode, keep cycling through cards
+            if (!completedCycles.includes(prev.currentCycle)) {
+                completedCycles.push(prev.currentCycle);
+            }
+            nextCurrentCycle = prev.currentCycle + 1;
+            console.log(`Completed practice cycle ${prev.currentCycle}, starting cycle ${nextCurrentCycle}`);
+        }
+
+        // Specific test mode logic - if all cards have been removed show the summary
+        if (mode === 'test' && prev.isReviewMode && newReviewCards.length === 0) {
+          nextShowSummary = true;
+        }
+        
+        // Special check for practice mode - if all cards are removed in review mode, show summary
+        if (mode === 'practice' && prev.isReviewMode && newReviewCards.length === 0) {
+          nextShowSummary = true;
+          console.log('Practice review complete - no cards left in review pool');
         }
 
         return {
@@ -165,7 +182,7 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
     } catch (error) {
       handleGameError(error, 'process answer');
     }
-  }, [setState, mode, processPracticeAnswer, processTestAnswer, shouldShowRemovePrompt, handleGameError]);
+  }, [setState, mode, processPracticeAnswer, processTestAnswer, shouldShowRemovePrompt, isTestReviewCycleComplete, handleGameError]);
 
   return handleAnswer;
 };

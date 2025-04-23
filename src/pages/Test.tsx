@@ -33,6 +33,10 @@ const Test = () => {
     }
   };
 
+  // Use the active card pool for determining total cards
+  const activeCardPool = isReviewMode ? reviewCards : cards;
+  const totalCardCount = activeCardPool.length;
+
   return (
     <GameLayout
       isLoading={isLoading}
@@ -40,7 +44,7 @@ const Test = () => {
       deck={deck}
       currentCard={currentCard}
       currentCardIndex={currentCardIndex}
-      totalCards={cards.length}
+      totalCards={totalCardCount}
       mode="test"
       isReviewMode={isReviewMode}
       showRemovePrompt={showRemovePrompt}

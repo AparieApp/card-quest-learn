@@ -38,6 +38,10 @@ const Practice = () => {
 
   // In practice mode we may show cards from multiple cycles, so pass previousCycles
   const previousCycles = cards.filter(card => !reviewCards.some(rc => rc.id === card.id));
+  
+  // Use the active card pool for determining total cards
+  const activeCardPool = isReviewMode ? reviewCards : cards;
+  const totalCardCount = activeCardPool.length;
 
   return (
     <GameLayout
@@ -46,7 +50,7 @@ const Practice = () => {
       deck={deck}
       currentCard={currentCard}
       currentCardIndex={currentCardIndex}
-      totalCards={cards.length}
+      totalCards={totalCardCount}
       mode="practice"
       isReviewMode={isReviewMode}
       showRemovePrompt={showRemovePrompt}

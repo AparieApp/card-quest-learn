@@ -57,6 +57,7 @@ export const useTestMode = (setState: Function) => {
         console.log(`Test review: removing card ${currentCard.id} after correct answer`);
         newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
       }
+      // Cards answered incorrectly stay in the review pool for the next cycle
     } else {
       // In main test mode, collect incorrect answers
       if (!isCorrect && !incorrectCards.some(c => c.id === currentCard.id)) {
@@ -68,8 +69,16 @@ export const useTestMode = (setState: Function) => {
     return { newIncorrectCards, newReviewCards };
   }, []);
 
+  // Calculate whether the review cycle is complete
+  const isTestReviewCycleComplete = useCallback((currentCardIndex: number, reviewCards: Flashcard[]) => {
+    // The cycle is complete when we've gone through all cards
+    const isLastCard = currentCardIndex >= reviewCards.length - 1;
+    return isLastCard;
+  }, []);
+
   return {
     startTestReview,
-    processTestAnswer
+    processTestAnswer,
+    isTestReviewCycleComplete
   };
 };

@@ -52,19 +52,20 @@ export const useGameState = (initialState?: Partial<GameState>) => {
 
   // Memoized selectors for frequently accessed state
   const currentCard = useMemo(() => {
-    if (state.isReviewMode) {
-      if (state.reviewCards.length === 0) return null;
-      return state.reviewCards[state.currentCardIndex];
-    } else {
-      if (state.cards.length === 0) return null;
-      return state.cards[state.currentCardIndex];
-    }
+    // Get the active card pool based on mode
+    const activeCardPool = state.isReviewMode ? state.reviewCards : state.cards;
+    
+    if (activeCardPool.length === 0) return null;
+    
+    // Ensure we're using a valid index
+    const validIndex = Math.min(state.currentCardIndex, activeCardPool.length - 1);
+    return activeCardPool[validIndex];
   }, [state.cards, state.reviewCards, state.currentCardIndex, state.isReviewMode]);
 
   const progress = useMemo(() => {
     const totalCards = state.isReviewMode ? state.reviewCards.length : state.cards.length;
     if (totalCards === 0) return 0;
-    return ((state.currentCardIndex + 1) / totalCards) * 100;
+    return ((Math.min(state.currentCardIndex + 1, totalCards)) / totalCards) * 100;
   }, [state.cards.length, state.reviewCards.length, state.currentCardIndex, state.isReviewMode]);
   
   const isComplete = useMemo(() => {
@@ -79,7 +80,7 @@ export const useGameState = (initialState?: Partial<GameState>) => {
       // Validate state transition based on active card pool
       const totalCards = nextState.isReviewMode ? nextState.reviewCards.length : nextState.cards.length;
       
-      if (nextState.currentCardIndex >= totalCards && totalCards > 0) {
+      if (totalCards > 0 && nextState.currentCardIndex >= totalCards) {
         console.warn(`Invalid card index ${nextState.currentCardIndex} for ${totalCards} cards, resetting to 0`);
         nextState.currentCardIndex = 0;
       }

@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { Flashcard } from '@/types/deck';
 import { useGameError } from '../useGameError';
@@ -67,17 +66,21 @@ export const usePracticeMode = (setState: Function) => {
     return { newIncorrectCards, newReviewCards };
   }, []);
 
-  // Check if we should show remove prompt for practice mode
+  // Check if we should show remove prompt for practice mode - streak is per card
   const shouldShowRemovePrompt = useCallback((
     isCorrect: boolean,
     isReviewMode: boolean,
+    cardId: string,
     streak: number,
     threshold: number
   ) => {
+    // Only show remove prompt in review mode when streak meets threshold
     const shouldShow = isCorrect && isReviewMode && streak >= threshold;
+    
     if (shouldShow) {
-      console.log(`Showing remove prompt for card with streak ${streak}/${threshold}`);
+      console.log(`Showing remove prompt for card ${cardId} with streak ${streak}/${threshold}`);
     }
+    
     return shouldShow;
   }, []);
 
