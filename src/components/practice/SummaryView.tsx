@@ -46,8 +46,10 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   return (
     <div className="max-w-3xl mx-auto">
       <SummaryHeader 
-        title={isReviewMode ? "Review Results" : "Session Complete!"} 
-        subtitle={isTestMode ? "Test Mode" : "Practice Mode"} 
+        title={isReviewMode ? "Review Results" : "Session Complete!"}
+        subtitle={isTestMode ? "Test Mode" : "Practice Mode"}
+        isTestMode={isTestMode}
+        isReviewMode={isReviewMode}
       />
       
       <div className="mt-8 mb-12">

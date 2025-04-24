@@ -4,33 +4,32 @@ import SummaryStatsCard from "./SummaryStatsCard";
 
 interface SummaryStatsGridProps {
   initialCorrect: number;
+  initialCorrectPercent: number;
   totalCards: number;
   overallCorrect: number;
+  overallCorrectPercent: number;
   overallAttempts: number;
 }
 
 const SummaryStatsGrid: React.FC<SummaryStatsGridProps> = ({
   initialCorrect,
+  initialCorrectPercent,
   totalCards,
   overallCorrect,
+  overallCorrectPercent,
   overallAttempts,
 }) => {
-  const initialAccuracy =
-    totalCards > 0 ? Math.round((initialCorrect / totalCards) * 100) : 0;
-  const overallAccuracy =
-    overallAttempts > 0 ? Math.round((overallCorrect / overallAttempts) * 100) : 0;
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <SummaryStatsCard
         title="Initial Accuracy"
-        value={initialAccuracy}
+        value={initialCorrectPercent}
         correct={initialCorrect}
         total={totalCards}
       />
       <SummaryStatsCard
         title="Overall Accuracy"
-        value={overallAccuracy}
+        value={overallCorrectPercent}
         correct={overallCorrect}
         total={overallAttempts}
       />
