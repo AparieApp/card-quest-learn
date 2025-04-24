@@ -71,8 +71,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         name: feedback.substring(0, 50) + '...',
-        type: 11,
-        auto_archive_duration: 10080,
+        type: 11, // Use 11 for public threads
+        auto_archive_duration: 10080, // 7 days
       }),
     });
 

@@ -80,6 +80,65 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          system_info: Json
+          thread_id: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          system_info: Json
+          thread_id: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          system_info?: Json
+          thread_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      feedback_replies: {
+        Row: {
+          author: string
+          content: string
+          created_at: string
+          feedback_id: string
+          id: string
+        }
+        Insert: {
+          author: string
+          content: string
+          created_at?: string
+          feedback_id: string
+          id?: string
+        }
+        Update: {
+          author?: string
+          content?: string
+          created_at?: string
+          feedback_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_replies_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcards: {
         Row: {
           correct_answer: string
