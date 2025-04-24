@@ -30,6 +30,7 @@ export const useTestMode = (setState: Function) => {
           currentCardIndex: 0,
           showSummary: false,
           showRemovePrompt: false,
+          currentCycleCorrect: [], // Track correct answers within the current cycle
           currentCardStreak: {},
           perCardThresholds: {},
         };
@@ -39,7 +40,7 @@ export const useTestMode = (setState: Function) => {
     }
   }, [setState, handleGameError]);
 
-  // Process test mode answer - correct answers remove cards from review immediately
+  // Process test mode answer - collect incorrect cards in first pass, manage review cycles
   const processTestAnswer = useCallback((
     isCorrect: boolean,
     currentCard: Flashcard,
@@ -50,14 +51,14 @@ export const useTestMode = (setState: Function) => {
     // In test mode, we track incorrect answers in first pass
     let newIncorrectCards = [...incorrectCards];
     let newReviewCards = [...reviewCards];
+    let currentCycleCorrect: Flashcard[] = [];
 
     if (isReviewMode) {
-      // In review mode, remove cards that are answered correctly
+      // In review mode, track correct answers but don't remove them yet
       if (isCorrect) {
-        console.log(`Test review: removing card ${currentCard.id} after correct answer`);
-        newReviewCards = newReviewCards.filter(c => c.id !== currentCard.id);
+        console.log(`Test review: marking card ${currentCard.id} as correct for this cycle`);
+        currentCycleCorrect = [currentCard];
       }
-      // Cards answered incorrectly stay in the review pool for the next cycle
     } else {
       // In main test mode, collect incorrect answers
       if (!isCorrect && !incorrectCards.some(c => c.id === currentCard.id)) {
@@ -66,19 +67,39 @@ export const useTestMode = (setState: Function) => {
       }
     }
 
-    return { newIncorrectCards, newReviewCards };
+    return { 
+      newIncorrectCards, 
+      newReviewCards,
+      currentCycleCorrect 
+    };
   }, []);
 
-  // Calculate whether the review cycle is complete
+  // Calculate whether the review cycle is complete and process card removal
   const isTestReviewCycleComplete = useCallback((currentCardIndex: number, reviewCards: Flashcard[]) => {
     // The cycle is complete when we've gone through all cards
     const isLastCard = currentCardIndex >= reviewCards.length - 1;
     return isLastCard;
   }, []);
 
+  // Handle the completion of a review cycle
+  const handleCycleCompletion = useCallback((
+    reviewCards: Flashcard[],
+    currentCycleCorrect: Flashcard[]
+  ) => {
+    // Remove correctly answered cards only at cycle completion
+    const remainingCards = reviewCards.filter(
+      card => !currentCycleCorrect.some(correct => correct.id === card.id)
+    );
+
+    console.log(`Cycle complete. Removing ${currentCycleCorrect.length} correct cards. ${remainingCards.length} cards remaining.`);
+
+    return remainingCards;
+  }, []);
+
   return {
     startTestReview,
     processTestAnswer,
-    isTestReviewCycleComplete
+    isTestReviewCycleComplete,
+    handleCycleCompletion
   };
 };

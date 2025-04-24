@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from 'react';
 import { Deck, Flashcard } from '@/types/deck';
 
@@ -20,10 +19,11 @@ export interface GameState {
   showRemovePrompt: boolean;
   currentCardStreak: Record<string, number>;
   streakThreshold: number;
-  perCardThresholds?: Record<string, number>; // per-card thresholds for remove prompt
+  perCardThresholds?: Record<string, number>;
   stats: GameStats;
   currentCycle: number;
   completedCycles: number[];
+  currentCycleCorrect: Flashcard[];
 }
 
 export const useGameState = (initialState?: Partial<GameState>) => {
@@ -47,17 +47,15 @@ export const useGameState = (initialState?: Partial<GameState>) => {
     },
     currentCycle: 1,
     completedCycles: [],
+    currentCycleCorrect: [],
     ...initialState,
   });
 
-  // Memoized selectors for frequently accessed state
   const currentCard = useMemo(() => {
-    // Get the active card pool based on mode
     const activeCardPool = state.isReviewMode ? state.reviewCards : state.cards;
     
     if (activeCardPool.length === 0) return null;
     
-    // Ensure we're using a valid index
     const validIndex = Math.min(state.currentCardIndex, activeCardPool.length - 1);
     return activeCardPool[validIndex];
   }, [state.cards, state.reviewCards, state.currentCardIndex, state.isReviewMode]);
@@ -72,12 +70,10 @@ export const useGameState = (initialState?: Partial<GameState>) => {
     return state.showSummary && (!state.isReviewMode || state.reviewCards.length === 0);
   }, [state.showSummary, state.isReviewMode, state.reviewCards.length]);
 
-  // Optimized state setter with validation
   const setState = useCallback((updater: React.SetStateAction<GameState>) => {
     setRawState(prevState => {
       const nextState = typeof updater === 'function' ? updater(prevState) : updater;
       
-      // Validate state transition based on active card pool
       const totalCards = nextState.isReviewMode ? nextState.reviewCards.length : nextState.cards.length;
       
       if (totalCards > 0 && nextState.currentCardIndex >= totalCards) {
@@ -92,7 +88,6 @@ export const useGameState = (initialState?: Partial<GameState>) => {
   return {
     state,
     setState,
-    // Expose memoized selectors
     selectors: {
       currentCard,
       progress,
