@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { Flashcard } from '@/types/deck';
 import { useGameError } from '../useGameError';
@@ -50,6 +51,8 @@ export const usePracticeMode = (setState: Function) => {
     // In practice mode, we track incorrect cards across all modes
     let newIncorrectCards = [...incorrectCards];
     let newReviewCards = [...reviewCards];
+    // Add an empty currentCycleCorrect array to maintain consistent return type with processTestAnswer
+    let currentCycleCorrect: Flashcard[] = [];
 
     if (!isCorrect) {
       // Add incorrect answers to the appropriate collection
@@ -63,7 +66,7 @@ export const usePracticeMode = (setState: Function) => {
       }
     }
 
-    return { newIncorrectCards, newReviewCards };
+    return { newIncorrectCards, newReviewCards, currentCycleCorrect };
   }, []);
 
   // Check if we should show remove prompt for practice mode - streak is per card
