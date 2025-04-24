@@ -1,6 +1,5 @@
-
-import { useCallback } from 'react';
 import { Flashcard } from '@/types/deck';
+import { useCallback } from 'react';
 import { useGameError } from '../useGameError';
 
 export const useTestMode = (setState: Function) => {
@@ -67,6 +66,7 @@ export const useTestMode = (setState: Function) => {
       }
     }
 
+    // Ensure the return type matches the expectation in useAnswerHandler
     return { 
       newIncorrectCards, 
       newReviewCards,
