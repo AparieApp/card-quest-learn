@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,34 +21,39 @@ import SharedDeckPractice from "./pages/SharedDeckPractice";
 import SharedDeckTest from "./pages/SharedDeckTest";
 import NotFound from "./pages/NotFound";
 
+// Create a client
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <DeckProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/deck/:id" element={<DeckEdit />} />
-              <Route path="/deck/:id/practice" element={<Practice />} />
-              <Route path="/deck/:id/test" element={<Test />} />
-              <Route path="/deck/:id/share" element={<DeckShare />} />
-              <Route path="/shared/:code" element={<SharedDeck />} />
-              <Route path="/shared/:code/practice" element={<SharedDeckPractice />} />
-              <Route path="/shared/:code/test" element={<SharedDeckTest />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </DeckProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <DeckProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/deck/:id" element={<DeckEdit />} />
+                  <Route path="/deck/:id/practice" element={<Practice />} />
+                  <Route path="/deck/:id/test" element={<Test />} />
+                  <Route path="/deck/:id/share" element={<DeckShare />} />
+                  <Route path="/shared/:code" element={<SharedDeck />} />
+                  <Route path="/shared/:code/practice" element={<SharedDeckPractice />} />
+                  <Route path="/shared/:code/test" element={<SharedDeckTest />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </DeckProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
+};
 
 export default App;
