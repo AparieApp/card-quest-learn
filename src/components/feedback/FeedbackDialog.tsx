@@ -38,11 +38,14 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
     queryFn: async () => {
       if (!feedbackId) return [];
       
-      // Use a direct REST API call instead of the typed client
-      const { data, error } = await fetch(`${supabase.supabaseUrl}/rest/v1/feedback_replies?feedback_id=eq.${feedbackId}&order=created_at.asc`, {
+      // Use direct fetch with environment variables instead of protected properties
+      const supabaseUrl = "https://khtlezzcdjahvqaflgvk.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodGxlenpjZGphaHZxYWZsZ3ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3OTQ2MjcsImV4cCI6MjA2MDM3MDYyN30.4UqMdojyZxfHf8aiEz82W9z0kdbv5YCcIY4TCamyPvY";
+      
+      const { data, error } = await fetch(`${supabaseUrl}/rest/v1/feedback_replies?feedback_id=eq.${feedbackId}&order=created_at.asc`, {
         method: 'GET',
         headers: {
-          'apikey': supabase.supabaseKey,
+          'apikey': supabaseKey,
           'Content-Type': 'application/json'
         }
       }).then(res => res.json())
