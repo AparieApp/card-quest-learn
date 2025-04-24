@@ -11,9 +11,9 @@ export const shareService = {
         .from('share_codes')
         .select('code')
         .eq('deck_id', deckId)
-        .single();
+        .maybeSingle();
       
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      if (fetchError) {
         console.error('Error checking existing share code:', fetchError);
         throw fetchError;
       }
@@ -52,19 +52,14 @@ export const shareService = {
         .from('share_codes')
         .select('deck_id')
         .eq('code', code.trim().toUpperCase())
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error('Error fetching deck by share code:', error);
         return null;
       }
       
-      if (!data || !data.deck_id) {
-        console.log('No deck found with share code:', code);
-        return null;
-      }
-      
-      return data.deck_id;
+      return data?.deck_id || null;
     } catch (error) {
       console.error('Error in getDeckIdByShareCode:', error);
       return null;

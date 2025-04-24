@@ -19,8 +19,7 @@ export const SharingButtons = ({ deck, isCopying, onCopy }: SharingButtonsProps)
     try {
       const shareUrl = window.location.href;
       
-      // Check if Web Share API is available AND running in secure context
-      if (navigator.share && window.isSecureContext) {
+      if (navigator.share) {
         try {
           await navigator.share({
             title: `FlashCards: ${deck.title}`,
@@ -29,15 +28,18 @@ export const SharingButtons = ({ deck, isCopying, onCopy }: SharingButtonsProps)
           });
           toast.success('Deck shared successfully');
         } catch (error: any) {
-          console.log('Share API error:', error);
-          // If user cancels or permission denied, fall back to clipboard
-          if (error.name !== 'AbortError') {
+          if (error.name === 'NotAllowedError') {
+            // User denied permission or not in secure context, fall back to clipboard
             await navigator.clipboard.writeText(shareUrl);
             toast.success('Share link copied to clipboard');
+          } else if (error.name !== 'AbortError') {
+            // Only show error if it's not a user cancellation
+            console.error('Share error:', error);
+            toast.error('Failed to share deck');
           }
         }
       } else {
-        // Web Share API not available, use clipboard instead
+        // Web Share API not available, use clipboard
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Share link copied to clipboard');
       }
