@@ -37,11 +37,17 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
     queryKey: ['feedback-replies', feedbackId],
     queryFn: async () => {
       if (!feedbackId) return [];
-      const { data, error } = await supabase
-        .from('feedback_replies')
-        .select('*')
-        .eq('feedback_id', feedbackId)
-        .order('created_at', { ascending: true });
+      
+      // Use a direct REST API call instead of the typed client
+      const { data, error } = await fetch(`${supabase.supabaseUrl}/rest/v1/feedback_replies?feedback_id=eq.${feedbackId}&order=created_at.asc`, {
+        method: 'GET',
+        headers: {
+          'apikey': supabase.supabaseKey,
+          'Content-Type': 'application/json'
+        }
+      }).then(res => res.json())
+        .then(data => ({ data, error: null }))
+        .catch(error => ({ data: null, error }));
 
       if (error) throw error;
       return data as FeedbackReply[];
