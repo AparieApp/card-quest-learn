@@ -1,3 +1,4 @@
+
 import { Flashcard } from '@/types/deck';
 import { useCallback } from 'react';
 import { useGameError } from '../useGameError';
@@ -66,7 +67,7 @@ export const useTestMode = (setState: Function) => {
       }
     }
 
-    // Ensure the return type matches the expectation in useAnswerHandler
+    // Always return currentCycleCorrect, even if it's empty
     return { 
       newIncorrectCards, 
       newReviewCards,
