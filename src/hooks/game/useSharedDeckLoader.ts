@@ -12,19 +12,26 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
   
   // Memoized loader function to prevent unnecessary re-renders
   const loadSharedDeck = useCallback(async () => {
-    if (!shareCode) return null;
+    if (!shareCode) {
+      toast.error('Share code is missing');
+      navigate('/');
+      return null;
+    }
     
     setState(prev => ({ ...prev, isLoading: true }));
+    
     try {
+      console.log('Loading shared deck with code:', shareCode);
       const fetchedDeck = await getDeckByShareCode(shareCode);
       
       if (!fetchedDeck) {
+        console.error('Shared deck not found for code:', shareCode);
         toast.error('Shared deck not found');
         navigate('/');
         return null;
       }
       
-      if (fetchedDeck.cards.length === 0) {
+      if (!fetchedDeck.cards || fetchedDeck.cards.length === 0) {
         toast.warning('This deck has no cards');
         navigate(`/shared/${shareCode}`);
         return null;
@@ -48,6 +55,12 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
     } catch (error) {
       handleGameError(error, 'load shared deck');
       setState(prev => ({ ...prev, isLoading: false }));
+      
+      // Navigate back after error
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      
       return null;
     }
   }, [shareCode, getDeckByShareCode, navigate, setState, handleGameError]);

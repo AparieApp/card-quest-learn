@@ -50,17 +50,30 @@ export const useShareDeckPage = (id: string | undefined) => {
 
   const handleShare = async () => {
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `FlashCards: ${deck?.title}`,
-          text: `Check out my flashcard deck: ${deck?.title}`,
-          url: shareUrl,
-        });
+      // Check if Web Share API is available AND the app is running in a secure context
+      if (navigator.share && window.isSecureContext) {
+        try {
+          await navigator.share({
+            title: `FlashCards: ${deck?.title}`,
+            text: `Check out my flashcard deck: ${deck?.title}`,
+            url: shareUrl,
+          });
+          toast.success('Deck shared successfully');
+        } catch (error: any) {
+          // If user aborts sharing or permission denied, fall back to clipboard
+          console.log('Share API error, falling back to clipboard:', error);
+          if (error.name !== 'AbortError') {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Share link copied to clipboard');
+          }
+        }
       } else {
+        // Web Share API not available, use clipboard instead
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Share link copied to clipboard');
       }
     } catch (error) {
+      console.error('Sharing failed:', error);
       handleError(error, 'Failed to share deck');
     }
   };
