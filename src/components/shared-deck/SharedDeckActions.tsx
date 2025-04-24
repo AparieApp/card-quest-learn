@@ -8,6 +8,7 @@ import { AuthPrompt } from './auth/AuthPrompt';
 
 interface SharedDeckActionsProps {
   deck: Deck;
+  shareCode: string;
   isCopying: boolean;
   isAuthenticated: boolean;
   onCopy: () => Promise<void>;
@@ -15,6 +16,7 @@ interface SharedDeckActionsProps {
 
 export const SharedDeckActions = ({
   deck,
+  shareCode,
   isCopying,
   isAuthenticated,
   onCopy,
@@ -25,7 +27,7 @@ export const SharedDeckActions = ({
         <CardTitle>Study Options</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <StudyButtons deck={deck} />
+        <StudyButtons deck={deck} shareCode={shareCode} />
         <SharingButtons deck={deck} isCopying={isCopying} onCopy={onCopy} />
         {!isAuthenticated && <AuthPrompt />}
       </CardContent>

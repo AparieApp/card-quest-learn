@@ -1,3 +1,4 @@
+
 import React from 'react';
 import GameHeader from './GameHeader';
 import ProgressBar from './ProgressBar';
@@ -27,6 +28,7 @@ interface GameLayoutProps {
   reviewCards?: Flashcard[];
   previousCycles?: Flashcard[];
   currentCycle: number;
+  shareCode?: string;
   onAnswer: (isCorrect: boolean) => void;
   onReviewMode: () => void;
   onEndPractice?: () => void;
@@ -52,6 +54,7 @@ const GameLayout = ({
   reviewCards = [],
   previousCycles = [],
   currentCycle,
+  shareCode,
   onAnswer,
   onReviewMode,
   onEndPractice,
@@ -95,6 +98,7 @@ const GameLayout = ({
             onReviewMode={onReviewMode}
             onContinuePractice={onContinuePractice}
             onRestartPractice={onRestartPractice}
+            shareCode={shareCode}
           />
         ) : (
           <div className="flex flex-col items-center max-w-3xl mx-auto">

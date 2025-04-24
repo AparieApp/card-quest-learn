@@ -70,6 +70,7 @@ const SharedDeck = () => {
           <div className="lg:col-span-2">
             <SharedDeckActions
               deck={deck}
+              shareCode={code || ''}
               isCopying={isCopying}
               isAuthenticated={isAuthenticated}
               onCopy={handleCopyDeck}

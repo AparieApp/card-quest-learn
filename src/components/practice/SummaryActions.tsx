@@ -22,6 +22,7 @@ interface SummaryActionsProps {
   onReviewMode: () => void;
   onContinuePractice?: () => void;
   onRestartPractice?: () => void;
+  shareCode?: string;
 }
 
 const SummaryActions: React.FC<SummaryActionsProps> = ({
@@ -32,11 +33,12 @@ const SummaryActions: React.FC<SummaryActionsProps> = ({
   onReviewMode,
   onContinuePractice,
   onRestartPractice,
+  shareCode,
 }) => {
   const { toggleFavorite, isFavorite, copyDeck } = useDeck();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const isSharedDeck = window.location.pathname.includes("/shared/");
+  const isSharedDeck = !!shareCode || window.location.pathname.includes("/shared/");
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
@@ -52,7 +54,11 @@ const SummaryActions: React.FC<SummaryActionsProps> = ({
   };
 
   const handleReturnHome = () => {
-    navigate("/dashboard");
+    if (isSharedDeck && shareCode) {
+      navigate(`/shared/${shareCode}`);
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   const handleAddToDeck = async () => {
@@ -78,7 +84,8 @@ const SummaryActions: React.FC<SummaryActionsProps> = ({
   return (
     <div className="flex flex-wrap gap-3 justify-center">
       <Button variant="outline" onClick={handleReturnHome}>
-        <Home className="mr-2 h-4 w-4" /> Return Home
+        <Home className="mr-2 h-4 w-4" /> 
+        {isSharedDeck ? "Return to Deck" : "Return Home"}
       </Button>
 
       {isTestMode && incorrectCardsLength > 0 && (

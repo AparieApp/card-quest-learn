@@ -16,6 +16,8 @@ import Practice from "./pages/Practice";
 import Test from "./pages/Test";
 import DeckShare from "./pages/DeckShare";
 import SharedDeck from "./pages/SharedDeck";
+import SharedDeckPractice from "./pages/SharedDeckPractice";
+import SharedDeckTest from "./pages/SharedDeckTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/deck/:id/test" element={<Test />} />
               <Route path="/deck/:id/share" element={<DeckShare />} />
               <Route path="/shared/:code" element={<SharedDeck />} />
+              <Route path="/shared/:code/practice" element={<SharedDeckPractice />} />
+              <Route path="/shared/:code/test" element={<SharedDeckTest />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

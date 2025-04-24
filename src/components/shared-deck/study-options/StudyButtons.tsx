@@ -6,16 +6,24 @@ import { Deck } from "@/types/deck";
 
 interface StudyButtonsProps {
   deck: Deck;
+  shareCode?: string;
 }
 
-export const StudyButtons = ({ deck }: StudyButtonsProps) => {
+export const StudyButtons = ({ deck, shareCode }: StudyButtonsProps) => {
   const navigate = useNavigate();
+  const isSharedView = !!shareCode;
   
   return (
     <div className="space-y-4">
       <Button 
         className="w-full justify-start bg-flashcard-primary hover:bg-flashcard-secondary"
-        onClick={() => navigate(`/deck/${deck.id}/practice`)}
+        onClick={() => {
+          if (isSharedView) {
+            navigate(`/shared/${shareCode}/practice`);
+          } else {
+            navigate(`/deck/${deck.id}/practice`);
+          }
+        }}
       >
         <BookOpen className="mr-2 h-4 w-4" /> 
         Practice Mode
@@ -24,7 +32,13 @@ export const StudyButtons = ({ deck }: StudyButtonsProps) => {
       
       <Button 
         className="w-full justify-start"
-        onClick={() => navigate(`/deck/${deck.id}/test`)}
+        onClick={() => {
+          if (isSharedView) {
+            navigate(`/shared/${shareCode}/test`);
+          } else {
+            navigate(`/deck/${deck.id}/test`);
+          }
+        }}
       >
         <Play className="mr-2 h-4 w-4" /> 
         Test Mode
