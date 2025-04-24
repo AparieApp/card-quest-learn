@@ -67,7 +67,7 @@ export const useTestMode = (setState: Function) => {
       }
     }
 
-    // Always return currentCycleCorrect, even if it's empty
+    // Always return currentCycleCorrect to ensure consistent return type
     return { 
       newIncorrectCards, 
       newReviewCards,
