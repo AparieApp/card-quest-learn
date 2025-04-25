@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
@@ -53,7 +54,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithUsername = async (username: string, password: string): Promise<void> => {
     try {
       // First, get the user information associated with the username
-      // We need to join with auth.users to get the email field
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id, username')
@@ -69,8 +69,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       // Use the auth admin API to get the user's email
-      const { data: authUserData, error: authUserError } = await supabase
-        .rpc('get_user_email_by_id', { user_id: userData.id });
+      const { data: authUserData, error: authUserError } = await supabase.rpc(
+        'get_user_email_by_id', 
+        { user_id: userData.id }
+      );
         
       if (authUserError || !authUserData) {
         throw new Error('Could not retrieve email for this username');
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Now login with the email
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: authUserData,
+        email: authUserData as string,
         password,
       });
 
