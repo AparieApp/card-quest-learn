@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,25 +76,21 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
     
     try {
       setIsSubmitting(true);
-      console.log('SignupForm: Attempting signup...');
       
       const signupTimeout = setTimeout(() => {
         if (isSubmitting) {
           setIsSubmitting(false);
           setError('Signup attempt timed out. Please try again.');
           toast.error('Signup attempt timed out');
-          console.log('SignupForm: Signup timeout');
         }
       }, SIGNUP_TIMEOUT_MS);
       
       await signup(values.email, values.username, values.password);
-      console.log('SignupForm: Signup successful');
       
       clearTimeout(signupTimeout);
       
       onSuccess?.();
     } catch (error: any) {
-      console.log('SignupForm: Signup failed', error);
       setError(error.message || 'An error occurred during signup');
     } finally {
       setIsSubmitting(false);
@@ -101,14 +98,14 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-md">
+    <div className="space-y-6 w-full">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">Create an Account</h1>
+        <h1 className="text-2xl font-bold text-flashcard-dark">Create an Account</h1>
         <p className="text-sm text-muted-foreground mt-2">Start creating and learning with flashcards</p>
       </div>
       
       {error && (
-        <Alert variant="destructive" className="bg-red-50">
+        <Alert variant="destructive" className="bg-red-50 border-red-100">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -122,7 +119,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="your@email.com" {...field} />
+                  <Input 
+                    placeholder="your@email.com" 
+                    className="h-12 text-base" 
+                    disabled={isSubmitting}
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -138,6 +140,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
                   <div className="relative">
                     <Input 
                       placeholder="username" 
+                      className="h-12 text-base pr-24"
+                      disabled={isSubmitting}
                       {...field} 
                       onChange={(e) => {
                         field.onChange(e);
@@ -148,7 +152,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
                       <div className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium ${
                         usernameStatus === 'checking' ? 'text-orange-500' :
                         usernameStatus === 'available' ? 'text-green-500' : 'text-red-500'
-                      }`}>
+                      } bg-white/80 px-2 py-1 rounded-full`}>
                         {usernameStatus === 'checking' ? 'Checking...' : 
                          usernameStatus === 'available' ? 'Available' : 'Taken'}
                       </div>
@@ -166,7 +170,13 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="h-12 text-base" 
+                    disabled={isSubmitting}
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -179,7 +189,13 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
               <FormItem>
                 <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="h-12 text-base" 
+                    disabled={isSubmitting}
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -187,12 +203,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
           />
           <Button 
             type="submit" 
-            className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
+            className="w-full bg-flashcard-primary hover:bg-flashcard-primary/90 h-12 text-base mt-6"
             disabled={isSubmitting || usernameStatus === 'taken'}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Creating Account...
               </>
             ) : 'Create Account'}
@@ -200,7 +216,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitch }) => {
         </form>
       </Form>
       
-      <div className="text-center text-sm">
+      <div className="text-center text-sm pt-2">
         <p className="text-muted-foreground">
           Already have an account?{' '}
           <Button variant="link" onClick={onSwitch} className="p-0 h-auto text-flashcard-primary">

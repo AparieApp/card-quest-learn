@@ -39,8 +39,8 @@ const Auth = () => {
   }
 
   return (
-    <Layout>
-      <div className="container py-12 flex flex-col items-center justify-center min-h-[80vh]">
+    <Layout showHeader={true}>
+      <div className="container py-8 md:py-12 flex flex-col items-center justify-center min-h-[80vh] safe-top safe-bottom">
         <AuthForm onSuccess={() => navigate(redirectTo, { replace: true })} />
       </div>
     </Layout>

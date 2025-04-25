@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +41,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [loginMethod, setLoginMethod] = useState<'email' | 'username'>('email');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Clean up timeout if component unmounts
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -51,16 +49,28 @@ const LoginForm: React.FC<LoginFormProps> = ({
     };
   }, []);
 
-  const emailForm = useForm<EmailLoginFormValues>({
-    resolver: zodResolver(emailLoginSchema),
+  const emailForm = useForm<{
+    email: string;
+    password: string;
+  }>({
+    resolver: zodResolver(z.object({
+      email: z.string().email('Please enter a valid email'),
+      password: z.string().min(6, 'Password must be at least 6 characters')
+    })),
     defaultValues: {
       email: '',
       password: ''
     }
   });
 
-  const usernameForm = useForm<UsernameLoginFormValues>({
-    resolver: zodResolver(usernameLoginSchema),
+  const usernameForm = useForm<{
+    username: string;
+    password: string;
+  }>({
+    resolver: zodResolver(z.object({
+      username: z.string().min(3, 'Please enter your username'),
+      password: z.string().min(6, 'Password must be at least 6 characters')
+    })),
     defaultValues: {
       username: '',
       password: ''
@@ -78,7 +88,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   const onSubmitEmail = async (values: EmailLoginFormValues) => {
-    // Clear any previous errors
     setError(null);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -87,29 +96,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
     
     try {
       setIsSubmitting(true);
-      console.log('LoginForm: Attempting login with email...');
-
-      // Set a timeout to prevent hanging on login indefinitely
       timeoutRef.current = setTimeout(handleLoginTimeout, LOGIN_TIMEOUT_MS);
-
-      // Attempt login
       await login(values.email, values.password);
-      console.log('LoginForm: Login successful');
-
-      // Clear timeout as login succeeded
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-
-      // Call onSuccess callback
       onSuccess?.();
     } catch (error: any) {
-      console.log('LoginForm: Login failed', error);
-      // Error is handled in the auth context
       setError(error.message || 'An error occurred during login');
     } finally {
-      // Clear timeout if it's still active
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -119,7 +115,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   const onSubmitUsername = async (values: UsernameLoginFormValues) => {
-    // Clear any previous errors
     setError(null);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -128,28 +123,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
     
     try {
       setIsSubmitting(true);
-      console.log('LoginForm: Attempting login with username...');
-
-      // Set a timeout to prevent hanging on login indefinitely
       timeoutRef.current = setTimeout(handleLoginTimeout, LOGIN_TIMEOUT_MS);
-
-      // Attempt login with username
       await loginWithUsername(values.username, values.password);
-      console.log('LoginForm: Login successful');
-
-      // Clear timeout as login succeeded
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-
-      // Call onSuccess callback
       onSuccess?.();
     } catch (error: any) {
-      console.log('LoginForm: Login failed', error);
       setError(error.message || 'An error occurred during login');
     } finally {
-      // Clear timeout if it's still active
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -159,14 +142,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="space-y-6 w-full max-w-md">
+    <div className="space-y-6 w-full">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">Login</h1>
+        <h1 className="text-2xl font-bold text-flashcard-dark">Login</h1>
         <p className="text-sm text-muted-foreground mt-2">Welcome back to Aparie!</p>
       </div>
       
       {error && (
-        <Alert variant="destructive" className="bg-red-50">
+        <Alert variant="destructive" className="bg-red-50 border-red-100">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -179,7 +162,32 @@ const LoginForm: React.FC<LoginFormProps> = ({
         
         <TabsContent value="email" className="mt-4">
           <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onSubmitEmail)} className="space-y-4">
+            <form onSubmit={emailForm.handleSubmit(async (values) => {
+              setError(null);
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+              }
+              
+              try {
+                setIsSubmitting(true);
+                timeoutRef.current = setTimeout(handleLoginTimeout, LOGIN_TIMEOUT_MS);
+                await login(values.email, values.password);
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current);
+                  timeoutRef.current = null;
+                }
+                onSuccess?.();
+              } catch (error: any) {
+                setError(error.message || 'An error occurred during login');
+              } finally {
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current);
+                  timeoutRef.current = null;
+                }
+                setIsSubmitting(false);
+              }
+            })} className="space-y-4">
               <FormField
                 control={emailForm.control}
                 name="email"
@@ -187,7 +195,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="your@email.com" autoComplete="email" {...field} />
+                      <Input 
+                        placeholder="your@email.com" 
+                        autoComplete="email" 
+                        className="h-12 text-base" 
+                        disabled={isSubmitting}
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,7 +214,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        autoComplete="current-password" 
+                        className="h-12 text-base" 
+                        disabled={isSubmitting}
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -208,12 +229,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
               />
               <Button
                 type="submit"
-                className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
+                className="w-full bg-flashcard-primary hover:bg-flashcard-primary/90 h-12 text-base mt-6"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Logging in...
                   </>
                 ) : 'Login'}
@@ -224,7 +245,32 @@ const LoginForm: React.FC<LoginFormProps> = ({
         
         <TabsContent value="username" className="mt-4">
           <Form {...usernameForm}>
-            <form onSubmit={usernameForm.handleSubmit(onSubmitUsername)} className="space-y-4">
+            <form onSubmit={usernameForm.handleSubmit(async (values) => {
+              setError(null);
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+              }
+              
+              try {
+                setIsSubmitting(true);
+                timeoutRef.current = setTimeout(handleLoginTimeout, LOGIN_TIMEOUT_MS);
+                await loginWithUsername(values.username, values.password);
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current);
+                  timeoutRef.current = null;
+                }
+                onSuccess?.();
+              } catch (error: any) {
+                setError(error.message || 'An error occurred during login');
+              } finally {
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current);
+                  timeoutRef.current = null;
+                }
+                setIsSubmitting(false);
+              }
+            })} className="space-y-4">
               <FormField
                 control={usernameForm.control}
                 name="username"
@@ -232,7 +278,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="username" autoComplete="username" {...field} />
+                      <Input 
+                        placeholder="username" 
+                        autoComplete="username" 
+                        className="h-12 text-base" 
+                        disabled={isSubmitting}
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,7 +297,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        autoComplete="current-password" 
+                        className="h-12 text-base" 
+                        disabled={isSubmitting}
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -253,12 +312,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
               />
               <Button
                 type="submit"
-                className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
+                className="w-full bg-flashcard-primary hover:bg-flashcard-primary/90 h-12 text-base mt-6"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Logging in...
                   </>
                 ) : 'Login'}
@@ -268,7 +327,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </TabsContent>
       </Tabs>
       
-      <div className="text-center text-sm">
+      <div className="text-center text-sm pt-2">
         <p className="text-muted-foreground">
           Don't have an account?{' '}
           <Button variant="link" onClick={onSwitch} className="p-0 h-auto text-flashcard-primary">

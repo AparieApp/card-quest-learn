@@ -63,15 +63,15 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom flashcard app specific colors
+				// Updated flashcard app specific colors to match logo
 				flashcard: {
-					primary: '#9b87f5', // Main purple
-					secondary: '#7E69AB', // Secondary purple
-					light: '#D6BCFA', // Light purple
-					dark: '#1A1F2C', // Dark text
-					neutral: '#8E9196', // Supporting text
-					correct: '#10b981', // Green for correct answers
-					incorrect: '#ef4444', // Red for incorrect answers
+					primary: '#FF9B7D', // Updated from purple to coral from logo
+					secondary: '#F5E6E0', // Warm beige from apple in logo
+					accent: '#FFD95A', // Yellow from leaf in logo
+					dark: '#4A3B38', // Dark brown from outline in logo
+					neutral: '#8E9196', // Keeping original neutral
+					correct: '#10b981', // Keeping original green for correct answers
+					incorrect: '#ef4444', // Keeping original red for incorrect answers
 				}
 			},
 			borderRadius: {
@@ -101,6 +101,10 @@ export default {
 					'0%, 100%': { transform: 'translateX(0)' },
 					'10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
 					'20%, 40%, 60%, 80%': { transform: 'translateX(5px)' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' }
 				}
 			},
 			animation: {
@@ -108,7 +112,8 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'card-flip': 'card-flip 0.6s ease-in-out',
 				'bounce-in': 'bounce-in 0.5s ease-out',
-				'shake': 'shake 0.5s ease-in-out'
+				'shake': 'shake 0.5s ease-in-out',
+				'float': 'float 3s ease-in-out infinite'
 			}
 		}
 	},

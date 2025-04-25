@@ -13,13 +13,28 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     preferredContentMode: 'mobile',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     // Setting status bar to match app theme
     statusBarStyle: 'dark'
   },
   // Android specific configuration
   android: {
-    backgroundColor: '#ffffff'
+    backgroundColor: '#FFFFFF'
+  },
+  // Adding plugins configuration for better mobile experience
+  plugins: {
+    Keyboard: {
+      resize: true,
+      style: 'dark',
+      resizeOnFullScreen: true
+    },
+    SplashScreen: {
+      launchShowDuration: 1000,
+      backgroundColor: '#FFFFFF',
+      androidSplashResourceName: 'splash',
+      splashFullScreen: true,
+      splashImmersive: true
+    }
   }
 };
 

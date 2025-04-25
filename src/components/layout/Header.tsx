@@ -27,7 +27,7 @@ const Header: React.FC = () => {
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="py-8">
+      <SheetContent side="left" className="py-8 safe-top safe-left">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-center mb-4">
             <img 
@@ -76,7 +76,7 @@ const Header: React.FC = () => {
             </Button>
           ) : (
             <Button 
-              className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
+              className="w-full bg-flashcard-primary hover:bg-flashcard-primary/90"
               onClick={() => {
                 navigate('/auth');
                 setSheetOpen(false);
@@ -91,7 +91,7 @@ const Header: React.FC = () => {
   );
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-top">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           {isMobile && <MobileNavigation />}
@@ -103,7 +103,7 @@ const Header: React.FC = () => {
             <img 
               src="/aparie-logo.png" 
               alt="Aparie Logo" 
-              className="w-8 h-8 object-contain mr-2" 
+              className="w-9 h-9 object-contain mr-2" 
             />
             <h1 className="text-xl font-bold text-flashcard-primary">Aparie</h1>
           </div>
@@ -113,8 +113,8 @@ const Header: React.FC = () => {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-                  <User className="h-4 w-4 text-flashcard-primary" />
+                <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full">
+                  <User className="h-5 w-5 text-flashcard-primary" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -135,7 +135,7 @@ const Header: React.FC = () => {
             <Button 
               onClick={() => navigate('/auth')} 
               variant="default" 
-              className="bg-flashcard-primary hover:bg-flashcard-secondary"
+              className="bg-flashcard-primary hover:bg-flashcard-primary/90"
             >
               Login
             </Button>
