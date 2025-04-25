@@ -79,8 +79,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       // Now login with the email
+      // Fixed: Cast authUserData to string since we know it's a string returned by the RPC function
+      const emailFromRPC = authUserData as string;
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: authUserData as string,
+        email: emailFromRPC,
         password,
       });
 
