@@ -18,6 +18,7 @@ const initialState: AuthState = {
 export const AuthContext = createContext<AuthContextType>({
   ...initialState,
   login: async () => {},
+  loginWithUsername: async () => {},
   signup: async () => {},
   logout: async () => {},
   checkUsernameAvailability: async () => true,
@@ -45,6 +46,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // The auth state listener will handle updating the user/session
     } catch (error: any) {
       console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  // Add username login functionality
+  const loginWithUsername = async (username: string, password: string): Promise<void> => {
+    try {
+      // First, get the email associated with the username
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('username', username)
+        .single();
+
+      if (profileError) {
+        throw new Error('Username not found');
+      }
+
+      if (!profileData?.email) {
+        throw new Error('Email not found for this username');
+      }
+
+      // Now login with the email
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: profileData.email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      console.log('Login with username successful:', data);
+      // The auth state listener will handle updating the user/session
+    } catch (error: any) {
+      console.error('Login with username error:', error);
       throw error;
     }
   };
@@ -168,6 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       ...state, 
       login,
+      loginWithUsername,
       signup,
       logout,
       checkUsernameAvailability,

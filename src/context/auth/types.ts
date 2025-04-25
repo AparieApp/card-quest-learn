@@ -1,3 +1,4 @@
+
 import { Session, User } from '@supabase/supabase-js';
 
 export interface AuthUser {
@@ -16,6 +17,7 @@ export interface AuthState {
 
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  loginWithUsername: (username: string, password: string) => Promise<void>;
   signup: (email: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkUsernameAvailability: (username: string) => Promise<boolean>;
