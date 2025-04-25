@@ -1,42 +1,28 @@
-
 import { useAuth } from '@/context/auth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, User, LogOut } from 'lucide-react';
-
 const Header: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    logout
+  } = useAuth();
   const navigate = useNavigate();
-  
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
-  
-  return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  return <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 
-            onClick={() => navigate('/')}
-            className="text-xl font-bold text-flashcard-primary cursor-pointer"
-          >
-            FlashCards
-          </h1>
+          <h1 onClick={() => navigate('/')} className="text-xl font-bold text-flashcard-primary cursor-pointer">Aparie</h1>
         </div>
 
         <div className="flex items-center gap-2">
-          {isAuthenticated ? (
-            <DropdownMenu>
+          {isAuthenticated ? <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
                   <User className="h-4 w-4 text-flashcard-primary" />
@@ -55,16 +41,11 @@ const Header: React.FC = () => {
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button onClick={() => navigate('/auth')} variant="default" className="bg-flashcard-primary hover:bg-flashcard-secondary">
+            </DropdownMenu> : <Button onClick={() => navigate('/auth')} variant="default" className="bg-flashcard-primary hover:bg-flashcard-secondary">
               Login
-            </Button>
-          )}
+            </Button>}
         </div>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;

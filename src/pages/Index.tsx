@@ -1,43 +1,31 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import Layout from '@/components/layout/Layout';
 import { BookOpen, Brain, Share2, Award } from 'lucide-react';
-
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  
-  return (
-    <Layout>
+  const {
+    isAuthenticated
+  } = useAuth();
+  return <Layout>
       {/* Hero Section */}
       <section className="py-20 bg-flashcard-primary/10">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">
-            Master Any Subject with <span className="text-flashcard-primary">FlashCards</span>
+            Master Any Subject with <span className="text-flashcard-primary">Aparie</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             Create, practice, and share digital flashcards to improve your learning and memory retention.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-flashcard-primary hover:bg-flashcard-secondary"
-              onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')}
-            >
+            <Button size="lg" className="bg-flashcard-primary hover:bg-flashcard-secondary" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')}>
               {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
             </Button>
-            {!isAuthenticated && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => navigate('/auth')}
-              >
+            {!isAuthenticated && <Button size="lg" variant="outline" onClick={() => navigate('/auth')}>
                 Log In
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </section>
@@ -94,17 +82,11 @@ const Index = () => {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             Join thousands of students improving their knowledge with flashcards.
           </p>
-          <Button 
-            size="lg"
-            className="bg-flashcard-primary hover:bg-flashcard-secondary"
-            onClick={() => navigate('/auth')}
-          >
+          <Button size="lg" className="bg-flashcard-primary hover:bg-flashcard-secondary" onClick={() => navigate('/auth')}>
             Create Your First Deck
           </Button>
         </div>
       </section>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Index;
