@@ -26,6 +26,7 @@ export const useDeleteCard = (
     }
 
     try {
+      // Optimistic update - remove card from UI
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -38,11 +39,13 @@ export const useDeleteCard = (
         )
       );
 
+      // Delete from database
       await deckService.deleteCard(cardId);
       console.log('Card deleted successfully from database');
       
       toast.success('Card deleted successfully!');
       
+      // Trigger refresh after operation completes
       if (onOperationComplete) {
         console.log('Calling operation complete callback');
         await onOperationComplete();
@@ -50,6 +53,7 @@ export const useDeleteCard = (
     } catch (error) {
       console.error('Error deleting card:', error);
       
+      // Rollback on error by fetching the original deck
       try {
         const originalDeck = await deckService.getDeck(deckId);
         if (originalDeck) {

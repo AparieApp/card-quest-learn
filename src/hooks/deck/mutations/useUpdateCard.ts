@@ -28,6 +28,7 @@ export const useUpdateCard = (
     }
 
     try {
+      // Optimistic update in the UI
       setDecks(prev => 
         prev.map(deck => 
           deck.id === deckId 
@@ -44,6 +45,7 @@ export const useUpdateCard = (
         )
       );
 
+      // Prepare data for the API
       const dataToSave = {
         ...(cardData.front_text !== undefined ? { front_text: cardData.front_text } : {}),
         ...(cardData.correct_answer !== undefined ? { correct_answer: cardData.correct_answer } : {}),
@@ -51,10 +53,12 @@ export const useUpdateCard = (
         ...(cardData.manual_incorrect_answers !== undefined ? { manual_incorrect_answers: [...cardData.manual_incorrect_answers] } : {})
       };
       
+      // Update in the database
       await deckService.updateCard(cardId, dataToSave);
       
       toast.success('Card updated successfully!');
       
+      // Trigger refresh after operation completes
       if (onOperationComplete) {
         console.log('Calling operation complete callback');
         await onOperationComplete();
@@ -62,6 +66,7 @@ export const useUpdateCard = (
     } catch (error) {
       console.error('Error updating card:', error);
       
+      // Rollback on error by fetching the original deck
       try {
         const originalDeck = await deckService.getDeck(deckId);
         if (originalDeck) {
