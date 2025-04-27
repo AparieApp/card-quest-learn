@@ -101,6 +101,12 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     return Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
   }, [decks]);
 
+  // Connect the setBypassThrottle from useDeckStorage to the setThrottlingPaused exposed by context
+  const handleSetThrottlingPaused = useCallback((value: boolean) => {
+    console.log(`Setting throttling paused to ${value}`);
+    setBypassThrottle(value);
+  }, [setBypassThrottle]);
+
   const contextValue = {
     decks: Array.isArray(decks) ? decks : [],
     favorites: Array.isArray(favorites) ? favorites : [],
@@ -119,7 +125,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     copyDeck,
     refreshDecks,
     isOptimisticUpdating,
-    setThrottlingPaused,
+    setThrottlingPaused: handleSetThrottlingPaused,
   };
 
   return (

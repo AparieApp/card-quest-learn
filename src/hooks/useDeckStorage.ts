@@ -64,21 +64,21 @@ export const useDeckStorage = () => {
   const refreshDecksWithThrottle = async (bypassThrottle = false) => {
     if (!isAuthenticated || !user) {
       console.log('Cannot refresh decks: Not authenticated');
-      return;
+      return null;
     }
     
     if (isFetchingRef.current) {
       console.log('Refresh already in progress, skipping');
-      return;
+      return null;
     }
     
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTimeRef.current;
     
     // Always allow refresh if bypassing throttle or if enough time has passed
-    if (!bypassThrottle && timeSinceLastFetch < 500) {
+    if (!bypassThrottle && !bypassThrottleRef.current && timeSinceLastFetch < 500) {
       console.log('Throttling refresh - last fetch was only', timeSinceLastFetch, 'ms ago');
-      return;
+      return null;
     }
     
     console.log(`${bypassThrottle ? 'Bypassing throttle' : 'Normal refresh'} - fetching latest data`);
@@ -99,6 +99,12 @@ export const useDeckStorage = () => {
     }
   };
 
+  // Add function to set bypass throttle
+  const setBypassThrottle = (value: boolean) => {
+    console.log(`${value ? 'Enabling' : 'Disabling'} throttle bypass`);
+    bypassThrottleRef.current = value;
+  };
+
   return { 
     decks, 
     loading,
@@ -112,6 +118,7 @@ export const useDeckStorage = () => {
       } else {
         setDecks(Array.isArray(newDecks) ? newDecks : []);
       }
-    }
+    },
+    setBypassThrottle
   };
 };
