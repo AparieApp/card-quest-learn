@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/context/auth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +30,7 @@ const Header: React.FC = () => {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/lovable-uploads/7a10dc4d-9e61-45bc-ab71-4fd912895dc0.png" 
+              src="/aparie-logo.png" 
               alt="Aparie Logo" 
               className="w-12 h-12 object-contain" 
             />
@@ -101,7 +100,7 @@ const Header: React.FC = () => {
             className="flex items-center cursor-pointer"
           >
             <img 
-              src="/lovable-uploads/7a10dc4d-9e61-45bc-ab71-4fd912895dc0.png" 
+              src="/aparie-logo.png" 
               alt="Aparie Logo" 
               className="w-9 h-9 object-contain mr-2" 
             />

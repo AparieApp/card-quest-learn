@@ -11,7 +11,6 @@ const Index = () => {
   const { isAuthenticated } = useAuth();
   const isMobile = useIsMobile();
 
-  // Auto-redirect mobile users to dashboard or auth if they're returning users
   useEffect(() => {
     if (isMobile && isAuthenticated) {
       navigate('/dashboard');
@@ -21,12 +20,11 @@ const Index = () => {
   return (
     <Layout>
       {isMobile ? (
-        // Mobile-specific home page (onboarding/intro)
         <section className="py-8 px-4">
           <div className="container mx-auto text-center">
             <div className="mb-8 flex justify-center">
               <img 
-                src="/aparie-logo.svg" 
+                src="/aparie-logo.png" 
                 alt="Aparie Logo" 
                 className="w-24 h-24 object-contain" 
               />
@@ -85,14 +83,12 @@ const Index = () => {
           </div>
         </section>
       ) : (
-        // Desktop marketing homepage
         <>
-          {/* Hero Section */}
           <section className="py-20 bg-flashcard-primary/10">
             <div className="container mx-auto px-4 text-center">
               <div className="mb-6 flex justify-center">
                 <img 
-                  src="/aparie-logo.svg" 
+                  src="/aparie-logo.png" 
                   alt="Aparie Logo" 
                   className="w-20 h-20 object-contain" 
                 />
@@ -125,7 +121,6 @@ const Index = () => {
             </div>
           </section>
 
-          {/* Features Section */}
           <section className="py-16">
             <div className="container mx-auto px-4">
               <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
@@ -170,7 +165,6 @@ const Index = () => {
             </div>
           </section>
 
-          {/* CTA Section */}
           <section className="py-16 bg-flashcard-primary/5">
             <div className="container mx-auto px-4 text-center">
               <h2 className="text-3xl font-bold mb-6">Ready to Start Learning?</h2>
