@@ -27,7 +27,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialView = 'login' })
         className="mb-6 w-full flex justify-center items-center"
       >
         <img 
-          src="/aparie-logo.png" 
+          src="/aparie-logo.svg" 
           alt="Aparie Logo" 
           className="w-32 h-32 object-contain animate-float"
         />

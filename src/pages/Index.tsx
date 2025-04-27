@@ -26,7 +26,7 @@ const Index = () => {
           <div className="container mx-auto text-center">
             <div className="mb-8 flex justify-center">
               <img 
-                src="/aparie-logo.png" 
+                src="/aparie-logo.svg" 
                 alt="Aparie Logo" 
                 className="w-24 h-24 object-contain" 
               />
@@ -92,7 +92,7 @@ const Index = () => {
             <div className="container mx-auto px-4 text-center">
               <div className="mb-6 flex justify-center">
                 <img 
-                  src="/aparie-logo.png" 
+                  src="/aparie-logo.svg" 
                   alt="Aparie Logo" 
                   className="w-20 h-20 object-contain" 
                 />
