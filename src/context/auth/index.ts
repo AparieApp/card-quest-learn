@@ -1,8 +1,9 @@
 
 export * from './types';
-export * from './AuthProvider';
+export * from './providers/AuthProvider';
 export * from './hooks';
-export * from './utils';
+export * from './utils/userUtils';
+export * from './utils/errorUtils';
 
 // Default export for backward compatibility
 export { useAuth } from './hooks';

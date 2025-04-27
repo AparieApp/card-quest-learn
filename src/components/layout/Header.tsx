@@ -31,7 +31,7 @@ const Header: React.FC = () => {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/aparie-logo.png" 
+              src="/lovable-uploads/7a10dc4d-9e61-45bc-ab71-4fd912895dc0.png" 
               alt="Aparie Logo" 
               className="w-12 h-12 object-contain" 
             />
@@ -101,7 +101,7 @@ const Header: React.FC = () => {
             className="flex items-center cursor-pointer"
           >
             <img 
-              src="/aparie-logo.png" 
+              src="/lovable-uploads/7a10dc4d-9e61-45bc-ab71-4fd912895dc0.png" 
               alt="Aparie Logo" 
               className="w-9 h-9 object-contain mr-2" 
             />

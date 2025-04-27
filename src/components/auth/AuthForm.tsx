@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import LoginForm from './LoginForm';
-import SignupForm from './SignupForm';
+import LoginForm from './login/LoginForm';
+import SignupForm from './signup/SignupForm';
 import { Card, CardContent } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -27,7 +27,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialView = 'login' })
         className="mb-6 w-full flex justify-center items-center"
       >
         <img 
-          src="/aparie-logo.png" 
+          src="/lovable-uploads/7a10dc4d-9e61-45bc-ab71-4fd912895dc0.png" 
           alt="Aparie Logo" 
           className="w-32 h-32 object-contain animate-float"
         />
