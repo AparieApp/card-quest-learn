@@ -1,9 +1,10 @@
 
 // Export types and interfaces
-export { 
+export type { 
   AuthUser, 
   AuthActions, 
-  AuthContextType 
+  AuthContextType,
+  AuthState 
 } from './types';
 
 // Export providers
