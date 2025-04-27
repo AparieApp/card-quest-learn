@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import LoginForm from './login/LoginForm';
 import SignupForm from './signup/SignupForm';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,10 +12,24 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialView = 'login' }) => {
   const [view, setView] = useState<'login' | 'signup'>(initialView);
+  const [logoLoaded, setLogoLoaded] = useState(false);
 
   const handleSwitch = () => {
     setView(prev => prev === 'login' ? 'signup' : 'login');
   };
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = '/aparie-logo.png';
+    img.onload = () => {
+      console.log('Logo image loaded successfully');
+      setLogoLoaded(true);
+    };
+    img.onerror = () => {
+      console.error('Failed to load logo image');
+      setLogoLoaded(false);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center w-full px-4 max-w-md mx-auto">
@@ -25,11 +40,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialView = 'login' })
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="mb-6 w-full flex justify-center items-center"
       >
-        <img 
-          src="/aparie-logo.png" 
-          alt="Aparie Logo" 
-          className="w-32 h-32 object-contain animate-float"
-        />
+        {logoLoaded ? (
+          <img 
+            src="/aparie-logo.png" 
+            alt="Aparie Logo" 
+            className="w-32 h-32 object-contain animate-float"
+          />
+        ) : (
+          <div className="w-32 h-32 flex items-center justify-center text-muted-foreground">
+            Logo Loading...
+          </div>
+        )}
       </motion.div>
       
       <h2 className="text-2xl md:text-3xl font-bold text-flashcard-dark mb-2 text-center">
