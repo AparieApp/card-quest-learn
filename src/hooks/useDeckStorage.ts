@@ -31,7 +31,6 @@ export const useDeckStorage = () => {
         return;
       }
 
-      // Prevent concurrent fetches
       if (isFetchingRef.current) {
         console.log('Fetch already in progress, skipping');
         return;
@@ -47,13 +46,12 @@ export const useDeckStorage = () => {
         lastFetchTimeRef.current = Date.now();
       } catch (error) {
         console.error('Error fetching decks:', error);
-        setDecks([]); // Reset to empty array on error
+        setDecks([]);
       } finally {
         setLoading(false);
         isFetchingRef.current = false;
       }
       
-      // Update the previous auth state
       previousAuthState.current = {
         isAuthenticated,
         userId: user?.id
@@ -69,16 +67,15 @@ export const useDeckStorage = () => {
       return;
     }
     
-    // Prevent concurrent fetches
     if (isFetchingRef.current) {
       console.log('Refresh already in progress, skipping');
       return;
     }
     
-    // Check if we should bypass throttling
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTimeRef.current;
     
+    // Always allow refresh if bypassing throttle or if enough time has passed
     if (!bypassThrottle && timeSinceLastFetch < 500) {
       console.log('Throttling refresh - last fetch was only', timeSinceLastFetch, 'ms ago');
       return;
@@ -92,7 +89,7 @@ export const useDeckStorage = () => {
       const fetchedDecks = await deckService.getDecks();
       console.log('Manual refresh retrieved', fetchedDecks.length, 'decks');
       setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
-      lastFetchTimeRef.current = Date.now();
+      lastFetchTimeRef.current = now;
       return fetchedDecks;
     } catch (error) {
       console.error('Error during manual refresh:', error);
@@ -102,21 +99,10 @@ export const useDeckStorage = () => {
     }
   };
 
-  // Allow external components to control throttle behavior
-  const setBypassThrottle = (bypass: boolean) => {
-    bypassThrottleRef.current = bypass;
-    if (bypass) {
-      console.log('Throttling disabled for immediate refresh');
-    } else {
-      console.log('Normal throttling restored');
-    }
-  };
-
   return { 
     decks, 
     loading,
-    refreshDecks: (bypassThrottle = bypassThrottleRef.current) => refreshDecksWithThrottle(bypassThrottle),
-    setBypassThrottle,
+    refreshDecks: refreshDecksWithThrottle,
     setDecks: (newDecks: Deck[] | ((prev: Deck[]) => Deck[])) => {
       if (typeof newDecks === 'function') {
         setDecks(prev => {

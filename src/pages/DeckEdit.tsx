@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -30,7 +29,8 @@ const DeckEdit = () => {
     setIsRefreshing(true);
     try {
       console.log('Manual refresh requested');
-      await refreshDecks();
+      // Always bypass throttling for manual refresh
+      await refreshDecks(true);
       toast.success('Deck refreshed successfully');
     } catch (error) {
       console.error('Error during manual refresh:', error);
@@ -60,8 +60,9 @@ const DeckEdit = () => {
   // Handle operations completion by refreshing the deck
   const handleOperationComplete = useCallback(async () => {
     console.log('Operation completed, refreshing deck data');
-    await refreshDeck();
-  }, [refreshDeck]);
+    // Always bypass throttling after operations
+    await refreshDecks(true);
+  }, [refreshDecks]);
 
   const {
     isCardDialogOpen,

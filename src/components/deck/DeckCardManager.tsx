@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, RefreshCw } from 'lucide-react';
@@ -27,15 +26,6 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
 }) => {
   const { refreshDecks } = useDeck();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  
-  // Collect all unique answers from the deck
-  const existingAnswers = React.useMemo(() => {
-    return Array.from(new Set(cards.flatMap(card => [
-      card.correct_answer,
-      ...(card.incorrect_answers || []),
-      ...(card.manual_incorrect_answers || [])
-    ])));
-  }, [cards]);
 
   const handleRefresh = async () => {
     if (isRefreshing || !deckId) return;
@@ -46,7 +36,7 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
       if (onRefreshRequest) {
         await onRefreshRequest();
       } else {
-        // Force bypass throttling for this manual refresh
+        // Always bypass throttling for manual refresh
         await refreshDecks(true);
       }
       console.log('Manual refresh completed');
@@ -56,6 +46,15 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
       setIsRefreshing(false);
     }
   };
+
+  // Collect all unique answers from the deck
+  const existingAnswers = React.useMemo(() => {
+    return Array.from(new Set(cards.flatMap(card => [
+      card.correct_answer,
+      ...(card.incorrect_answers || []),
+      ...(card.manual_incorrect_answers || [])
+    ])));
+  }, [cards]);
 
   return (
     <div className="space-y-4">

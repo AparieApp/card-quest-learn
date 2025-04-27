@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Flashcard } from '@/types/deck';
 import { useDeck } from '@/context/DeckContext';
@@ -15,11 +14,9 @@ export const useCardManager = (
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Ensure reliable refresh after operation
   const performOperationAndRefresh = useCallback(async (operation: () => Promise<any>) => {
     setIsSubmitting(true);
     try {
-      // Disable throttling before operation
       if (setThrottlingPaused) {
         setThrottlingPaused(true);
       }
@@ -29,16 +26,15 @@ export const useCardManager = (
       setIsCardDialogOpen(false);
       setCurrentCard(undefined);
       
-      // Allow a small delay to ensure the database operation completes
       setTimeout(async () => {
         console.log('Performing refresh after operation with throttling disabled');
         setIsRefreshing(true);
         
         try {
-          await refreshDecks(true); // Pass true to bypass throttle
+          await refreshDecks(true);
           
           if (onOperationComplete) {
-            console.log('Calling operation complete callback from card manager');
+            console.log('Calling operation complete callback');
             await onOperationComplete();
           }
         } catch (refreshError) {
@@ -46,7 +42,6 @@ export const useCardManager = (
         } finally {
           setIsRefreshing(false);
           
-          // Re-enable throttling after all operations complete
           if (setThrottlingPaused) {
             setTimeout(() => {
               setThrottlingPaused(false);
