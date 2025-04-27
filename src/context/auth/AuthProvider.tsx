@@ -3,7 +3,8 @@ import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
 import { AuthContextType, AuthUser, AuthState } from './types';
-import { processUserData } from './utils';
+import { processUserData } from './utils/userUtils';
+import { useAuthActions } from './hooks/useAuthActions';
 
 // Create the initial auth state
 const initialState: AuthState = {
@@ -30,182 +31,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     authInitialized: false
   });
   
-  // Instead of calling useAuthActions, define these functions directly here
-  const login = async (email: string, password: string): Promise<void> => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        throw error;
-      }
-      
-      console.log('Login successful:', data);
-      // The auth state listener will handle updating the user/session
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  };
-
-  // Add username login functionality
-  const loginWithUsername = async (username: string, password: string): Promise<void> => {
-    try {
-      // First, get the user information associated with the username
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('username', username)
-        .single();
-
-      if (userError) {
-        throw new Error('Username not found');
-      }
-
-      if (!userData) {
-        throw new Error('User data not found for this username');
-      }
-      
-      // Use the auth admin API to get the user's email
-      const { data: authUserData, error: authUserError } = await supabase.rpc(
-        'get_user_email_by_id', 
-        { user_id: userData.id }
-      );
-        
-      if (authUserError || !authUserData) {
-        throw new Error('Could not retrieve email for this username');
-      }
-      
-      // Now login with the email
-      // Fixed: Cast authUserData to string since we know it's a string returned by the RPC function
-      const emailFromRPC = authUserData as string;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailFromRPC,
-        password,
-      });
-
-      if (error) {
-        throw error;
-      }
-      
-      console.log('Login with username successful:', data);
-      // The auth state listener will handle updating the user/session
-    } catch (error: any) {
-      console.error('Login with username error:', error);
-      throw error;
-    }
-  };
-
-  const signup = async (email: string, username: string, password: string): Promise<void> => {
-    try {
-      // Check if username is available
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', username);
-
-      if (error) {
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        throw new Error('Username already taken');
-      }
-
-      // Create the user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username,
-          },
-        },
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error('Failed to create user');
-      }
-
-      console.log('Signup successful:', authData);
-      // The auth state listener will handle updating the user/session
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-      
-      console.log('Logout successful');
-      // The auth state listener will handle removing the user
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      throw error;
-    }
-  };
-
-  const checkUsernameAvailability = async (username: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', username);
-
-      if (error) {
-        throw error;
-      }
-
-      return data.length === 0;
-    } catch (error) {
-      console.error('Error checking username availability:', error);
-      return false;
-    }
-  };
+  // Use the hooks for auth actions
+  const actions = useAuthActions();
 
   useEffect(() => {
     console.log('Initializing auth state...');
     
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('Auth state change event:', event);
+      
+      // Update session immediately
       setState(prev => ({ 
         ...prev, 
         session: newSession,
-        user: newSession?.user ? {
-          id: newSession.user.id,
-          email: newSession.user.email || '',
-          username: newSession.user.user_metadata.username || newSession.user.email?.split('@')[0] || ''
-        } : null,
         isAuthenticated: !!newSession?.user
       }));
+      
+      // Then process user data asynchronously to avoid deadlocks
+      if (newSession?.user) {
+        try {
+          const userData = await processUserData(newSession.user);
+          setState(prev => ({
+            ...prev,
+            user: userData
+          }));
+        } catch (error) {
+          console.error('Error processing user data:', error);
+        }
+      } else {
+        setState(prev => ({
+          ...prev,
+          user: null
+        }));
+      }
     });
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Got existing session:', session?.user?.id);
+      
+      // Update session immediately
       setState(prev => ({
         ...prev,
         session,
-        user: session?.user ? {
-          id: session.user.id,
-          email: session.user.email || '',
-          username: session.user.user_metadata.username || session.user.email?.split('@')[0] || ''
-        } : null,
         isAuthenticated: !!session?.user,
-        isLoading: false,
-        authInitialized: true
+        isLoading: false
       }));
+      
+      // Then process user data asynchronously
+      if (session?.user) {
+        try {
+          const userData = await processUserData(session.user);
+          setState(prev => ({
+            ...prev,
+            user: userData,
+            authInitialized: true
+          }));
+        } catch (error) {
+          console.error('Error processing user data:', error);
+          setState(prev => ({
+            ...prev,
+            authInitialized: true
+          }));
+        }
+      } else {
+        setState(prev => ({
+          ...prev,
+          authInitialized: true
+        }));
+      }
     });
 
     return () => {
@@ -216,11 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ 
       ...state, 
-      login,
-      loginWithUsername,
-      signup,
-      logout,
-      checkUsernameAvailability,
+      ...actions
     }}>
       {children}
     </AuthContext.Provider>

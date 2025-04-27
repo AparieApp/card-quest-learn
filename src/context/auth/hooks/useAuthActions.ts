@@ -81,13 +81,13 @@ export const useAuthActions = () => {
         throw new Error('Username already taken');
       }
 
-      // Create the user
+      // Create the user with username in metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username,
+            username, // This will be used by the database trigger
           },
         },
       });

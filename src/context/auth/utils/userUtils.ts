@@ -45,14 +45,17 @@ export const processUserData = async (supabaseUser: User | null): Promise<AuthUs
   }
 };
 
+// Check username availability against the profiles table
 export const checkUsernameAvailability = async (username: string): Promise<boolean> => {
   try {
+    // Use the unique constraint we added to ensure usernames are unique
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
       .eq('username', username);
 
     if (error) {
+      console.error('Error checking username availability:', error);
       throw error;
     }
 
