@@ -1,16 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { AuthUser } from '../types';
+import { AuthUser, AuthState } from '../types'; // Import from types instead of redefining
 import { supabase } from '@/integrations/supabase/client';
-
-export interface AuthState {
-  user: AuthUser | null;
-  session: Session | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  authInitialized: boolean;
-}
 
 export const useAuthState = () => {
   const [state, setState] = useState<AuthState>({
