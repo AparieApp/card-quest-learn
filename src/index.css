@@ -93,6 +93,24 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+    /* Fix for iOS 100vh issue */
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Improve tap target sizes on mobile */
+  .ios-device button, 
+  .ios-device a,
+  .ios-device [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text size adjustment after orientation changes */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 }
 
@@ -113,6 +131,16 @@
     padding-right: env(safe-area-inset-right);
   }
   
+  /* iOS-specific adjustments */
+  .ios-notch-padding {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .ios-home-indicator-padding {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Animation keyframes */
   @keyframes float {
     0% {
       transform: translateY(0px);
@@ -127,5 +155,37 @@
   
   .animate-float {
     animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Enhanced responsiveness for different screen sizes */
+  .iphone-se {
+    /* Optimizations for iPhone SE (smaller device) */
+    @media screen and (max-width: 320px) {
+      font-size: 90%;
+    }
+  }
+  
+  .iphone-pro-max {
+    /* Optimizations for larger iPhones */
+    @media screen and (min-width: 428px) {
+      /* Pro Max specific adjustments */
+    }
+  }
+}
+
+/* Additional iOS-specific adjustments */
+@supports (-webkit-touch-callout: none) {
+  /* iOS-only styles */
+  body {
+    /* Prevents scrolling issues on iOS */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+  }
+  
+  /* Prevent element highlighting on tap */
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 }

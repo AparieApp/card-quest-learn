@@ -75,13 +75,14 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
             onClick={handleRefresh}
             disabled={isLoading || isRefreshing}
             title="Refresh cards"
-            className="flex items-center justify-center"
+            className="flex items-center justify-center min-h-[44px] min-w-[44px]" // iOS touch target size
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Refresh cards</span>
           </Button>
           <Button 
             onClick={onAddClick}
-            className="bg-flashcard-primary hover:bg-flashcard-secondary"
+            className="bg-flashcard-primary hover:bg-flashcard-secondary min-h-[44px]" // iOS touch target size
             disabled={isLoading || isRefreshing}
           >
             <Plus className="mr-1 h-4 w-4" /> Add Card

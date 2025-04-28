@@ -1,0 +1,23 @@
+
+{
+  "name": "Aparie - Master Any Subject with Flashcards",
+  "short_name": "Aparie",
+  "description": "Create, practice, and share digital flashcards to improve your learning and memory retention.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FF9B7D",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/aparie-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/aparie-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

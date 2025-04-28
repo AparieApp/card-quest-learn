@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -12,11 +11,18 @@
     <link rel="icon" href="/aparie-logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="/aparie-logo.png" />
 
-    <!-- PWA related meta tags -->
+    <!-- PWA and iOS specific meta tags -->
     <meta name="theme-color" content="#FF9B7D" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Aparie" />
+    
+    <!-- iOS splash screen images -->
+    <link rel="apple-touch-startup-image" href="/aparie-logo.png" />
+
+    <!-- Other iOS specific meta tags -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-touch-fullscreen" content="yes" />
 
     <!-- Open Graph tags -->
     <meta property="og:title" content="Aparie - Master Any Subject with Flashcards" />
@@ -27,8 +33,6 @@
 
   <body>
     <div id="root"></div>
-    <!-- Lovable script tag for Pick and Edit functionality -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
