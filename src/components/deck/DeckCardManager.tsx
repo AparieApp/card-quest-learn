@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, RefreshCw } from 'lucide-react';
 import CardList from './CardList';
@@ -26,7 +26,7 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
   onRefreshRequest,
 }) => {
   const { refreshDecks } = useDeck();
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
     if (isRefreshing || !deckId) return;
@@ -36,9 +36,11 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
       console.log('Manual refresh requested from DeckCardManager');
       if (onRefreshRequest) {
         await onRefreshRequest();
+        console.log('Custom refresh handler completed');
       } else {
         // Always bypass throttling for manual refresh
         await refreshDecks(true);
+        console.log('Default refresh completed');
       }
       console.log('Manual refresh completed');
     } catch (error) {
@@ -57,12 +59,14 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
     ])));
   }, [cards]);
 
+  console.log(`Rendering DeckCardManager with ${cards.length} cards`);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="font-semibold flex items-center gap-2">
           Cards ({cards.length})
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {(isLoading || isRefreshing) && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </h2>
         <div className="flex gap-2">
           <Button 
@@ -71,13 +75,14 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
             onClick={handleRefresh}
             disabled={isLoading || isRefreshing}
             title="Refresh cards"
+            className="flex items-center justify-center"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
           <Button 
             onClick={onAddClick}
             className="bg-flashcard-primary hover:bg-flashcard-secondary"
-            disabled={isLoading}
+            disabled={isLoading || isRefreshing}
           >
             <Plus className="mr-1 h-4 w-4" /> Add Card
           </Button>
@@ -88,7 +93,7 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
         cards={cards}
         onEdit={onEditCard}
         onDelete={onDeleteCard}
-        isLoading={isLoading}
+        isLoading={isLoading || isRefreshing}
         existingAnswers={existingAnswers}
       />
     </div>

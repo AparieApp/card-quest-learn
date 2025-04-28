@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/context/auth';
@@ -11,6 +12,7 @@ import DeckEditHeader from '@/components/deck/edit/DeckEditHeader';
 import DeckEditLayout from '@/components/deck/edit/DeckEditLayout';
 import { toast } from 'sonner';
 import { useDeck } from '@/context/DeckContext';
+import { Deck } from '@/types/deck';
 
 const DeckEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,18 +21,25 @@ const DeckEdit = () => {
   const deckId = id || '';
   const { refreshDecks, getDeck } = useDeck();
   
+  // Local state to force re-render when cards change
+  const [localUpdateTrigger, setLocalUpdateTrigger] = useState<number>(0);
+  
   // State to track if a manual refresh is in progress
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Manual refresh function
+  // Manual refresh function with more reliable updating
   const manualRefresh = useCallback(async () => {
     if (isRefreshing) return;
     
     setIsRefreshing(true);
     try {
-      console.log('Manual refresh requested');
+      console.log('Manual refresh requested from DeckEdit page');
       // Always bypass throttling for manual refresh
       await refreshDecks(true);
+      
+      // Force local update after refresh
+      setLocalUpdateTrigger(prev => prev + 1);
+      
       toast.success('Deck refreshed successfully');
     } catch (error) {
       console.error('Error during manual refresh:', error);
@@ -44,8 +53,9 @@ const DeckEdit = () => {
   const {
     fetchedDeck,
     loading,
-    refreshDeck
-  } = useDeckData(deckId, false); // Pass false to disable auto-refresh
+    refreshDeck,
+    updateLocalDeck
+  } = useDeckData(deckId, false, localUpdateTrigger); // Pass false to disable auto-refresh
   
   const {
     title,
@@ -60,9 +70,22 @@ const DeckEdit = () => {
   // Handle operations completion by refreshing the deck
   const handleOperationComplete = useCallback(async () => {
     console.log('Operation completed, refreshing deck data');
-    // Always bypass throttling after operations
-    await refreshDecks(true);
-  }, [refreshDecks]);
+    
+    try {
+      // Bypass throttling after operations
+      await refreshDecks(true);
+      
+      // Force local update
+      const currentDeck = getDeck(deckId);
+      if (currentDeck) {
+        console.log('Updating local deck after operation with latest data');
+        updateLocalDeck(currentDeck);
+        setLocalUpdateTrigger(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error refreshing after operation:', error);
+    }
+  }, [refreshDecks, getDeck, deckId, updateLocalDeck]);
 
   const {
     isCardDialogOpen,
@@ -75,6 +98,16 @@ const DeckEdit = () => {
     handleDeleteCurrentCard,
     isSubmitting
   } = useCardManager(deckId, handleOperationComplete);
+  
+  // Listen for deck changes and update local state
+  useEffect(() => {
+    if (!deckId) return;
+    
+    const currentDeck = getDeck(deckId);
+    if (currentDeck) {
+      updateLocalDeck(currentDeck);
+    }
+  }, [getDeck, deckId, updateLocalDeck, localUpdateTrigger]);
   
   React.useEffect(() => {
     if (!isAuthenticated) {
@@ -110,7 +143,7 @@ const DeckEdit = () => {
           title={title}
           description={description}
           isSaving={isSaving}
-          isLoading={isPageLoading}
+          isLoading={isPageLoading || isRefreshing}
           onTitleChange={setTitle}
           onDescriptionChange={setDescription}
           onSaveDeck={saveDeck}

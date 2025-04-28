@@ -9,7 +9,7 @@ export const useCardManager = (
   deckId: string,
   onOperationComplete?: () => void
 ) => {
-  const { addCardToDeck, updateCard, deleteCard, refreshDecks, setThrottlingPaused } = useDeck();
+  const { addCardToDeck, updateCard, deleteCard, refreshDecks, setThrottlingPaused, getDeck } = useDeck();
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [currentCard, setCurrentCard] = useState<Flashcard | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,6 +20,7 @@ export const useCardManager = (
     try {
       if (setThrottlingPaused) {
         setThrottlingPaused(true);
+        console.log('Throttling paused for card operation');
       }
       
       await operation();
@@ -27,37 +28,26 @@ export const useCardManager = (
       setIsCardDialogOpen(false);
       setCurrentCard(undefined);
       
-      setTimeout(async () => {
-        console.log('Performing refresh after operation with throttling disabled');
-        setIsRefreshing(true);
-        
-        try {
-          await refreshDecks(true);
-          
-          if (onOperationComplete) {
-            console.log('Calling operation complete callback');
-            await onOperationComplete();
-          }
-        } catch (refreshError) {
-          console.error('Error during refresh:', refreshError);
-        } finally {
-          setIsRefreshing(false);
-          
-          if (setThrottlingPaused) {
-            setTimeout(() => {
-              setThrottlingPaused(false);
-              console.log('Throttling restored after all operations');
-            }, 500);
-          }
-        }
-      }, 300);
+      // Immediate refresh after operation, directly invoke parent handler
+      if (onOperationComplete) {
+        console.log('Calling operation complete callback immediately');
+        await onOperationComplete();
+      }
     } catch (error) {
       console.error('Operation failed:', error);
       handleError(error, 'Operation failed');
     } finally {
       setIsSubmitting(false);
+      
+      // Restore throttling after operation is complete
+      if (setThrottlingPaused) {
+        setTimeout(() => {
+          setThrottlingPaused(false);
+          console.log('Throttling restored after card operation');
+        }, 500);
+      }
     }
-  }, [refreshDecks, onOperationComplete, setThrottlingPaused]);
+  }, [setThrottlingPaused, onOperationComplete]);
 
   const handleAddCard = useCallback(async (cardData: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => {
     console.log('Adding new card with data:', { ...cardData, deck_id: deckId });
@@ -71,6 +61,7 @@ export const useCardManager = (
         manual_incorrect_answers: cardData.manual_incorrect_answers || []
       });
       console.log('Card added successfully, received:', newCard);
+      toast.success('Card added successfully!');
       return newCard;
     });
   }, [deckId, addCardToDeck, performOperationAndRefresh]);
@@ -86,6 +77,7 @@ export const useCardManager = (
     
     await performOperationAndRefresh(async () => {
       await updateCard(deckId, currentCard.id, cardData);
+      toast.success('Card updated successfully!');
     });
   }, [deckId, updateCard, currentCard, performOperationAndRefresh]);
 
@@ -97,6 +89,7 @@ export const useCardManager = (
     
     await performOperationAndRefresh(async () => {
       await deleteCard(deckId, cardId);
+      toast.success('Card deleted successfully!');
     });
   }, [deckId, deleteCard, performOperationAndRefresh]);
 
@@ -110,7 +103,7 @@ export const useCardManager = (
     
     await performOperationAndRefresh(async () => {
       await deleteCard(deckId, currentCard.id);
-      toast.success('Card deleted successfully');
+      toast.success('Card deleted successfully!');
     });
   }, [deckId, deleteCard, currentCard, performOperationAndRefresh]);
 
@@ -123,6 +116,7 @@ export const useCardManager = (
     try {
       if (setThrottlingPaused) {
         setThrottlingPaused(true);
+        console.log('Throttling paused for manual refresh');
       }
       
       await refreshDecks(true);
@@ -140,26 +134,11 @@ export const useCardManager = (
       if (setThrottlingPaused) {
         setTimeout(() => {
           setThrottlingPaused(false);
+          console.log('Throttling restored after manual refresh');
         }, 500);
       }
     }
   }, [refreshDecks, onOperationComplete, isRefreshing, setThrottlingPaused]);
-
-  const openAddCardDialog = useCallback(() => {
-    setCurrentCard(undefined);
-    setIsCardDialogOpen(true);
-  }, []);
-
-  const openEditCardDialog = useCallback((card: Flashcard) => {
-    console.log('Opening edit dialog for card:', card);
-    setCurrentCard(card);
-    setIsCardDialogOpen(true);
-  }, []);
-
-  const closeCardDialog = useCallback(() => {
-    setIsCardDialogOpen(false);
-    setCurrentCard(undefined);
-  }, []);
 
   return {
     isCardDialogOpen,
@@ -172,9 +151,6 @@ export const useCardManager = (
     handleUpdateCard,
     handleDeleteCard,
     handleDeleteCurrentCard,
-    openAddCardDialog,
-    openEditCardDialog,
-    closeCardDialog,
     manualRefresh
   };
 };

@@ -74,20 +74,23 @@ export const useDeckStorage = () => {
     
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTimeRef.current;
+    const shouldBypassThrottle = bypassThrottle || bypassThrottleRef.current;
     
     // Always allow refresh if bypassing throttle or if enough time has passed
-    if (!bypassThrottle && !bypassThrottleRef.current && timeSinceLastFetch < 500) {
+    if (!shouldBypassThrottle && timeSinceLastFetch < 500) {
       console.log('Throttling refresh - last fetch was only', timeSinceLastFetch, 'ms ago');
       return null;
     }
     
-    console.log(`${bypassThrottle ? 'Bypassing throttle' : 'Normal refresh'} - fetching latest data`);
+    console.log(`${shouldBypassThrottle ? 'Bypassing throttle' : 'Normal refresh'} - fetching latest data`);
     
     isFetchingRef.current = true;
     try {
       console.log('Manual refresh of decks requested');
       const fetchedDecks = await deckService.getDecks();
       console.log('Manual refresh retrieved', fetchedDecks.length, 'decks');
+      
+      // Always update the state when we get fresh data
       setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
       lastFetchTimeRef.current = now;
       return fetchedDecks;
@@ -113,10 +116,16 @@ export const useDeckStorage = () => {
       if (typeof newDecks === 'function') {
         setDecks(prev => {
           const result = newDecks(prev);
+          // Mark the time of this update to avoid unnecessary refreshes
+          if (result !== prev) {
+            lastFetchTimeRef.current = Date.now();
+          }
           return Array.isArray(result) ? result : [];
         });
       } else {
         setDecks(Array.isArray(newDecks) ? newDecks : []);
+        // Mark the time of this update
+        lastFetchTimeRef.current = Date.now();
       }
     },
     setBypassThrottle
