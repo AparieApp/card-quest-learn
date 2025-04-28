@@ -6,6 +6,8 @@ import { useDeck } from '@/context/DeckContext';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { validateShareCode } from '@/utils/secureValidation';
+import { checkRateLimit } from '@/utils/secureValidation';
 
 const FindDeckForm: React.FC = () => {
   const [code, setCode] = useState('');
@@ -21,19 +23,34 @@ const FindDeckForm: React.FC = () => {
       return;
     }
     
+    // Check rate limit
+    if (!checkRateLimit('find_deck', 10, 60000)) {
+      toast.error('Too many search attempts. Please try again later.');
+      return;
+    }
+    
     setIsSearching(true);
     
     try {
-      // Clean up code (remove spaces, etc)
-      const cleanCode = code.trim().toUpperCase();
-      const deck = await getDeckByShareCode(cleanCode);
+      // Validate and clean up code
+      let validCode: string;
+      try {
+        validCode = validateShareCode(code);
+      } catch (error) {
+        toast.error('Invalid deck code format');
+        setIsSearching(false);
+        return;
+      }
+      
+      const deck = await getDeckByShareCode(validCode);
       
       if (deck) {
-        navigate(`/shared/${cleanCode}`);
+        navigate(`/shared/${validCode}`);
       } else {
         toast.error('Deck not found. Please check the code and try again.');
       }
     } catch (error) {
+      console.error('Error finding deck:', error);
       toast.error('An error occurred while searching for the deck');
     } finally {
       setIsSearching(false);

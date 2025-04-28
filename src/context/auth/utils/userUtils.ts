@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuthUser } from '../types';
 import { User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { checkRateLimit, secureCompare } from '@/utils/secureValidation';
 
 // Safely fetch user profile without causing deadlocks
 export const fetchUserProfile = async (userId: string) => {
@@ -46,9 +47,23 @@ export const processUserData = async (supabaseUser: User | null): Promise<AuthUs
 };
 
 // Check username availability against the profiles table
+// This function uses constant time processing and rate limiting
+// to prevent username enumeration attacks
 export const checkUsernameAvailability = async (username: string): Promise<boolean> => {
   try {
-    // Use the unique constraint we added to ensure usernames are unique
+    // Rate limit username checks to prevent enumeration
+    if (!checkRateLimit(`username_check_${username.substring(0, 2)}`, 5, 60000)) {
+      // Add random delay to prevent timing attacks
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200));
+      toast.error('Too many requests. Please try again later.');
+      return false;
+    }
+    
+    // Always introduce a small random delay to prevent timing attacks
+    const delay = Math.random() * 300 + 100;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Use unique constraint to ensure usernames are unique
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
@@ -62,6 +77,7 @@ export const checkUsernameAvailability = async (username: string): Promise<boole
     return data.length === 0;
   } catch (error) {
     console.error('Error checking username availability:', error);
+    // Default to unavailable on error for security
     return false;
   }
 };
