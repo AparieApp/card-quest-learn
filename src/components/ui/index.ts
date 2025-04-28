@@ -42,7 +42,9 @@ export * from './sheet';
 export * from './sidebar';
 export * from './skeleton';
 export * from './slider';
-export * from './sonner';
+// Export from sonner with renamed toast to avoid conflicts
+export { Toaster } from './sonner';
+export { toast as sonnerToast } from './sonner';
 export * from './switch';
 export * from './table';
 export * from './tabs';
