@@ -48,7 +48,8 @@ export * from './table';
 export * from './tabs';
 export * from './textarea';
 export * from './toast';
-export * from './toaster';
+// Remove duplicate exports that are already in sonner
+// export * from './toaster';
 export * from './toggle-group';
 export * from './toggle';
 export * from './tooltip';

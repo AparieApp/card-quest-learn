@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => ({
     // Custom plugin to handle directory imports
     {
       name: 'handle-directory-imports',
-      load(id) {
+      load(id: string) {
         if (fs.existsSync(id) && fs.statSync(id).isDirectory()) {
           // Check if there's an index file in the directory
           const indexPath = path.join(id, 'index.ts');
