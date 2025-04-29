@@ -65,11 +65,13 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
               prev.reviewCards
             );
 
+        // Initialize streak tracking variables (available in all scopes)
+        let newCurrentCardStreak = { ...prev.currentCardStreak };
+        let newPerCardThresholds = { ...(prev.perCardThresholds || {}) };
+        
         // Handle practice mode specific logic
         if (mode === 'practice') {
           // Track streaks per card (mostly for practice mode)
-          let newCurrentCardStreak = { ...prev.currentCardStreak };
-          let newPerCardThresholds = { ...(prev.perCardThresholds || {}) };
           const cardId = currentCard.id;
 
           // Set initial threshold to 3, or keep as-is
