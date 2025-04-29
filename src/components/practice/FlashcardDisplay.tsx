@@ -46,26 +46,17 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
 
     setSelectedAnswer(option.text);
     setShowFeedback(true);
-    
-    // Set animation state based on correctness
     setAnimateExit(option.isCorrect ? 'correct' : 'incorrect');
 
-    // Define different timing based on answer correctness and mode
-    if (option.isCorrect) {
-      // For correct answers - quick feedback (550ms)
-      setTimeout(() => {
-        setShowFeedback(false);
-        onAnswer(true);
-      }, 550);
-    } else {
-      // For incorrect answers - show feedback for longer (1500ms)
-      // This allows user to see the correct answer
-      const incorrectDelay = mode === 'practice' ? 1500 : 550;
-      setTimeout(() => {
-        setShowFeedback(false);
-        onAnswer(false);
-      }, incorrectDelay);
-    }
+    // Faster feedback times
+    const feedbackDelay = mode === 'practice' 
+      ? (option.isCorrect ? 550 : 700) // Reduced from 1000/2000 to 550/700ms
+      : 550; // Test mode is always faster
+
+    setTimeout(() => {
+      setShowFeedback(false);
+      onAnswer(option.isCorrect);
+    }, feedbackDelay);
   };
 
   if (showRemovePrompt) {
