@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { Flashcard } from '@/types/deck';
@@ -69,29 +68,29 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
         // Handle practice mode specific logic
         if (mode === 'practice') {
           // Track streaks per card (mostly for practice mode)
-          let newStreak = { ...prev.currentCardStreak };
-          let perCardThresholds = { ...(prev.perCardThresholds || {}) };
+          let newCurrentCardStreak = { ...prev.currentCardStreak };
+          let newPerCardThresholds = { ...(prev.perCardThresholds || {}) };
           const cardId = currentCard.id;
 
           // Set initial threshold to 3, or keep as-is
-          if (!perCardThresholds[cardId]) {
-            perCardThresholds[cardId] = prev.streakThreshold; // initial is 3
+          if (!newPerCardThresholds[cardId]) {
+            newPerCardThresholds[cardId] = prev.streakThreshold; // initial is 3
           }
 
           // Update streaks based on answer correctness
           if (!isCorrect) {
             // Reset streak for incorrect answers
-            newStreak[cardId] = 0;
+            newCurrentCardStreak[cardId] = 0;
             console.log(`Card ${cardId} streak reset to 0 (incorrect answer)`);
           } else if (prev.isReviewMode) {
             // Increment streak for correct answers in review mode
-            newStreak[cardId] = (newStreak[cardId] || 0) + 1;
-            console.log(`Card ${cardId} streak increased to ${newStreak[cardId]}`);
+            newCurrentCardStreak[cardId] = (newCurrentCardStreak[cardId] || 0) + 1;
+            console.log(`Card ${cardId} streak increased to ${newCurrentCardStreak[cardId]}`);
           }
 
           // Determine if we should show remove prompt (practice mode only)
-          const streak = newStreak[cardId] || 0;
-          const threshold = perCardThresholds[cardId] || prev.streakThreshold;
+          const streak = newCurrentCardStreak[cardId] || 0;
+          const threshold = newPerCardThresholds[cardId] || prev.streakThreshold;
           
           // Enhanced logging for streak tracking
           console.log(`Evaluating removal prompt for card ${cardId}: streak=${streak}, threshold=${threshold}, isReviewMode=${prev.isReviewMode}`);
@@ -100,9 +99,9 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
             console.log(`SHOWING REMOVE PROMPT for card ${cardId} with streak ${streak}/${threshold}`);
             return {
               ...prev,
-              currentCardStreak: newStreak,
+              currentCardStreak: newCurrentCardStreak,
               showRemovePrompt: true,
-              perCardThresholds,
+              perCardThresholds: newPerCardThresholds,
               currentCardIndex: validIndex, // Use validated index
             };
           }
@@ -159,8 +158,8 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           currentCycle: nextCurrentCycle,
           completedCycles: completedCycles,
           currentCycleCorrect: nextCurrentCycleCorrect,
-          currentCardStreak: newStreak,
-          perCardThresholds: perCardThresholds
+          currentCardStreak: newCurrentCardStreak,
+          perCardThresholds: newPerCardThresholds
         };
       });
     } catch (error) {
