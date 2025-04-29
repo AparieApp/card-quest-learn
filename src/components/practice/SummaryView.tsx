@@ -60,6 +60,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           overallCorrect={overallCorrect}
           overallCorrectPercent={overallCorrectPercent}
           overallAttempts={overallAttempts}
+          isTestMode={isTestMode}
         />
       </div>
       
