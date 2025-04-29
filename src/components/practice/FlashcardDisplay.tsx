@@ -48,9 +48,9 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
     setShowFeedback(true);
     setAnimateExit(option.isCorrect ? 'correct' : 'incorrect');
 
-    // Faster feedback times
+    // Feedback times
     const feedbackDelay = mode === 'practice' 
-      ? (option.isCorrect ? 550 : 700) // Reduced from 1000/2000 to 550/700ms
+      ? (option.isCorrect ? 550 : 1500) // Increased from 700ms to 1500ms for incorrect answers
       : 550; // Test mode is always faster
 
     setTimeout(() => {
