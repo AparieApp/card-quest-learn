@@ -81,7 +81,9 @@ export const usePracticeMode = (setState: Function) => {
     const shouldShow = isCorrect && isReviewMode && streak >= threshold;
     
     if (shouldShow) {
-      console.log(`Showing remove prompt for card ${cardId} with streak ${streak}/${threshold}`);
+      console.log(`THRESHOLD MET: Should show remove prompt for card ${cardId} with streak ${streak}/${threshold}`);
+    } else {
+      console.log(`Not showing remove prompt: isCorrect=${isCorrect}, isReviewMode=${isReviewMode}, streak=${streak}, threshold=${threshold}`);
     }
     
     return shouldShow;

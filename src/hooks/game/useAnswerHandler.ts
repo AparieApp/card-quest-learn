@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { Flashcard } from '@/types/deck';
@@ -81,6 +82,7 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           if (!isCorrect) {
             // Reset streak for incorrect answers
             newStreak[cardId] = 0;
+            console.log(`Card ${cardId} streak reset to 0 (incorrect answer)`);
           } else if (prev.isReviewMode) {
             // Increment streak for correct answers in review mode
             newStreak[cardId] = (newStreak[cardId] || 0) + 1;
@@ -91,7 +93,11 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           const streak = newStreak[cardId] || 0;
           const threshold = perCardThresholds[cardId] || prev.streakThreshold;
           
+          // Enhanced logging for streak tracking
+          console.log(`Evaluating removal prompt for card ${cardId}: streak=${streak}, threshold=${threshold}, isReviewMode=${prev.isReviewMode}`);
+          
           if (shouldShowRemovePrompt(isCorrect, prev.isReviewMode, cardId, streak, threshold)) {
+            console.log(`SHOWING REMOVE PROMPT for card ${cardId} with streak ${streak}/${threshold}`);
             return {
               ...prev,
               currentCardStreak: newStreak,
@@ -152,7 +158,9 @@ export const useAnswerHandler = ({ mode, setState }: AnswerHandlerOptions) => {
           showSummary: nextShowSummary,
           currentCycle: nextCurrentCycle,
           completedCycles: completedCycles,
-          currentCycleCorrect: nextCurrentCycleCorrect
+          currentCycleCorrect: nextCurrentCycleCorrect,
+          currentCardStreak: newStreak,
+          perCardThresholds: perCardThresholds
         };
       });
     } catch (error) {

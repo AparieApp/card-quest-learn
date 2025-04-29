@@ -29,6 +29,8 @@ interface GameLayoutProps {
   previousCycles?: Flashcard[];
   currentCycle: number;
   shareCode?: string;
+  currentCardStreak?: Record<string, number>;
+  streakThreshold?: number;
   onAnswer: (isCorrect: boolean) => void;
   onReviewMode: () => void;
   onEndPractice?: () => void;
@@ -55,6 +57,8 @@ const GameLayout = ({
   previousCycles = [],
   currentCycle,
   shareCode,
+  currentCardStreak = {},
+  streakThreshold = 3,
   onAnswer,
   onReviewMode,
   onEndPractice,
@@ -78,8 +82,15 @@ const GameLayout = ({
   const cycleCards = isReviewMode ? reviewCards : deck.cards;
   const totalCardCount = cycleCards.length;
   
+  // Calculate the current streak for the current card
+  const currentCardId = currentCard?.id;
+  const currentStreak = currentCardId ? (currentCardStreak[currentCardId] || 0) : 0;
+  
   if (isReviewMode) {
     console.log(`GameLayout: Rendering Review Mode with ${totalCardCount} cards.`);
+    if (currentCardId) {
+      console.log(`Current card ${currentCardId} has streak: ${currentStreak}/${streakThreshold}`);
+    }
   }
 
   return (
@@ -149,6 +160,8 @@ const GameLayout = ({
                 mode={mode}
                 showRemovePrompt={showRemovePrompt}
                 onRemoveCardPrompt={onRemoveCardPrompt}
+                currentStreak={currentStreak}
+                streakThreshold={streakThreshold}
               />
             )}
           </div>

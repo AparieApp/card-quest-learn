@@ -16,6 +16,8 @@ interface FlashcardDisplayProps {
   mode: 'practice' | 'test';
   showRemovePrompt?: boolean;
   onRemoveCardPrompt?: (shouldRemove: boolean) => void;
+  currentStreak?: number;
+  streakThreshold?: number;
 }
 
 const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
@@ -27,6 +29,8 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
   mode,
   showRemovePrompt = false,
   onRemoveCardPrompt,
+  currentStreak = 0,
+  streakThreshold = 3,
 }) => {
   const [options, setOptions] = useState<AnswerOption[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -48,12 +52,19 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
     setShowFeedback(true);
     setAnimateExit(option.isCorrect ? 'correct' : 'incorrect');
 
-    // Faster feedback times
+    // Calculate feedback delay based on mode and correctness
     const feedbackDelay = mode === 'practice' 
       ? (option.isCorrect ? 550 : 700) // Reduced from 1000/2000 to 550/700ms
       : 550; // Test mode is always faster
+    
+    // If this is practice mode, in review mode, with a correct answer, and the streak would meet threshold,
+    // don't proceed with the usual flow as we want to show the prompt
+    if (mode === 'practice' && option.isCorrect) {
+      console.log(`Card answered correctly, current streak: ${currentStreak}, threshold: ${streakThreshold}`);
+    }
 
     setTimeout(() => {
+      // Only process the answer if we're not going to show a removal prompt
       setShowFeedback(false);
       onAnswer(option.isCorrect);
     }, feedbackDelay);

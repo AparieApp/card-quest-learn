@@ -21,6 +21,8 @@ const Practice = () => {
     isLoading,
     stats,
     currentCycle,
+    currentCardStreak,
+    streakThreshold,
     handleAnswer,
     startReviewMode,
     handleRemoveCardPrompt,
@@ -59,6 +61,8 @@ const Practice = () => {
       reviewCards={reviewCards}
       previousCycles={previousCycles}
       currentCycle={currentCycle}
+      currentCardStreak={currentCardStreak}
+      streakThreshold={streakThreshold}
       onAnswer={handleAnswer}
       onReviewMode={startReviewMode}
       onEndPractice={endPractice}
