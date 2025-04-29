@@ -94,26 +94,37 @@ export default {
 				},
 				'bounce-in': {
 					'0%': { transform: 'scale(0.8)', opacity: '0' },
-					'80%': { transform: 'scale(1.1)' },
+					'80%': { transform: 'scale(1.05)' },
 					'100%': { transform: 'scale(1)', opacity: '1' }
 				},
 				'shake': {
 					'0%, 100%': { transform: 'translateX(0)' },
-					'10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
-					'20%, 40%, 60%, 80%': { transform: 'translateX(5px)' }
+					'20%, 60%': { transform: 'translateX(-5px)' },
+					'40%, 80%': { transform: 'translateX(5px)' }
 				},
 				'float': {
 					'0%, 100%': { transform: 'translateY(0)' },
 					'50%': { transform: 'translateY(-10px)' }
+				},
+				'slide-right': {
+					'0%': { transform: 'translateX(0)' },
+					'100%': { transform: 'translateX(110%)' }
+				},
+				'flash-correct': {
+					'0%': { backgroundColor: 'rgba(16, 185, 129, 0)', transform: 'scale(1)' },
+					'50%': { backgroundColor: 'rgba(16, 185, 129, 0.2)', transform: 'scale(1.05)' },
+					'100%': { backgroundColor: 'rgba(16, 185, 129, 0)', transform: 'scale(1)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'card-flip': 'card-flip 0.6s ease-in-out',
-				'bounce-in': 'bounce-in 0.5s ease-out',
-				'shake': 'shake 0.5s ease-in-out',
-				'float': 'float 3s ease-in-out infinite'
+				'bounce-in': 'bounce-in 0.2s ease-out', // Updated from 0.5s to 0.2s
+				'shake': 'shake 0.3s ease-in-out', // Updated from 0.5s to 0.3s
+				'float': 'float 3s ease-in-out infinite',
+				'slide-right': 'slide-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // New sliding animation with easing
+				'flash-correct': 'flash-correct 0.15s ease-out' // New flash animation for correct answers
 			}
 		}
 	},

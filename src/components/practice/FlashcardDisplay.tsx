@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,12 +31,14 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
   const [options, setOptions] = useState<AnswerOption[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [animateExit, setAnimateExit] = useState<'correct' | 'incorrect' | null>(null);
 
   useEffect(() => {
     const answerOptions = generateAnswerOptions(card, deck, cards, previousCycles);
     setOptions(answerOptions);
     setSelectedAnswer(null);
     setShowFeedback(false);
+    setAnimateExit(null);
   }, [card, deck, cards, previousCycles]);
 
   const handleOptionClick = (option: AnswerOption) => {
@@ -43,8 +46,12 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
 
     setSelectedAnswer(option.text);
     setShowFeedback(true);
+    setAnimateExit(option.isCorrect ? 'correct' : 'incorrect');
 
-    const feedbackDelay = mode === 'practice' ? (option.isCorrect ? 1000 : 2000) : 1000;
+    // Faster feedback times
+    const feedbackDelay = mode === 'practice' 
+      ? (option.isCorrect ? 550 : 700) // Reduced from 1000/2000 to 550/700ms
+      : 550; // Test mode is always faster
 
     setTimeout(() => {
       setShowFeedback(false);
@@ -58,6 +65,7 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
         key={`${card.id}-prompt`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }} // Faster animation (200ms)
         className="w-full max-w-lg mx-auto"
       >
         <Card className="shadow-lg">
@@ -100,16 +108,36 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
     );
   }
 
+  // Animation variants for different states
+  const cardVariants = {
+    initial: { opacity: 0, y: 20, scale: 0.95 },
+    animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } },
+    exitCorrect: { 
+      x: '110%', 
+      opacity: 0,
+      transition: { 
+        duration: 0.4,
+        ease: [0.34, 1.56, 0.64, 1] // Custom easing for smoother slide
+      } 
+    },
+    exitIncorrect: { 
+      opacity: 0,
+      scale: 0.95,
+      transition: { duration: 0.2 } 
+    }
+  };
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
         key={card.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className="w-full max-w-lg mx-auto"
+        initial="initial"
+        animate="animate"
+        exit={animateExit === 'correct' ? 'exitCorrect' : 'exitIncorrect'}
+        variants={cardVariants}
+        className={`w-full max-w-lg mx-auto ${showFeedback && animateExit === 'correct' ? 'animate-flash-correct' : ''}`}
       >
-        <Card className="shadow-lg">
+        <Card className={`shadow-lg ${showFeedback && animateExit === 'incorrect' ? 'animate-shake' : ''}`}>
           <CardContent className="p-6">
             <div className="space-y-6">
               <div className="text-center">
@@ -127,7 +155,7 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
                           : "destructive"
                         : "outline"
                     }
-                    className={`w-full justify-start text-left p-4 h-auto ${
+                    className={`w-full justify-start text-left p-4 h-auto transition-colors duration-150 ${
                       showFeedback && option.isCorrect
                         ? "bg-green-100 text-green-800 hover:bg-green-200"
                         : ""
