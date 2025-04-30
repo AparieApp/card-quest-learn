@@ -83,9 +83,29 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     deleteDeck,
   } = useDeckOperations(setDecks, userId);
 
+  // Create all hooks first, before any conditional logic
   const handleDecksUpdate = useCallback((updater: (prevDecks: Deck[]) => Deck[]) => {
     setDecks(updater);
   }, [setDecks]);
+
+  const handleSetThrottlingPaused = useCallback((value: boolean) => {
+    console.log(`Setting throttling paused to ${value}`);
+    setBypassThrottle(value);
+  }, [setBypassThrottle]);
+
+  const getDeck = useCallback((id: string): Deck | null => {
+    if (!id) return null;
+    
+    // First check user-created decks
+    let deck = Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
+    
+    // If not found, check followed decks
+    if (!deck && Array.isArray(followedDecks)) {
+      deck = followedDecks.find(deck => deck.id === id) || null;
+    }
+    
+    return deck;
+  }, [decks, followedDecks]);
 
   const refreshDecks = useCallback(async (bypassThrottle?: boolean) => {
     console.log('Refreshing decks with user ID:', userId);
@@ -116,26 +136,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     copyDeck,
   } = useSharingOperations(decks, followedDecks, setDecks, userId);
   
-  const getDeck = useCallback((id: string): Deck | null => {
-    if (!id) return null;
-    
-    // First check user-created decks
-    let deck = Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
-    
-    // If not found, check followed decks
-    if (!deck && Array.isArray(followedDecks)) {
-      deck = followedDecks.find(deck => deck.id === id) || null;
-    }
-    
-    return deck;
-  }, [decks, followedDecks]);
-
-  // Connect the setBypassThrottle from useDeckStorage to the setThrottlingPaused exposed by context
-  const handleSetThrottlingPaused = useCallback((value: boolean) => {
-    console.log(`Setting throttling paused to ${value}`);
-    setBypassThrottle(value);
-  }, [setBypassThrottle]);
-
   const contextValue = {
     decks: Array.isArray(decks) ? decks : [],
     favorites: Array.isArray(favorites) ? favorites : [],
