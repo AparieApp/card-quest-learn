@@ -12,20 +12,21 @@ import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
-  const { decks = [], favorites = [], followedDeckIds = [], loading } = useDeck();
+  const { decks = [], favorites = [], followedDeckIds = [], loading, refreshDecks } = useDeck();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
   const isMobile = useIsMobile();
   const [followedDecks, setFollowedDecks] = useState<typeof decks>([]);
   const [myDecks, setMyDecks] = useState<typeof decks>([]);
 
-  // Update followed decks when decks or followedDeckIds change
+  // Update followed decks and my decks when decks or followedDeckIds change
   useEffect(() => {
     if (Array.isArray(decks) && Array.isArray(followedDeckIds)) {
+      // Only include decks that are in the followed decks list
       const followed = decks.filter(deck => followedDeckIds.includes(deck.id));
       setFollowedDecks(followed);
       
-      // Filter decks created by current user
+      // Only include decks created by the current user for the My Decks tab
       if (user) {
         const userDecks = decks.filter(deck => deck.creator_id === user.id);
         setMyDecks(userDecks);
@@ -34,6 +35,13 @@ const Dashboard = () => {
       }
     }
   }, [decks, followedDeckIds, user]);
+
+  // Refresh decks when active tab changes to 'followed'
+  useEffect(() => {
+    if (activeTab === 'followed' && isAuthenticated) {
+      refreshDecks(true);
+    }
+  }, [activeTab, isAuthenticated, refreshDecks]);
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -92,7 +100,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <DeckGrid 
-                    decks={Array.isArray(myDecks) ? myDecks : []} 
+                    decks={myDecks} 
                     emptyMessage="You haven't created any decks yet. Click 'Create Deck' to get started."
                   />
                 )}

@@ -73,7 +73,10 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
     }
     
     loadSharedDeck();
-  }, [shareCode, loadSharedDeck, navigate]);
+    // We're intentionally not including loadSharedDeck in the deps array
+    // because we only want to load the deck once when the component mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareCode, navigate]);
   
   return { loadSharedDeck };
 };

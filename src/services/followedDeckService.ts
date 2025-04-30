@@ -7,9 +7,18 @@ export const followedDeckService = {
   // Get all decks followed by the current user
   async getFollowedDecks(): Promise<string[]> {
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No user found when fetching followed decks');
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('followed_decks')
-        .select('deck_id');
+        .select('deck_id')
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error fetching followed decks:', error);
@@ -105,10 +114,18 @@ export const followedDeckService = {
         return false;
       }
       
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        return false;
+      }
+      
       const { data, error } = await supabase
         .from('followed_decks')
         .select('id')
         .eq('deck_id', deckId)
+        .eq('user_id', user.id)
         .maybeSingle();
       
       if (error) {

@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { Deck } from '@/types/deck';
 import { deckService } from '@/services/deckService';
@@ -11,6 +12,8 @@ export const useSharingOperations = (
 ) => {
   // Use useRef for caching to maintain values between renders without triggering re-renders
   const shareCodeCacheRef = useRef<Record<string, string>>({});
+  const deckCacheRef = useRef<Record<string, Deck>>({});
+  
   const { generateShareCode: genShareCode, getDeckIdByShareCode: getSharedDeckId } = useSharing();
   const [isLoadingShareCode, setIsLoadingShareCode] = useState(false);
 
@@ -27,10 +30,18 @@ export const useSharingOperations = (
         return null;
       }
       
-      // Check local cache first to avoid unnecessary API calls
+      // Check cached deck first
+      if (deckCacheRef.current[deckId]) {
+        console.log('Using cached deck by ID from useSharingOperations');
+        return deckCacheRef.current[deckId];
+      }
+      
+      // Check local decks array next to avoid unnecessary API calls
       const cachedDeck = decks.find(d => d.id === deckId);
       if (cachedDeck) {
         console.log('Using cached deck from memory');
+        // Update cache
+        deckCacheRef.current[deckId] = cachedDeck;
         return cachedDeck;
       }
       
@@ -43,6 +54,8 @@ export const useSharingOperations = (
         return null;
       }
       
+      // Update cache
+      deckCacheRef.current[deckId] = deck;
       return deck;
     } catch (error) {
       console.error('Error getting deck by share code:', error);

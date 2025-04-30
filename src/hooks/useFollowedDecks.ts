@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 export const useFollowedDecks = () => {
   const [followedDeckIds, setFollowedDeckIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const fetchFollowedDecks = useCallback(async () => {
     if (!isAuthenticated) {
@@ -19,6 +19,7 @@ export const useFollowedDecks = () => {
     setIsLoading(true);
     try {
       const deckIds = await followedDeckService.getFollowedDecks();
+      console.log('Fetched followed deck IDs:', deckIds.length);
       setFollowedDeckIds(deckIds);
     } catch (error) {
       console.error('Error fetching followed decks:', error);
@@ -40,7 +41,10 @@ export const useFollowedDecks = () => {
     
     try {
       await followedDeckService.followDeck(deckId);
-      setFollowedDeckIds(prev => [...prev, deckId]);
+      setFollowedDeckIds(prev => {
+        if (prev.includes(deckId)) return prev;
+        return [...prev, deckId];
+      });
       return true;
     } catch (error) {
       console.error('Error following deck:', error);

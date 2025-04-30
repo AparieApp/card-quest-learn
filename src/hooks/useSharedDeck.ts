@@ -8,12 +8,13 @@ import { toast } from 'sonner';
 
 export const useSharedDeck = (code: string | undefined) => {
   const navigate = useNavigate();
-  const { getDeckByShareCode, toggleFavorite, isFavorite, copyDeck, followDeck, unfollowDeck, isFollowingDeck } = useDeck();
+  const { getDeckByShareCode, toggleFavorite, isFavorite, copyDeck, followDeck, unfollowDeck, isFollowingDeck, refreshDecks } = useDeck();
   const { isAuthenticated, user } = useAuth();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [isTogglingFollow, setIsTogglingFollow] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
     const loadDeck = async () => {
@@ -39,6 +40,12 @@ export const useSharedDeck = (code: string | undefined) => {
         }
         
         setDeck(fetchedDeck);
+        
+        // Check if the user is following this deck
+        if (isAuthenticated && fetchedDeck.id) {
+          const following = isFollowingDeck(fetchedDeck.id);
+          setIsFollowing(following);
+        }
       } catch (error) {
         console.error('Error loading shared deck:', error);
         toast.error('Failed to load deck');
@@ -49,7 +56,7 @@ export const useSharedDeck = (code: string | undefined) => {
     };
     
     loadDeck();
-  }, [code, getDeckByShareCode, navigate, isAuthenticated, user]);
+  }, [code, getDeckByShareCode, navigate, isAuthenticated, user, isFollowingDeck]);
 
   const handleFavorite = () => {
     if (!isAuthenticated) {
@@ -108,8 +115,13 @@ export const useSharedDeck = (code: string | undefined) => {
     
     setIsTogglingFollow(true);
     try {
-      await followDeck(deck.id);
-      toast.success('You are now following this deck');
+      const result = await followDeck(deck.id);
+      if (result) {
+        setIsFollowing(true);
+        toast.success('You are now following this deck');
+        // Refresh decks to update followed decks list
+        await refreshDecks(true);
+      }
     } catch (error) {
       console.error('Error following deck:', error);
       toast.error('Failed to follow deck');
@@ -123,8 +135,13 @@ export const useSharedDeck = (code: string | undefined) => {
     
     setIsTogglingFollow(true);
     try {
-      await unfollowDeck(deck.id);
-      toast.success('You have unfollowed this deck');
+      const result = await unfollowDeck(deck.id);
+      if (result) {
+        setIsFollowing(false);
+        toast.success('You have unfollowed this deck');
+        // Refresh decks to update followed decks list
+        await refreshDecks(true);
+      }
     } catch (error) {
       console.error('Error unfollowing deck:', error);
       toast.error('Failed to unfollow deck');
@@ -140,7 +157,7 @@ export const useSharedDeck = (code: string | undefined) => {
     isTogglingFollow,
     isAuthenticated,
     isFavorite: deck ? isFavorite(deck.id) : false,
-    isFollowing: deck ? isFollowingDeck(deck.id) : false,
+    isFollowing,
     handleFavorite,
     handleCopyDeck,
     handleFollowDeck,

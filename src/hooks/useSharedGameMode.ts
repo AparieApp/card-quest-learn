@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef } from 'react';
 import { GameMode } from '@/types/game';
 import { useGameState } from './game/useGameState';
 import { useSharedDeckLoader } from './game/useSharedDeckLoader';
@@ -13,11 +13,12 @@ import { useTestMode } from './game/modes/useTestMode';
 export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode) => {
   // Initialize game state
   const { state, setState, selectors } = useGameState();
+  const loadedRef = useRef(false);
 
   // Initialize error handling
   const { errorState, clearError } = useGameError();
 
-  // Initialize deck loading with shared deck loader
+  // Initialize deck loading with shared deck loader - prevents multiple refreshes
   const { loadSharedDeck } = useSharedDeckLoader(shareCode, setState);
 
   // Fisher-Yates shuffle algorithm
@@ -73,6 +74,16 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
     return state.isReviewMode ? state.reviewCards : state.cards;
   }, [state.isReviewMode, state.reviewCards, state.cards]);
 
+  // Custom reload function that prevents infinite reloads
+  const reloadDeck = useCallback(async () => {
+    if (loadedRef.current) {
+      console.log('Deck already loaded, skipping reload');
+      return;
+    }
+    loadedRef.current = true;
+    await loadSharedDeck();
+  }, [loadSharedDeck]);
+
   // Expose state and handlers
   return {
     ...state,
@@ -89,6 +100,6 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
     endReviewMode: mode === 'practice' ? endReviewMode : undefined,
     continuePractice: mode === 'practice' ? continuePractice : undefined,
     restartPractice,
-    reloadDeck: loadSharedDeck
+    reloadDeck
   };
 };
