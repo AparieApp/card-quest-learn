@@ -39,24 +39,29 @@ export const useRemovePrompt = (setState: Function) => {
         }
 
         if (!shouldRemove) {
-          // User said no, so increment threshold for future prompts
-          perCardThresholds[cardId] = (perCardThresholds[cardId] || prev.streakThreshold) + 1;
-          // The next prompt for this card will occur after another +1 streak count
-          console.log(`User kept card ${cardId}, increasing threshold to ${perCardThresholds[cardId]}`);
+          // User said no, increase threshold significantly to delay the next prompt
+          // Instead of just +1, add the streak threshold to make it appear after more correct answers
+          const currentThreshold = perCardThresholds[cardId] || prev.streakThreshold;
+          perCardThresholds[cardId] = currentThreshold + prev.streakThreshold;
+          
+          console.log(`User kept card ${cardId}, increasing threshold from ${currentThreshold} to ${perCardThresholds[cardId]}`);
         } else {
           // Reset threshold to default for this card if removed
           delete perCardThresholds[cardId];
           console.log(`User removed card ${cardId} from review pool, ${newReviewCards.length} cards remaining`);
         }
 
-        // Calculate the next card index after removal
-        let nextCardIndex = prev.currentCardIndex;
+        // Always move to the next card when the user responds to the prompt
+        // This way we don't immediately show the same card again
+        let nextCardIndex = (prev.currentCardIndex + 1) % newReviewCards.length;
         
         // If we removed the current card and it was the last one in the pool,
-        // we need to adjust the index to point to the new last card
-        if (shouldRemove && nextCardIndex >= newReviewCards.length) {
-          nextCardIndex = Math.max(0, newReviewCards.length - 1);
-          console.log(`Adjusting card index to ${nextCardIndex} after removal (${newReviewCards.length} cards remain)`);
+        // we need to adjust the index to point to the new first card
+        if (shouldRemove && newReviewCards.length === 0) {
+          nextCardIndex = 0;
+          console.log(`No cards left in review, resetting index to ${nextCardIndex}`);
+        } else {
+          console.log(`Moving from card index ${prev.currentCardIndex} to next card index ${nextCardIndex}`);
         }
         
         // If no cards left in review, show summary
