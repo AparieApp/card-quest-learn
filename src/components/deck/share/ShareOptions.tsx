@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Share2 } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { handleError } from '@/utils/errorHandling';
 
@@ -66,16 +66,6 @@ export const ShareOptions = ({ shareCode, shareUrl, onShare }: ShareOptionsProps
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-        
-        <div className="pt-2">
-          <Button 
-            className="w-full bg-flashcard-primary hover:bg-flashcard-secondary"
-            onClick={onShare}
-          >
-            <Share2 className="mr-2 h-4 w-4" /> 
-            Share Deck
-          </Button>
         </div>
       </div>
     </div>

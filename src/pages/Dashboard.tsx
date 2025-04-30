@@ -17,14 +17,23 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('decks');
   const isMobile = useIsMobile();
   const [followedDecks, setFollowedDecks] = useState<typeof decks>([]);
+  const [myDecks, setMyDecks] = useState<typeof decks>([]);
 
   // Update followed decks when decks or followedDeckIds change
   useEffect(() => {
     if (Array.isArray(decks) && Array.isArray(followedDeckIds)) {
       const followed = decks.filter(deck => followedDeckIds.includes(deck.id));
       setFollowedDecks(followed);
+      
+      // Filter decks created by current user
+      if (user) {
+        const userDecks = decks.filter(deck => deck.creator_id === user.id);
+        setMyDecks(userDecks);
+      } else {
+        setMyDecks([]);
+      }
     }
-  }, [decks, followedDeckIds]);
+  }, [decks, followedDeckIds, user]);
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -83,7 +92,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <DeckGrid 
-                    decks={Array.isArray(decks) ? decks : []} 
+                    decks={Array.isArray(myDecks) ? myDecks : []} 
                     emptyMessage="You haven't created any decks yet. Click 'Create Deck' to get started."
                   />
                 )}

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 export const useSharedDeck = (code: string | undefined) => {
   const navigate = useNavigate();
   const { getDeckByShareCode, toggleFavorite, isFavorite, copyDeck, followDeck, unfollowDeck, isFollowingDeck } = useDeck();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [isTogglingFollow, setIsTogglingFollow] = useState(false);
@@ -32,6 +32,12 @@ export const useSharedDeck = (code: string | undefined) => {
           return;
         }
         
+        // Check if this is user's own deck - if so, redirect to edit page
+        if (isAuthenticated && user && fetchedDeck.creator_id === user.id) {
+          navigate(`/deck/${fetchedDeck.id}`);
+          return;
+        }
+        
         setDeck(fetchedDeck);
       } catch (error) {
         console.error('Error loading shared deck:', error);
@@ -43,7 +49,7 @@ export const useSharedDeck = (code: string | undefined) => {
     };
     
     loadDeck();
-  }, [code, getDeckByShareCode, navigate]);
+  }, [code, getDeckByShareCode, navigate, isAuthenticated, user]);
 
   const handleFavorite = () => {
     if (!isAuthenticated) {
