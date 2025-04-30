@@ -1,13 +1,11 @@
-
 import { useEffect, useCallback } from 'react';
-import { useDeck } from '@/context/DeckContext';
+import { deckService } from '@/services/deckService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useGameError } from './useGameError';
 
 export const useDeckLoader = (deckId: string | undefined, setState: Function) => {
   const navigate = useNavigate();
-  const { getDeck, refreshDecks } = useDeck();
   const { handleGameError } = useGameError();
   
   // Memoized loader function to prevent unnecessary re-renders
@@ -16,8 +14,8 @@ export const useDeckLoader = (deckId: string | undefined, setState: Function) =>
     
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      await refreshDecks();
-      const fetchedDeck = getDeck(deckId);
+      // Fetch only the one deck, no global list refresh
+      const fetchedDeck = await deckService.getDeck(deckId);
       
       if (!fetchedDeck) {
         toast.error('Deck not found');
@@ -51,7 +49,7 @@ export const useDeckLoader = (deckId: string | undefined, setState: Function) =>
       setState(prev => ({ ...prev, isLoading: false }));
       return null;
     }
-  }, [deckId, getDeck, navigate, refreshDecks, setState, handleGameError]);
+  }, [deckId, navigate, setState, handleGameError]);
 
   // Effect to load deck on mount or when deckId changes
   useEffect(() => {

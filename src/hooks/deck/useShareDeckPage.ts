@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeck } from '@/context/DeckContext';
 import { handleError } from '@/utils/errorHandling';
 import { Deck } from '@/types/deck';
 import { toast } from 'sonner';
+import { deckService } from '@/services/deckService';
 
 export const useShareDeckPage = (id: string | undefined) => {
   const navigate = useNavigate();
-  const { getDeck, generateShareCode, refreshDecks } = useDeck();
+  const { generateShareCode } = useDeck();
   
   const [shareCode, setShareCode] = useState('');
   const [shareUrl, setShareUrl] = useState('');
@@ -24,11 +24,9 @@ export const useShareDeckPage = (id: string | undefined) => {
       
       setIsLoading(true);
       try {
-        await refreshDecks();
-        const fetchedDeck = getDeck(id);
-        if (!fetchedDeck) {
-          throw new Error('Deck not found');
-        }
+        // Fetch only this one deck, without altering the global list
+        const fetchedDeck = await deckService.getDeck(id);
+        if (!fetchedDeck) throw new Error('Deck not found');
         
         setDeck(fetchedDeck);
         
@@ -46,7 +44,7 @@ export const useShareDeckPage = (id: string | undefined) => {
     };
     
     loadDeckAndGenerateCode();
-  }, [id, getDeck, navigate, generateShareCode, refreshDecks]);
+  }, [id, navigate, generateShareCode]);
 
   const handleShare = async () => {
     try {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Deck } from '@/types/deck';
 import { deckService } from '@/services/deckService';
@@ -57,10 +56,15 @@ export const useDeckStorage = () => {
         console.log('Fetching decks with auth state change');
         const fetchedDecks = await deckService.getDecks();
         
+        // Only keep decks created by the current user
+        const ownDecks = Array.isArray(fetchedDecks) && user?.id
+          ? fetchedDecks.filter(d => d.creator_id === user.id)
+          : [];
+        
         // Only update state if component is still mounted
         if (isMountedRef.current) {
-          setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
-          console.log('Fetched decks:', fetchedDecks.length);
+          setDecks(ownDecks);
+          console.log('Fetched own decks:', ownDecks.length);
         }
         
         lastFetchTimeRef.current = Date.now();
@@ -122,9 +126,15 @@ export const useDeckStorage = () => {
       const fetchedDecks = await deckService.getDecks();
       console.log('Manual refresh retrieved', fetchedDecks.length, 'decks');
       
+      // Filter to only the current user's decks
+      const ownDecks = Array.isArray(fetchedDecks) && user?.id
+        ? fetchedDecks.filter(d => d.creator_id === user.id)
+        : [];
+      
       // Always update the state when we get fresh data, but only if component is mounted
       if (isMountedRef.current) {
-        setDecks(Array.isArray(fetchedDecks) ? fetchedDecks : []);
+        setDecks(ownDecks);
+        console.log('Manual refresh own decks:', ownDecks.length);
       }
       
       lastFetchTimeRef.current = now;
