@@ -8,10 +8,11 @@ import { withCircuitBreaker } from '@/utils/circuitBreaker';
 
 export const useDeckLoader = (deckId: string | undefined, setState: Function) => {
   const navigate = useNavigate();
-  const { getDeck, refreshDecks } = useDeck();
+  const { getDeck, refreshDecks, setThrottlingPaused } = useDeck();
   const { handleGameError } = useGameError();
   const isLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
+  const attemptCountRef = useRef(0);
   
   // Memoized loader function with stable dependencies
   const loadDeck = useCallback(async () => {
@@ -33,14 +34,28 @@ export const useDeckLoader = (deckId: string | undefined, setState: Function) =>
       return null;
     }
     
+    // Track loading state
     isLoadingRef.current = true;
     setState(prev => ({ ...prev, isLoading: true }));
     
+    // Temporarily pause throttling for this critical operation
+    setThrottlingPaused(true);
+    
     try {
+      attemptCountRef.current += 1;
+      console.log(`Loading deck ${deckId}, attempt #${attemptCountRef.current}`);
+      
       // Use circuit breaker to prevent infinite loading loops
       const result = await withCircuitBreaker(
         async () => {
-          await refreshDecks(true); // Force refresh with throttle bypass
+          // Ensure we get fresh data by bypassing throttling
+          await refreshDecks(true); 
+          
+          // Small delay to ensure the refresh has completed
+          if (attemptCountRef.current > 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
           const fetchedDeck = getDeck(deckId);
           
           if (!fetchedDeck) {
@@ -60,7 +75,7 @@ export const useDeckLoader = (deckId: string | undefined, setState: Function) =>
           return fetchedDeck;
         },
         `load-deck-${deckId}`,
-        { failureThreshold: 2, resetTimeout: 30000 }
+        { failureThreshold: 3, resetTimeout: 30000 }
       );
       
       if (result) {
@@ -78,19 +93,25 @@ export const useDeckLoader = (deckId: string | undefined, setState: Function) =>
           isLoading: false,
         }));
         
+        console.log(`Successfully loaded deck ${deckId} with ${shuffledCards.length} cards`);
+        
         // Mark that we've successfully loaded the deck
         hasLoadedRef.current = true;
+        attemptCountRef.current = 0;
+        return result;
       }
       
-      return result;
+      return null;
     } catch (error) {
       handleGameError(error, 'load deck');
       setState(prev => ({ ...prev, isLoading: false }));
       return null;
     } finally {
       isLoadingRef.current = false;
+      // Re-enable normal throttling
+      setThrottlingPaused(false);
     }
-  }, [deckId, getDeck, navigate, refreshDecks, setState, handleGameError]);
+  }, [deckId, getDeck, navigate, refreshDecks, setState, handleGameError, setThrottlingPaused]);
 
   // Effect to load deck on mount or when deckId changes
   useEffect(() => {
@@ -100,14 +121,23 @@ export const useDeckLoader = (deckId: string | undefined, setState: Function) =>
     }
     
     // Reset the loaded state when deck ID changes
-    if (deckId) {
-      hasLoadedRef.current = false;
-    }
+    hasLoadedRef.current = false;
+    attemptCountRef.current = 0;
     
-    loadDeck();
+    // Execute the load operation
+    const loadPromise = loadDeck();
+    
+    // If loading fails after 3 seconds, try one more time
+    const timeoutId = setTimeout(() => {
+      if (!hasLoadedRef.current && !isLoadingRef.current) {
+        console.log('Deck loading timed out, retrying...');
+        loadDeck();
+      }
+    }, 3000);
     
     // Cleanup function
     return () => {
+      clearTimeout(timeoutId);
       hasLoadedRef.current = false;
     };
   }, [deckId, navigate, loadDeck]);

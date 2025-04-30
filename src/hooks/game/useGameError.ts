@@ -25,7 +25,18 @@ export const useGameError = () => {
   }, []);
 
   const handleGameError = useCallback((error: unknown, operation: string) => {
-    const appError = handleError(error, `Failed to ${operation}`);
+    // Customize error message based on operation
+    let customMessage: string | undefined;
+    
+    if (operation === 'load deck') {
+      customMessage = 'Failed to load deck. Please try again.';
+    } else if (operation === 'load shared deck') {
+      customMessage = 'Failed to load shared deck. Please check the link and try again.';
+    }
+    
+    const appError = handleError(error, customMessage || `Failed to ${operation}`);
+    
+    console.error(`Game error during ${operation}:`, error);
     
     setErrorState({
       hasError: true,

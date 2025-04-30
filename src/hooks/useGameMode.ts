@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef } from 'react';
 import { GameMode } from '@/types/game';
 import { useGameState } from './game/useGameState';
 import { useDeckLoader } from './game/useDeckLoader';
@@ -13,6 +13,8 @@ import { useTestMode } from './game/modes/useTestMode';
 export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
   // Initialize game state
   const { state, setState, selectors } = useGameState();
+  const loadedRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
 
   // Initialize error handling
   const { errorState, clearError } = useGameError();
@@ -73,6 +75,23 @@ export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
     return state.isReviewMode ? state.reviewCards : state.cards;
   }, [state.isReviewMode, state.reviewCards, state.cards]);
 
+  // Fixed reloadDeck function to avoid any potential circular dependencies
+  const reloadDeck = useCallback(() => {
+    const isAlreadyLoaded = loadedRef.current && !isInitialLoadRef.current;
+    
+    // Skip if we're already loaded (unless this is the initial load)
+    if (isAlreadyLoaded) {
+      console.log('Deck already loaded, skipping reload');
+      return Promise.resolve(null);
+    }
+    
+    console.log('Loading deck...');
+    isInitialLoadRef.current = false;
+    loadedRef.current = true;
+    
+    return loadDeck();
+  }, [loadDeck]);
+
   // Expose state and handlers
   return {
     ...state,
@@ -89,6 +108,6 @@ export const useGameMode = (deckId: string | undefined, mode: GameMode) => {
     endReviewMode: mode === 'practice' ? endReviewMode : undefined,
     continuePractice: mode === 'practice' ? continuePractice : undefined,
     restartPractice,
-    reloadDeck: loadDeck
+    reloadDeck
   };
 };

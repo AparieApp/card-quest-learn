@@ -12,6 +12,7 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
   const { handleGameError } = useGameError();
   const isLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
+  const attemptCountRef = useRef(0);
   
   // Get deck function with stable reference
   const fetchDeckByShareCode = useCallback((code: string) => {
@@ -40,14 +41,17 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
     
     isLoadingRef.current = true;
     setState(prev => ({ ...prev, isLoading: true }));
+    attemptCountRef.current += 1;
     
     return new Promise(async (resolve) => {
       try {
+        console.log(`Loading shared deck ${shareCode}, attempt #${attemptCountRef.current}`);
+        
         // Use circuit breaker to prevent infinite loading loops
         const fetchedDeck = await withCircuitBreaker(
           () => fetchDeckByShareCode(shareCode),
           `load-shared-deck-${shareCode}`,
-          { failureThreshold: 2, resetTimeout: 30000 }
+          { failureThreshold: 3, resetTimeout: 30000 }
         );
         
         if (!fetchedDeck) {
@@ -79,8 +83,11 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
           isLoading: false,
         }));
         
+        console.log(`Successfully loaded shared deck with ${shuffledCards.length} cards`);
+        
         // Mark that we've successfully loaded the deck
         hasLoadedRef.current = true;
+        attemptCountRef.current = 0;
         
         resolve(fetchedDeck);
       } catch (error) {
@@ -107,14 +114,23 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
     }
     
     // Reset the loaded state when share code changes
-    if (shareCode) {
-      hasLoadedRef.current = false;
-    }
+    hasLoadedRef.current = false;
+    attemptCountRef.current = 0;
     
-    loadSharedDeck();
+    // Execute the load operation
+    const loadPromise = loadSharedDeck();
+    
+    // If loading fails after 3 seconds, try one more time
+    const timeoutId = setTimeout(() => {
+      if (!hasLoadedRef.current && !isLoadingRef.current) {
+        console.log('Shared deck loading timed out, retrying...');
+        loadSharedDeck();
+      }
+    }, 3000);
     
     // Cleanup function
     return () => {
+      clearTimeout(timeoutId);
       hasLoadedRef.current = false;
     };
   }, [shareCode, navigate, loadSharedDeck]);

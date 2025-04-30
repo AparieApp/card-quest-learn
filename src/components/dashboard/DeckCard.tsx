@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Deck } from '@/types/deck';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck, Bell } from 'lucide-react';
+import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck, Bell, Loader2 } from 'lucide-react';
 import { useDeck } from '@/context/DeckContext';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface DeckCardProps {
   deck: Deck;
@@ -14,21 +15,73 @@ interface DeckCardProps {
 
 const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
   const navigate = useNavigate();
-  const { toggleFavorite, isFavorite, deleteDeck, isFollowingDeck, unfollowDeck } = useDeck();
+  const { toggleFavorite, isFavorite, deleteDeck, isFollowingDeck, unfollowDeck, refreshDecks } = useDeck();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [navTarget, setNavTarget] = useState<string | null>(null);
   
-  const handlePlay = () => {
-    navigate(`/deck/${deck.id}/practice`);
+  const handlePlay = async () => {
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    setNavTarget('practice');
+    
+    try {
+      // Ensure deck is refreshed before navigation
+      console.log('Preparing to navigate to practice mode...');
+      await refreshDecks(true);
+      
+      // Check if deck has cards after refresh
+      if (!deck.cards || deck.cards.length === 0) {
+        toast.warning('This deck has no cards. Please add cards first.');
+        navigate(`/deck/${deck.id}`);
+        return;
+      }
+      
+      navigate(`/deck/${deck.id}/practice`);
+    } catch (error) {
+      console.error('Error preparing for practice mode:', error);
+      toast.error('Could not start practice. Please try again.');
+    } finally {
+      setIsNavigating(false);
+      setNavTarget(null);
+    }
   };
   
-  const handleTest = () => {
-    navigate(`/deck/${deck.id}/test`);
+  const handleTest = async () => {
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    setNavTarget('test');
+    
+    try {
+      // Ensure deck is refreshed before navigation
+      console.log('Preparing to navigate to test mode...');
+      await refreshDecks(true);
+      
+      // Check if deck has cards after refresh
+      if (!deck.cards || deck.cards.length === 0) {
+        toast.warning('This deck has no cards. Please add cards first.');
+        navigate(`/deck/${deck.id}`);
+        return;
+      }
+      
+      navigate(`/deck/${deck.id}/test`);
+    } catch (error) {
+      console.error('Error preparing for test mode:', error);
+      toast.error('Could not start test. Please try again.');
+    } finally {
+      setIsNavigating(false);
+      setNavTarget(null);
+    }
   };
   
   const handleEdit = () => {
+    if (isNavigating) return;
     navigate(`/deck/${deck.id}`);
   };
   
   const handleShare = () => {
+    if (isNavigating) return;
     navigate(`/deck/${deck.id}/share`);
   };
   
@@ -83,17 +136,35 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
         onClick={handlePlay}
       >
         <p className="text-muted-foreground text-sm line-clamp-2">
-          {deck.description || `${deck.cards.length} cards`}
+          {deck.description || `${deck.cards?.length || 0} cards`}
         </p>
       </CardContent>
       <CardFooter className="pt-2 flex justify-between">
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handlePlay}>
-            <PlayCircle className="h-4 w-4 mr-1" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePlay} 
+            disabled={isNavigating}
+          >
+            {isNavigating && navTarget === 'practice' ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <PlayCircle className="h-4 w-4 mr-1" />
+            )}
             Practice
           </Button>
-          <Button variant="outline" size="sm" onClick={handleTest}>
-            <ClipboardCheck className="h-4 w-4 mr-1" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleTest} 
+            disabled={isNavigating}
+          >
+            {isNavigating && navTarget === 'test' ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <ClipboardCheck className="h-4 w-4 mr-1" />
+            )}
             Test
           </Button>
         </div>
