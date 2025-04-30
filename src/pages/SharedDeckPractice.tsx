@@ -1,37 +1,71 @@
 
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSharedGameMode } from '@/hooks/useSharedGameMode';
+import { useDirectSharedDeckLoad } from '@/hooks/game/useDirectSharedDeckLoad';
+import { useGameState } from '@/hooks/game/useGameState';
+import { useAnswerHandler } from '@/hooks/game/useAnswerHandler';
+import { useRemovePrompt } from '@/hooks/game/useRemovePrompt';
+import { useGameError } from '@/hooks/game/useGameError';
+import { usePracticeControls } from '@/hooks/game/usePracticeControls';
+import { usePracticeMode } from '@/hooks/game/modes/usePracticeMode';
 import GameLayout from '@/components/practice/GameLayout';
 
 const SharedDeckPractice = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   
-  const {
+  // Initialize direct deck loading
+  const { deck, cards, isLoading: isDeckLoading } = useDirectSharedDeckLoad(code);
+  
+  // Initialize game state
+  const { state, setState, selectors } = useGameState({
     deck,
     cards,
-    currentCard,
-    currentCardIndex,
-    incorrectCards,
-    reviewCards,
-    isReviewMode,
-    showSummary,
-    showRemovePrompt,
-    isLoading,
-    stats,
-    currentCycle,
-    currentCardStreak,
-    streakThreshold,
-    handleAnswer,
-    startReviewMode,
-    handleRemoveCardPrompt,
+    isLoading: isDeckLoading,
+  });
+  
+  // Initialize error handling
+  const { errorState, clearError } = useGameError();
+
+  // Fisher-Yates shuffle algorithm
+  const shuffleArray = React.useCallback(<T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, []);
+
+  // Initialize mode-specific handlers
+  const { startPracticeReview } = usePracticeMode(setState);
+
+  // Review mode handlers based on game mode
+  const startReviewMode = React.useCallback(() => {
+    // For practice mode, use specialized review logic
+    startPracticeReview(state.incorrectCards);
+  }, [state.incorrectCards, startPracticeReview]);
+
+  // Answer handler
+  const handleAnswer = useAnswerHandler({ mode: 'practice', setState });
+  
+  // Remove card prompt handler
+  const handleRemoveCardPrompt = useRemovePrompt(setState);
+
+  // Practice mode controls
+  const {
     endPractice,
     endReviewMode,
     continuePractice,
     restartPractice,
-  } = useSharedGameMode(code, 'practice');
-  
+  } = usePracticeControls({ mode: 'practice', setState, shuffleArray });
+
+  // Get the active cards (review cards or full deck)
+  const activeCards = React.useMemo(() => {
+    return state.isReviewMode ? state.reviewCards : state.cards;
+  }, [state.isReviewMode, state.reviewCards, state.cards]);
+
+  // Handle back button click
   const handleBackClick = () => {
     if (confirm('Are you sure you want to leave? Your progress will be lost.')) {
       navigate(`/shared/${code}`);
@@ -39,30 +73,29 @@ const SharedDeckPractice = () => {
   };
 
   // In practice mode we may show cards from multiple cycles, so pass previousCycles
-  const previousCycles = cards.filter(card => !reviewCards.some(rc => rc.id === card.id));
+  const previousCycles = cards.filter(card => !state.reviewCards.some(rc => rc.id === card.id));
   
   // Use the active card pool for determining total cards
-  const activeCardPool = isReviewMode ? reviewCards : cards;
-  const totalCardCount = activeCardPool.length;
+  const totalCardCount = activeCards.length;
 
   return (
     <GameLayout
-      isLoading={isLoading}
-      showSummary={showSummary}
-      deck={deck}
-      currentCard={currentCard}
-      currentCardIndex={currentCardIndex}
+      isLoading={state.isLoading}
+      showSummary={state.showSummary}
+      deck={state.deck}
+      currentCard={selectors.currentCard}
+      currentCardIndex={state.currentCardIndex}
       totalCards={totalCardCount}
       mode="practice"
-      isReviewMode={isReviewMode}
-      showRemovePrompt={showRemovePrompt}
-      stats={stats}
-      incorrectCards={incorrectCards}
-      reviewCards={reviewCards}
+      isReviewMode={state.isReviewMode}
+      showRemovePrompt={state.showRemovePrompt}
+      stats={state.stats}
+      incorrectCards={state.incorrectCards}
+      reviewCards={state.reviewCards}
       previousCycles={previousCycles}
-      currentCycle={currentCycle}
-      currentCardStreak={currentCardStreak}
-      streakThreshold={streakThreshold}
+      currentCycle={state.currentCycle}
+      currentCardStreak={state.currentCardStreak}
+      streakThreshold={state.streakThreshold}
       shareCode={code}
       onAnswer={handleAnswer}
       onReviewMode={startReviewMode}
