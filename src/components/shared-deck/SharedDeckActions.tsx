@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Deck } from '@/types/deck';
 import { StudyButtons } from './study-options/StudyButtons';
 import { SharingButtons } from './sharing/SharingButtons';
 import { AuthPrompt } from './auth/AuthPrompt';
-import { useDeck } from '@/context/DeckContext';
+import { FollowBadge } from './FollowBadge';
 
 interface SharedDeckActionsProps {
   deck: Deck;
@@ -33,7 +33,10 @@ export const SharedDeckActions = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Study Options</CardTitle>
+        <CardTitle className="flex items-center">
+          Study Options
+          <FollowBadge isFollowing={isFollowing} />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <StudyButtons deck={deck} shareCode={shareCode} />

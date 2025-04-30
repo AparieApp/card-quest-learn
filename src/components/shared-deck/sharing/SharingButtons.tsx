@@ -1,9 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { BookCopy, Bell, BellOff } from 'lucide-react';
 import { Deck } from '@/types/deck';
-import { useDeck } from '@/context/DeckContext';
 
 interface SharingButtonsProps {
   deck: Deck;
@@ -46,6 +45,7 @@ export const SharingButtons = ({
         className="w-full flex items-center justify-center"
         disabled={isCopying}
         onClick={handleCopy}
+        title="Save a copy of this deck to your collection"
       >
         <BookCopy className="mr-2 h-4 w-4" />
         {isCopying ? 'Saving to My Decks...' : 'Save to My Decks'}
@@ -59,6 +59,7 @@ export const SharingButtons = ({
           }`}
           disabled={isTogglingFollow}
           onClick={handleToggleFollow}
+          title={isFollowing ? "Stop receiving updates when this deck changes" : "Get updates when this deck changes"}
         >
           {isFollowing ? (
             <>

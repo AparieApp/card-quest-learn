@@ -33,9 +33,19 @@ export const followedDeckService = {
         throw new ValidationError('Invalid deck ID');
       }
       
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new ValidationError('You must be logged in to follow a deck');
+      }
+      
       const { error } = await supabase
         .from('followed_decks')
-        .insert({ deck_id: deckId });
+        .insert({ 
+          deck_id: deckId,
+          user_id: user.id
+        });
       
       if (error) {
         // Check if it's a unique constraint violation (already following)
@@ -62,10 +72,18 @@ export const followedDeckService = {
         throw new ValidationError('Invalid deck ID');
       }
       
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new ValidationError('You must be logged in to unfollow a deck');
+      }
+      
       const { error } = await supabase
         .from('followed_decks')
         .delete()
-        .eq('deck_id', deckId);
+        .eq('deck_id', deckId)
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error unfollowing deck:', error);
