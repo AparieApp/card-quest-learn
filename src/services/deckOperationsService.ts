@@ -9,21 +9,13 @@ export const deckOperationsService = {
   // Get all decks for a user
   async getDecks(): Promise<Deck[]> {
     try {
-      // Always filter by authenticated user's created decks to ensure RLS works properly
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('User not authenticated when fetching decks');
-        return [];
-      }
-      
+      // Always filter by authenticated user to ensure RLS works properly
       const { data: decks, error } = await supabase
         .from('decks')
         .select(`
           *,
           flashcards (*)
         `)
-        .eq('creator_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {

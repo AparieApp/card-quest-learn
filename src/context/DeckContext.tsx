@@ -8,13 +8,10 @@ import { useDeckOperations } from '@/hooks/deck/useDeckOperations';
 import { useCardOperations } from '@/hooks/deck/useCardOperations';
 import { useSharingOperations } from '@/hooks/deck/useSharingOperations';
 import { deckService } from '@/services/deckService';
-import { useFollowedDecks } from '@/hooks/useFollowedDecks';
 
 interface DeckContextType {
   decks: Deck[];
   favorites: string[];
-  followedDeckIds: string[];
-  followedDecks: Deck[];
   loading: boolean;
   createDeck: (input: CreateDeckInput) => Promise<Deck>;
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
@@ -25,9 +22,6 @@ interface DeckContextType {
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
   isFavorite: (deckId: string) => boolean;
-  followDeck: (deckId: string) => Promise<boolean>;
-  unfollowDeck: (deckId: string) => Promise<boolean>;
-  isFollowingDeck: (deckId: string) => boolean;
   getDeckByShareCode: (code: string) => Promise<Deck | null>;
   generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
@@ -39,8 +33,6 @@ interface DeckContextType {
 const DeckContext = createContext<DeckContextType>({
   decks: [],
   favorites: [],
-  followedDeckIds: [],
-  followedDecks: [],
   loading: true,
   createDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
   updateDeck: async () => {},
@@ -51,9 +43,6 @@ const DeckContext = createContext<DeckContextType>({
   deleteCard: async () => {},
   toggleFavorite: async () => {},
   isFavorite: () => false,
-  followDeck: async () => false,
-  unfollowDeck: async () => false,
-  isFollowingDeck: () => false,
   getDeckByShareCode: async () => null,
   generateShareCode: () => '',
   copyDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
@@ -66,14 +55,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { decks = [], loading, setDecks, refreshDecks: refreshStoredDecks, setBypassThrottle } = useDeckStorage();
   const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
-  const { 
-    followedDeckIds = [], 
-    followedDecks = [],
-    followDeck, 
-    unfollowDeck, 
-    isFollowingDeck, 
-    refreshFollowedDecks 
-  } = useFollowedDecks();
   
   const userId = user?.id;
   
@@ -83,29 +64,9 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     deleteDeck,
   } = useDeckOperations(setDecks, userId);
 
-  // Create all hooks first, before any conditional logic
   const handleDecksUpdate = useCallback((updater: (prevDecks: Deck[]) => Deck[]) => {
     setDecks(updater);
   }, [setDecks]);
-
-  const handleSetThrottlingPaused = useCallback((value: boolean) => {
-    console.log(`Setting throttling paused to ${value}`);
-    setBypassThrottle(value);
-  }, [setBypassThrottle]);
-
-  const getDeck = useCallback((id: string): Deck | null => {
-    if (!id) return null;
-    
-    // First check user-created decks
-    let deck = Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
-    
-    // If not found, check followed decks
-    if (!deck && Array.isArray(followedDecks)) {
-      deck = followedDecks.find(deck => deck.id === id) || null;
-    }
-    
-    return deck;
-  }, [decks, followedDecks]);
 
   const refreshDecks = useCallback(async (bypassThrottle?: boolean) => {
     console.log('Refreshing decks with user ID:', userId);
@@ -116,11 +77,10 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       await refreshStoredDecks(bypassThrottle);
-      await refreshFollowedDecks();
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
-  }, [userId, refreshStoredDecks, refreshFollowedDecks]);
+  }, [userId, refreshStoredDecks]);
 
   const {
     addCardToDeck,
@@ -130,18 +90,26 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     setThrottlingPaused
   } = useCardOperations(handleDecksUpdate, userId, refreshDecks);
 
-  // Initialize sharing operations hook - ensure it's always called
   const {
     getDeckByShareCode,
     generateShareCode,
     copyDeck,
-  } = useSharingOperations(decks, followedDecks, setDecks, userId);
+  } = useSharingOperations(decks, setDecks, userId);
   
+  const getDeck = useCallback((id: string): Deck | null => {
+    if (!id) return null;
+    return Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
+  }, [decks]);
+
+  // Connect the setBypassThrottle from useDeckStorage to the setThrottlingPaused exposed by context
+  const handleSetThrottlingPaused = useCallback((value: boolean) => {
+    console.log(`Setting throttling paused to ${value}`);
+    setBypassThrottle(value);
+  }, [setBypassThrottle]);
+
   const contextValue = {
     decks: Array.isArray(decks) ? decks : [],
     favorites: Array.isArray(favorites) ? favorites : [],
-    followedDeckIds: Array.isArray(followedDeckIds) ? followedDeckIds : [],
-    followedDecks: Array.isArray(followedDecks) ? followedDecks : [],
     loading,
     createDeck,
     updateDeck,
@@ -152,9 +120,6 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     deleteCard,
     toggleFavorite,
     isFavorite,
-    followDeck,
-    unfollowDeck,
-    isFollowingDeck,
     getDeckByShareCode,
     generateShareCode,
     copyDeck,

@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback, useRef } from 'react';
+import { useMemo, useCallback } from 'react';
 import { GameMode } from '@/types/game';
 import { useGameState } from './game/useGameState';
 import { useSharedDeckLoader } from './game/useSharedDeckLoader';
@@ -13,8 +13,6 @@ import { useTestMode } from './game/modes/useTestMode';
 export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode) => {
   // Initialize game state
   const { state, setState, selectors } = useGameState();
-  const loadedRef = useRef(false);
-  const isInitialLoadRef = useRef(true);
 
   // Initialize error handling
   const { errorState, clearError } = useGameError();
@@ -39,8 +37,10 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
   // Review mode handlers based on game mode
   const startReviewMode = useCallback(() => {
     if (mode === 'test') {
+      // For test mode, review uses all incorrect cards from the session
       startTestReview(state.incorrectCards);
     } else {
+      // For practice mode, use specialized review logic
       startPracticeReview(state.incorrectCards);
     }
   }, [mode, state.incorrectCards, startTestReview, startPracticeReview]);
@@ -51,7 +51,7 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
   // Remove card prompt handler
   const handleRemoveCardPrompt = useRemovePrompt(setState);
 
-  // Practice mode controls with stable dependencies
+  // Practice mode controls
   const {
     endPractice,
     endReviewMode,
@@ -73,23 +73,6 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
     return state.isReviewMode ? state.reviewCards : state.cards;
   }, [state.isReviewMode, state.reviewCards, state.cards]);
 
-  // Fixed reloadDeck function to avoid any potential circular dependencies
-  const reloadDeck = useCallback(() => {
-    const isAlreadyLoaded = loadedRef.current && !isInitialLoadRef.current;
-    
-    // Skip if we're already loaded (unless this is the initial load)
-    if (isAlreadyLoaded) {
-      console.log('Deck already loaded, skipping reload');
-      return Promise.resolve(null);
-    }
-    
-    console.log('Loading shared deck...');
-    isInitialLoadRef.current = false;
-    loadedRef.current = true;
-    
-    return loadSharedDeck();
-  }, [loadSharedDeck]);
-
   // Expose state and handlers
   return {
     ...state,
@@ -106,6 +89,6 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
     endReviewMode: mode === 'practice' ? endReviewMode : undefined,
     continuePractice: mode === 'practice' ? continuePractice : undefined,
     restartPractice,
-    reloadDeck
+    reloadDeck: loadSharedDeck
   };
 };

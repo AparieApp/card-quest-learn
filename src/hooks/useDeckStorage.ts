@@ -17,7 +17,6 @@ export const useDeckStorage = () => {
   const bypassThrottleRef = useRef<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
   const networkErrorCountRef = useRef<number>(0);
-  const refreshQueueRef = useRef<boolean>(false);
   
   // Ensure we track if the component is mounted to prevent updates after unmount
   useEffect(() => {
@@ -46,7 +45,6 @@ export const useDeckStorage = () => {
 
       if (isFetchingRef.current) {
         console.log('Fetch already in progress, skipping');
-        refreshQueueRef.current = true; // Mark that we want to refresh later
         return;
       }
       
@@ -67,7 +65,6 @@ export const useDeckStorage = () => {
         
         lastFetchTimeRef.current = Date.now();
         networkErrorCountRef.current = 0; // Reset error counter on success
-        refreshQueueRef.current = false; // Clear the refresh queue
       } catch (error) {
         console.error('Error fetching decks:', error);
         
@@ -75,17 +72,13 @@ export const useDeckStorage = () => {
         if (isMountedRef.current) {
           // Increment error counter for exponential backoff
           networkErrorCountRef.current++;
+          setDecks([]);
         }
       } finally {
         if (isMountedRef.current) {
           setLoading(false);
         }
         isFetchingRef.current = false;
-        
-        // If a refresh was requested while we were fetching, schedule another fetch
-        if (refreshQueueRef.current && isMountedRef.current) {
-          setTimeout(() => refreshDecksWithThrottle(true), 100);
-        }
       }
       
       previousAuthState.current = {
@@ -106,7 +99,6 @@ export const useDeckStorage = () => {
     
     if (isFetchingRef.current) {
       console.log('Refresh already in progress, skipping');
-      refreshQueueRef.current = true; // Mark that we want to refresh after the current one finishes
       return null;
     }
     
@@ -125,8 +117,6 @@ export const useDeckStorage = () => {
     console.log(`${shouldBypassThrottle ? 'Bypassing throttle' : 'Normal refresh'} - fetching latest data`);
     
     isFetchingRef.current = true;
-    refreshQueueRef.current = false; // Clear the queue as we're about to refresh
-    
     try {
       console.log('Manual refresh of decks requested');
       const fetchedDecks = await deckService.getDecks();
@@ -148,11 +138,6 @@ export const useDeckStorage = () => {
       return null;
     } finally {
       isFetchingRef.current = false;
-      
-      // If a refresh was requested while we were fetching, schedule another fetch
-      if (refreshQueueRef.current && isMountedRef.current) {
-        setTimeout(() => refreshDecksWithThrottle(true), 100);
-      }
     }
   };
 

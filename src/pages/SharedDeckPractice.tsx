@@ -1,94 +1,37 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useDirectSharedDeckLoad } from '@/hooks/game/useDirectSharedDeckLoad';
-import { useGameState } from '@/hooks/game/useGameState';
-import { useAnswerHandler } from '@/hooks/game/useAnswerHandler';
-import { useRemovePrompt } from '@/hooks/game/useRemovePrompt';
-import { useGameError } from '@/hooks/game/useGameError';
-import { usePracticeControls } from '@/hooks/game/usePracticeControls';
-import { usePracticeMode } from '@/hooks/game/modes/usePracticeMode';
+import { useSharedGameMode } from '@/hooks/useSharedGameMode';
 import GameLayout from '@/components/practice/GameLayout';
-import { resetAllCircuitBreakers } from '@/utils/circuitBreaker';
-import { toast } from 'sonner';
 
 const SharedDeckPractice = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   
-  // Reset circuit breakers on mount to ensure fresh start
-  useEffect(() => {
-    resetAllCircuitBreakers();
-  }, []);
-  
-  // Initialize direct deck loading
-  const { deck, cards, isLoading: isDeckLoading, loadSharedDeck } = useDirectSharedDeckLoad(code);
-  
-  // Add effect to handle empty cards
-  useEffect(() => {
-    if (!isDeckLoading && cards.length === 0 && deck) {
-      console.log('Detected empty cards array but deck exists, attempting refresh');
-      loadSharedDeck(true); // Force refresh
-    }
-  }, [isDeckLoading, cards.length, deck, loadSharedDeck]);
-  
-  // Initialize game state
-  const { state, setState, selectors } = useGameState({
+  const {
     deck,
     cards,
-    isLoading: isDeckLoading,
-  });
-  
-  // Initialize error handling
-  const { errorState, clearError } = useGameError();
-
-  // Fisher-Yates shuffle algorithm
-  const shuffleArray = React.useCallback(<T,>(array: T[]): T[] => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }, []);
-
-  // Initialize mode-specific handlers
-  const { startPracticeReview } = usePracticeMode(setState);
-
-  // Review mode handlers based on game mode
-  const startReviewMode = React.useCallback(() => {
-    // For practice mode, use specialized review logic
-    startPracticeReview(state.incorrectCards);
-  }, [state.incorrectCards, startPracticeReview]);
-
-  // Answer handler
-  const handleAnswer = useAnswerHandler({ mode: 'practice', setState });
-  
-  // Remove card prompt handler
-  const handleRemoveCardPrompt = useRemovePrompt(setState);
-
-  // Handle manual refresh
-  const handleManualRefresh = React.useCallback(async () => {
-    toast.info("Refreshing shared deck data...");
-    resetAllCircuitBreakers();
-    await loadSharedDeck(true);
-    toast.success("Shared deck refreshed");
-  }, [loadSharedDeck]);
-
-  // Practice mode controls
-  const {
+    currentCard,
+    currentCardIndex,
+    incorrectCards,
+    reviewCards,
+    isReviewMode,
+    showSummary,
+    showRemovePrompt,
+    isLoading,
+    stats,
+    currentCycle,
+    currentCardStreak,
+    streakThreshold,
+    handleAnswer,
+    startReviewMode,
+    handleRemoveCardPrompt,
     endPractice,
     endReviewMode,
     continuePractice,
     restartPractice,
-  } = usePracticeControls({ mode: 'practice', setState, shuffleArray });
-
-  // Get the active cards (review cards or full deck)
-  const activeCards = React.useMemo(() => {
-    return state.isReviewMode ? state.reviewCards : state.cards;
-  }, [state.isReviewMode, state.reviewCards, state.cards]);
-
-  // Handle back button click
+  } = useSharedGameMode(code, 'practice');
+  
   const handleBackClick = () => {
     if (confirm('Are you sure you want to leave? Your progress will be lost.')) {
       navigate(`/shared/${code}`);
@@ -96,29 +39,30 @@ const SharedDeckPractice = () => {
   };
 
   // In practice mode we may show cards from multiple cycles, so pass previousCycles
-  const previousCycles = cards.filter(card => !state.reviewCards.some(rc => rc.id === card.id));
+  const previousCycles = cards.filter(card => !reviewCards.some(rc => rc.id === card.id));
   
   // Use the active card pool for determining total cards
-  const totalCardCount = activeCards.length;
+  const activeCardPool = isReviewMode ? reviewCards : cards;
+  const totalCardCount = activeCardPool.length;
 
   return (
     <GameLayout
-      isLoading={state.isLoading}
-      showSummary={state.showSummary}
-      deck={state.deck}
-      currentCard={selectors.currentCard}
-      currentCardIndex={state.currentCardIndex}
+      isLoading={isLoading}
+      showSummary={showSummary}
+      deck={deck}
+      currentCard={currentCard}
+      currentCardIndex={currentCardIndex}
       totalCards={totalCardCount}
       mode="practice"
-      isReviewMode={state.isReviewMode}
-      showRemovePrompt={state.showRemovePrompt}
-      stats={state.stats}
-      incorrectCards={state.incorrectCards}
-      reviewCards={state.reviewCards}
+      isReviewMode={isReviewMode}
+      showRemovePrompt={showRemovePrompt}
+      stats={stats}
+      incorrectCards={incorrectCards}
+      reviewCards={reviewCards}
       previousCycles={previousCycles}
-      currentCycle={state.currentCycle}
-      currentCardStreak={state.currentCardStreak}
-      streakThreshold={state.streakThreshold}
+      currentCycle={currentCycle}
+      currentCardStreak={currentCardStreak}
+      streakThreshold={streakThreshold}
       shareCode={code}
       onAnswer={handleAnswer}
       onReviewMode={startReviewMode}
@@ -128,7 +72,6 @@ const SharedDeckPractice = () => {
       onRestartPractice={restartPractice}
       onRemoveCardPrompt={handleRemoveCardPrompt}
       onBack={handleBackClick}
-      onRefresh={handleManualRefresh}
     />
   );
 };

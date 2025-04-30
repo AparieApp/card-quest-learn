@@ -17,14 +17,10 @@ const SharedDeck = () => {
     deck,
     isLoading,
     isCopying,
-    isTogglingFollow,
     isAuthenticated,
     isFavorite,
-    isFollowing,
     handleFavorite,
     handleCopyDeck,
-    handleFollowDeck,
-    handleUnfollowDeck,
   } = useSharedDeck(code);
   
   if (isLoading) {
@@ -77,11 +73,7 @@ const SharedDeck = () => {
               shareCode={code || ''}
               isCopying={isCopying}
               isAuthenticated={isAuthenticated}
-              isFollowing={isFollowing}
-              isTogglingFollow={isTogglingFollow}
               onCopy={handleCopyDeck}
-              onFollow={handleFollowDeck}
-              onUnfollow={handleUnfollowDeck}
             />
           </div>
         </div>

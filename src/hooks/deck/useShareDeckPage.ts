@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeck } from '@/context/DeckContext';
 import { handleError } from '@/utils/errorHandling';
@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 export const useShareDeckPage = (id: string | undefined) => {
   const navigate = useNavigate();
   const { getDeck, generateShareCode, refreshDecks } = useDeck();
-  const isInitialLoadRef = useRef(true);
   
   const [shareCode, setShareCode] = useState('');
   const [shareUrl, setShareUrl] = useState('');
@@ -25,12 +24,7 @@ export const useShareDeckPage = (id: string | undefined) => {
       
       setIsLoading(true);
       try {
-        // Only refresh decks on initial load to prevent excessive API calls
-        if (isInitialLoadRef.current) {
-          await refreshDecks();
-          isInitialLoadRef.current = false;
-        }
-        
+        await refreshDecks();
         const fetchedDeck = getDeck(id);
         if (!fetchedDeck) {
           throw new Error('Deck not found');
@@ -38,16 +32,11 @@ export const useShareDeckPage = (id: string | undefined) => {
         
         setDeck(fetchedDeck);
         
-        // Generate share code (this uses cache if available)
         const code = generateShareCode(id);
-        if (code) {
-          setShareCode(code);
-          
-          const baseUrl = window.location.origin;
-          setShareUrl(`${baseUrl}/shared/${code}`);
-        } else {
-          toast.error("Couldn't generate share code");
-        }
+        setShareCode(code);
+        
+        const baseUrl = window.location.origin;
+        setShareUrl(`${baseUrl}/shared/${code}`);
       } catch (error) {
         handleError(error, 'Error loading deck information');
         navigate('/dashboard');

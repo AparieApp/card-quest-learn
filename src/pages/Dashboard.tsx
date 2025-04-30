@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDeck } from '@/context/DeckContext';
@@ -12,36 +12,10 @@ import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
-  const { 
-    decks = [], 
-    favorites = [], 
-    followedDecks = [], 
-    loading, 
-    refreshDecks 
-  } = useDeck();
-  
+  const { decks = [], favorites = [], loading } = useDeck();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
   const isMobile = useIsMobile();
-  const [myDecks, setMyDecks] = useState<typeof decks>([]);
-
-  // Update my decks when decks change
-  useEffect(() => {
-    if (Array.isArray(decks) && user) {
-      // Only include decks created by the current user for the My Decks tab
-      const userDecks = decks.filter(deck => deck.creator_id === user.id);
-      setMyDecks(userDecks);
-    } else {
-      setMyDecks([]);
-    }
-  }, [decks, user]);
-
-  // Refresh decks when active tab changes to 'followed'
-  useEffect(() => {
-    if (activeTab === 'followed' && isAuthenticated) {
-      refreshDecks(true);
-    }
-  }, [activeTab, isAuthenticated, refreshDecks]);
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -84,10 +58,9 @@ const Dashboard = () => {
             value={activeTab} 
             onValueChange={setActiveTab}
           >
-            <TabsList className={isMobile ? "w-full grid grid-cols-4" : ""}>
+            <TabsList className={isMobile ? "w-full grid grid-cols-3" : ""}>
               <TabsTrigger value="decks">My Decks</TabsTrigger>
               <TabsTrigger value="favorites">Favorites</TabsTrigger>
-              <TabsTrigger value="followed">Followed</TabsTrigger>
               <TabsTrigger value="find">Find Deck</TabsTrigger>
             </TabsList>
             
@@ -100,7 +73,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <DeckGrid 
-                    decks={myDecks} 
+                    decks={Array.isArray(decks) ? decks : []} 
                     emptyMessage="You haven't created any decks yet. Click 'Create Deck' to get started."
                   />
                 )}
@@ -116,20 +89,6 @@ const Dashboard = () => {
                   <DeckGrid 
                     decks={favoritedDecks} 
                     emptyMessage="You haven't favorited any decks yet."
-                  />
-                )}
-              </TabsContent>
-              
-              <TabsContent value="followed">
-                {loading ? (
-                  <div className="flex justify-center items-center p-8">
-                    <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
-                    <p>Loading followed decks...</p>
-                  </div>
-                ) : (
-                  <DeckGrid 
-                    decks={followedDecks} 
-                    emptyMessage="You aren't following any decks yet."
                   />
                 )}
               </TabsContent>

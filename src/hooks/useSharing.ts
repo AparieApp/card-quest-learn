@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+
+import { useState, useCallback } from 'react';
 import { shareService } from '@/services/shareService';
 import { toast } from 'sonner';
 import { deckService } from '@/services/deckService';
@@ -6,7 +7,6 @@ import { Deck } from '@/types/deck';
 
 export const useSharing = () => {
   const [generatingCode, setGeneratingCode] = useState(false);
-  const shareCodeCache = useRef<Record<string, string>>({});
 
   const generateShareCode = useCallback((deckId: string): string => {
     if (!deckId) {
@@ -14,19 +14,9 @@ export const useSharing = () => {
       return '';
     }
     
-    // Check cache first
-    if (shareCodeCache.current[deckId]) {
-      console.log('Using cached share code for deck:', deckId);
-      return shareCodeCache.current[deckId];
-    }
-    
     // Generate a code that's more readable but still random
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
-    // Cache the code immediately
-    shareCodeCache.current[deckId] = code;
-    
-    // Save in background without blocking
     setGeneratingCode(true);
     shareService.saveShareCode(deckId, code)
       .then(() => {
@@ -34,8 +24,6 @@ export const useSharing = () => {
       })
       .catch((error) => {
         console.error('Error generating share code:', error);
-        // Keep using the generated code even if save fails
-        // Just notify the user there might be issues with persistence
         toast.error('Failed to save share code');
         setGeneratingCode(false);
       });
