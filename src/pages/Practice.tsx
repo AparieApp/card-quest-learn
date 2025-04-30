@@ -8,7 +8,6 @@ import { useRemovePrompt } from '@/hooks/game/useRemovePrompt';
 import { useGameError } from '@/hooks/game/useGameError';
 import { usePracticeControls } from '@/hooks/game/usePracticeControls';
 import { usePracticeMode } from '@/hooks/game/modes/usePracticeMode';
-import { useTestMode } from '@/hooks/game/modes/useTestMode';
 import GameLayout from '@/components/practice/GameLayout';
 
 const Practice = () => {
@@ -40,7 +39,6 @@ const Practice = () => {
 
   // Initialize mode-specific handlers
   const { startPracticeReview } = usePracticeMode(setState);
-  const { startTestReview } = useTestMode(setState);
 
   // Review mode handlers based on game mode
   const startReviewMode = React.useCallback(() => {

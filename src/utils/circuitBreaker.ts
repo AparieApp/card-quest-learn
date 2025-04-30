@@ -24,16 +24,16 @@ export class CircuitBreaker {
   private constructor(
     private readonly key: string,
     {
-      failureThreshold = 3,
-      resetTimeout = 10000,
-      maxRequestsInHalfOpen = 1,
+      failureThreshold = 5, // Increased from 3 to 5
+      resetTimeout = 5000,  // Decreased from 10000 to 5000
+      maxRequestsInHalfOpen = 2, // Increased from 1 to 2
     }: CircuitBreakerOptions = {}
   ) {
     this.failureThreshold = failureThreshold;
     this.resetTimeout = resetTimeout;
     this.maxRequestsInHalfOpen = maxRequestsInHalfOpen;
     
-    console.log(`Circuit breaker initialized for ${key}`);
+    console.log(`Circuit breaker initialized for ${key} with threshold ${failureThreshold}, timeout ${resetTimeout}ms`);
   }
   
   public static getInstance(key: string, options: CircuitBreakerOptions = {}): CircuitBreaker {
@@ -83,7 +83,7 @@ export class CircuitBreaker {
         this.successCount = 0;
       }
     } else {
-      this.failureCount = 0;
+      this.failureCount = Math.max(0, this.failureCount - 1); // Gradually decrease failure count on success
     }
   }
   

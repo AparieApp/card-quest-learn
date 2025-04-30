@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Deck, Flashcard } from '@/types/deck';
 import { DeckMapper } from '@/mappers/DeckMapper';
@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Cache to store loaded decks by share code
 const shareCodeCache = new Map<string, { deck: Deck; timestamp: number }>();
-const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes (increased from 5)
 
 export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -16,6 +16,7 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
   const [error, setError] = useState<string | null>(null);
   const [cards, setCards] = useState<Flashcard[]>([]);
   const navigate = useNavigate();
+  const loadingRef = useRef<boolean>(false);
 
   // Function to shuffle cards using Fisher-Yates algorithm
   const shuffleCards = useCallback((cardsToShuffle: Flashcard[]): Flashcard[] => {
@@ -29,6 +30,12 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
 
   // Load deck directly from Supabase using share code
   const loadSharedDeck = useCallback(async () => {
+    // Prevent multiple simultaneous load attempts
+    if (loadingRef.current) {
+      console.log('Already loading shared deck, skipping duplicate request');
+      return null;
+    }
+
     if (!shareCode) {
       setError('No share code provided');
       setIsLoading(false);
@@ -36,6 +43,7 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
       return null;
     }
 
+    loadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -49,6 +57,7 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
         setDeck(cachedData.deck);
         setCards(shuffleCards(cachedData.deck.cards));
         setIsLoading(false);
+        loadingRef.current = false;
         return cachedData.deck;
       }
 
@@ -67,6 +76,7 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
         toast.error('Shared deck not found');
         navigate('/');
         setIsLoading(false);
+        loadingRef.current = false;
         return null;
       }
 
@@ -84,6 +94,7 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
         setError(deckError?.message || 'Shared deck not found');
         toast.error('Failed to load shared deck');
         setIsLoading(false);
+        loadingRef.current = false;
         navigate('/');
         return null;
       }
@@ -92,13 +103,15 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
       const { data: cardData, error: cardError } = await supabase
         .from('flashcards')
         .select('*')
-        .eq('deck_id', deckId);
+        .eq('deck_id', deckId)
+        .order('created_at', { ascending: true });
 
       if (cardError) {
         console.error('Error loading cards for shared deck:', cardError);
         setError(cardError.message);
         toast.error('Failed to load cards from shared deck');
         setIsLoading(false);
+        loadingRef.current = false;
         return null;
       }
 
@@ -107,6 +120,7 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
         toast.warning('This shared deck has no cards');
         navigate(`/shared/${shareCode}`);
         setIsLoading(false);
+        loadingRef.current = false;
         return null;
       }
 
@@ -129,12 +143,14 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
       return mappedDeck;
     } catch (error) {
       console.error('Exception loading shared deck:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error loading shared deck');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error loading shared deck';
+      setError(errorMessage);
       toast.error('Failed to load shared deck');
       navigate('/');
       return null;
     } finally {
       setIsLoading(false);
+      loadingRef.current = false;
     }
   }, [shareCode, navigate, shuffleCards]);
 
@@ -142,11 +158,14 @@ export const useDirectSharedDeckLoad = (shareCode: string | undefined) => {
   useEffect(() => {
     if (!shareCode) return;
     
-    loadSharedDeck();
+    // Set a small delay to avoid race conditions with route transitions
+    const timer = setTimeout(() => {
+      loadSharedDeck();
+    }, 100);
     
     // Clean up function
     return () => {
-      // Nothing to clean up
+      clearTimeout(timer);
     };
   }, [shareCode, loadSharedDeck]);
 

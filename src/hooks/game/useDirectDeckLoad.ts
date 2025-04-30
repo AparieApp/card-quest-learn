@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Deck, Flashcard } from '@/types/deck';
 import { DeckMapper } from '@/mappers/DeckMapper';
@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Cache to store loaded decks in memory
 const deckCache = new Map<string, { deck: Deck; timestamp: number }>();
-const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes (increased from 5)
 
 export const useDirectDeckLoad = (deckId: string | undefined) => {
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -16,6 +16,7 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
   const [error, setError] = useState<string | null>(null);
   const [cards, setCards] = useState<Flashcard[]>([]);
   const navigate = useNavigate();
+  const loadingRef = useRef<boolean>(false);
 
   // Function to shuffle cards using Fisher-Yates algorithm
   const shuffleCards = useCallback((cardsToShuffle: Flashcard[]): Flashcard[] => {
@@ -29,6 +30,12 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
 
   // Load deck directly from Supabase
   const loadDeck = useCallback(async () => {
+    // Prevent multiple simultaneous load attempts
+    if (loadingRef.current) {
+      console.log('Already loading deck, skipping duplicate request');
+      return null;
+    }
+
     if (!deckId) {
       setError('No deck ID provided');
       setIsLoading(false);
@@ -36,6 +43,7 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
       return null;
     }
 
+    loadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -49,6 +57,7 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
         setDeck(cachedData.deck);
         setCards(shuffleCards(cachedData.deck.cards));
         setIsLoading(false);
+        loadingRef.current = false;
         return cachedData.deck;
       }
 
@@ -66,6 +75,7 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
         setError(deckError?.message || 'Deck not found');
         toast.error('Failed to load deck');
         setIsLoading(false);
+        loadingRef.current = false;
         navigate('/dashboard');
         return null;
       }
@@ -74,13 +84,15 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
       const { data: cardData, error: cardError } = await supabase
         .from('flashcards')
         .select('*')
-        .eq('deck_id', deckId);
+        .eq('deck_id', deckId)
+        .order('created_at', { ascending: true });
 
       if (cardError) {
         console.error('Error loading cards:', cardError);
         setError(cardError.message);
         toast.error('Failed to load cards');
         setIsLoading(false);
+        loadingRef.current = false;
         return null;
       }
 
@@ -89,6 +101,7 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
         toast.warning('This deck has no cards');
         navigate(`/deck/${deckId}`);
         setIsLoading(false);
+        loadingRef.current = false;
         return null;
       }
 
@@ -111,12 +124,14 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
       return mappedDeck;
     } catch (error) {
       console.error('Exception loading deck:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error loading deck');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error loading deck';
+      setError(errorMessage);
       toast.error('Failed to load deck');
       navigate('/dashboard');
       return null;
     } finally {
       setIsLoading(false);
+      loadingRef.current = false;
     }
   }, [deckId, navigate, shuffleCards]);
 
@@ -124,11 +139,14 @@ export const useDirectDeckLoad = (deckId: string | undefined) => {
   useEffect(() => {
     if (!deckId) return;
     
-    loadDeck();
+    // Set a small delay to avoid race conditions with route transitions
+    const timer = setTimeout(() => {
+      loadDeck();
+    }, 100);
     
     // Clean up function
     return () => {
-      // Nothing to clean up
+      clearTimeout(timer);
     };
   }, [deckId, loadDeck]);
 

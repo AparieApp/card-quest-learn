@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Deck } from '@/types/deck';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck, Bell, Loader2 } from 'lucide-react';
+import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck, Bell } from 'lucide-react';
 import { useDeck } from '@/context/DeckContext';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -15,22 +15,16 @@ interface DeckCardProps {
 
 const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
   const navigate = useNavigate();
-  const { toggleFavorite, isFavorite, deleteDeck, isFollowingDeck, unfollowDeck, refreshDecks } = useDeck();
+  const { toggleFavorite, isFavorite, deleteDeck, isFollowingDeck, unfollowDeck } = useDeck();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [navTarget, setNavTarget] = useState<string | null>(null);
   
-  const handlePlay = async () => {
+  const handlePlay = () => {
     if (isNavigating) return;
     
     setIsNavigating(true);
-    setNavTarget('practice');
     
     try {
-      // Ensure deck is refreshed before navigation
-      console.log('Preparing to navigate to practice mode...');
-      await refreshDecks(true);
-      
-      // Check if deck has cards after refresh
+      // Check if deck has cards before navigation
       if (!deck.cards || deck.cards.length === 0) {
         toast.warning('This deck has no cards. Please add cards first.');
         navigate(`/deck/${deck.id}`);
@@ -39,26 +33,20 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
       
       navigate(`/deck/${deck.id}/practice`);
     } catch (error) {
-      console.error('Error preparing for practice mode:', error);
+      console.error('Error navigating to practice mode:', error);
       toast.error('Could not start practice. Please try again.');
     } finally {
       setIsNavigating(false);
-      setNavTarget(null);
     }
   };
   
-  const handleTest = async () => {
+  const handleTest = () => {
     if (isNavigating) return;
     
     setIsNavigating(true);
-    setNavTarget('test');
     
     try {
-      // Ensure deck is refreshed before navigation
-      console.log('Preparing to navigate to test mode...');
-      await refreshDecks(true);
-      
-      // Check if deck has cards after refresh
+      // Check if deck has cards before navigation
       if (!deck.cards || deck.cards.length === 0) {
         toast.warning('This deck has no cards. Please add cards first.');
         navigate(`/deck/${deck.id}`);
@@ -67,11 +55,10 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
       
       navigate(`/deck/${deck.id}/test`);
     } catch (error) {
-      console.error('Error preparing for test mode:', error);
+      console.error('Error navigating to test mode:', error);
       toast.error('Could not start test. Please try again.');
     } finally {
       setIsNavigating(false);
-      setNavTarget(null);
     }
   };
   
@@ -147,11 +134,7 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
             onClick={handlePlay} 
             disabled={isNavigating}
           >
-            {isNavigating && navTarget === 'practice' ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <PlayCircle className="h-4 w-4 mr-1" />
-            )}
+            <PlayCircle className="h-4 w-4 mr-1" />
             Practice
           </Button>
           <Button 
@@ -160,11 +143,7 @@ const DeckCard: React.FC<DeckCardProps> = ({ deck }) => {
             onClick={handleTest} 
             disabled={isNavigating}
           >
-            {isNavigating && navTarget === 'test' ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <ClipboardCheck className="h-4 w-4 mr-1" />
-            )}
+            <ClipboardCheck className="h-4 w-4 mr-1" />
             Test
           </Button>
         </div>
