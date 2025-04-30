@@ -19,18 +19,18 @@ export const shareService = {
       }
       
       // First check if a share code already exists for this deck
-      const { data: existingCode, error: fetchError } = await supabase
+      const { data: existingCodes, error: fetchError } = await supabase
         .from('share_codes')
         .select('code')
-        .eq('deck_id', deckId)
-        .maybeSingle();
+        .eq('deck_id', deckId);
       
       if (fetchError) {
         console.error('Error checking existing share code:', fetchError);
         throw new DataError('Failed to check existing share codes');
       }
       
-      if (existingCode) {
+      if (existingCodes && existingCodes.length > 0) {
+        console.log(`Share code already exists for deck ${deckId}, returning existing code`);
         return; // Code already exists
       }
       

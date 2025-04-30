@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Deck } from '@/types/deck';
 import { deckService } from '@/services/deckService';
 import { useSharing } from '@/hooks/useSharing';
@@ -9,8 +9,8 @@ export const useSharingOperations = (
   setDecks: React.Dispatch<React.SetStateAction<Deck[]>>,
   userId?: string
 ) => {
-  // Initialize state unconditionally at the top level
-  const [shareCodeCache, setShareCodeCache] = useState<Record<string, string>>({});
+  // Use useRef for caching to maintain values between renders without triggering re-renders
+  const shareCodeCacheRef = useRef<Record<string, string>>({});
   const { generateShareCode: genShareCode, getDeckIdByShareCode: getSharedDeckId } = useSharing();
 
   const getDeckByShareCode = async (code: string): Promise<Deck | null> => {
@@ -35,12 +35,12 @@ export const useSharingOperations = (
       return '';
     }
     
-    if (shareCodeCache[deckId]) {
-      return shareCodeCache[deckId];
+    if (shareCodeCacheRef.current[deckId]) {
+      return shareCodeCacheRef.current[deckId];
     }
     
     const code = genShareCode(deckId);
-    setShareCodeCache(prev => ({...prev, [deckId]: code}));
+    shareCodeCacheRef.current[deckId] = code;
     return code;
   };
 
