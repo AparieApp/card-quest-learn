@@ -14,6 +14,7 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
   // Initialize game state
   const { state, setState, selectors } = useGameState();
   const loadedRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
 
   // Initialize error handling
   const { errorState, clearError } = useGameError();
@@ -76,10 +77,12 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
 
   // Custom reload function that prevents infinite reloads
   const reloadDeck = useCallback(async () => {
-    if (loadedRef.current) {
+    if (loadedRef.current && !isInitialLoadRef.current) {
       console.log('Deck already loaded, skipping reload');
       return;
     }
+    
+    isInitialLoadRef.current = false;
     loadedRef.current = true;
     await loadSharedDeck();
   }, [loadSharedDeck]);

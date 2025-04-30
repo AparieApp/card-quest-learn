@@ -12,29 +12,29 @@ import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
-  const { decks = [], favorites = [], followedDeckIds = [], loading, refreshDecks } = useDeck();
+  const { 
+    decks = [], 
+    favorites = [], 
+    followedDecks = [], 
+    loading, 
+    refreshDecks 
+  } = useDeck();
+  
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
   const isMobile = useIsMobile();
-  const [followedDecks, setFollowedDecks] = useState<typeof decks>([]);
   const [myDecks, setMyDecks] = useState<typeof decks>([]);
 
-  // Update followed decks and my decks when decks or followedDeckIds change
+  // Update my decks when decks change
   useEffect(() => {
-    if (Array.isArray(decks) && Array.isArray(followedDeckIds)) {
-      // Only include decks that are in the followed decks list
-      const followed = decks.filter(deck => followedDeckIds.includes(deck.id));
-      setFollowedDecks(followed);
-      
+    if (Array.isArray(decks) && user) {
       // Only include decks created by the current user for the My Decks tab
-      if (user) {
-        const userDecks = decks.filter(deck => deck.creator_id === user.id);
-        setMyDecks(userDecks);
-      } else {
-        setMyDecks([]);
-      }
+      const userDecks = decks.filter(deck => deck.creator_id === user.id);
+      setMyDecks(userDecks);
+    } else {
+      setMyDecks([]);
     }
-  }, [decks, followedDeckIds, user]);
+  }, [decks, user]);
 
   // Refresh decks when active tab changes to 'followed'
   useEffect(() => {

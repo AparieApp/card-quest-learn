@@ -1,14 +1,17 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useSharing } from '@/hooks/useSharing';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useGameError } from './useGameError';
+import { withCircuitBreaker } from '@/utils/circuitBreaker';
 
 export const useSharedDeckLoader = (shareCode: string | undefined, setState: Function) => {
   const navigate = useNavigate();
   const { getDeckByShareCode } = useSharing();
   const { handleGameError } = useGameError();
+  const isLoadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
   
   // Memoized loader function to prevent unnecessary re-renders
   const loadSharedDeck = useCallback(async () => {
@@ -18,11 +21,28 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
       return null;
     }
     
+    // Prevent concurrent loading attempts
+    if (isLoadingRef.current) {
+      console.log('Already loading shared deck, skipping duplicate request');
+      return null;
+    }
+    
+    // If we've already loaded this deck successfully, avoid reloading
+    if (hasLoadedRef.current) {
+      console.log('Deck already loaded, skipping reload');
+      return null;
+    }
+    
+    isLoadingRef.current = true;
     setState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      console.log('Loading shared deck with code:', shareCode);
-      const fetchedDeck = await getDeckByShareCode(shareCode);
+      // Use circuit breaker to prevent infinite loading loops
+      const fetchedDeck = await withCircuitBreaker(
+        () => getDeckByShareCode(shareCode),
+        `load-shared-deck-${shareCode}`,
+        { failureThreshold: 2, resetTimeout: 30000 }
+      );
       
       if (!fetchedDeck) {
         console.error('Shared deck not found for code:', shareCode);
@@ -51,6 +71,9 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
         isLoading: false,
       }));
       
+      // Mark that we've successfully loaded the deck
+      hasLoadedRef.current = true;
+      
       return fetchedDeck;
     } catch (error) {
       handleGameError(error, 'load shared deck');
@@ -62,6 +85,8 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
       }, 2000);
       
       return null;
+    } finally {
+      isLoadingRef.current = false;
     }
   }, [shareCode, getDeckByShareCode, navigate, setState, handleGameError]);
 
@@ -72,11 +97,18 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
       return;
     }
     
+    // Reset the loaded state when share code changes
+    if (shareCode) {
+      hasLoadedRef.current = false;
+    }
+    
     loadSharedDeck();
-    // We're intentionally not including loadSharedDeck in the deps array
-    // because we only want to load the deck once when the component mounts
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareCode, navigate]);
+    
+    // Cleanup function
+    return () => {
+      hasLoadedRef.current = false;
+    };
+  }, [shareCode, navigate, loadSharedDeck]);
   
   return { loadSharedDeck };
 };

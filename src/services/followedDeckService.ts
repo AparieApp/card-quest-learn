@@ -1,10 +1,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Deck } from "@/types/deck";
 import { ValidationError, DataError } from '@/utils/errorHandling';
 import { isValidUUID } from '@/utils/secureValidation';
+import { DeckMapper } from '@/mappers/DeckMapper';
 
 export const followedDeckService = {
-  // Get all decks followed by the current user
+  // Get all deck IDs followed by the current user
   async getFollowedDecks(): Promise<string[]> {
     try {
       // Get the current user's ID
@@ -32,6 +34,48 @@ export const followedDeckService = {
         throw error;
       }
       throw new DataError('Failed to fetch followed decks');
+    }
+  },
+  
+  // Get complete deck data for all decks followed by current user
+  async getFollowedDecksData(): Promise<Deck[]> {
+    try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No user found when fetching followed decks data');
+        return [];
+      }
+      
+      const { data, error } = await supabase
+        .from('followed_decks')
+        .select(`
+          deck_id,
+          decks:deck_id (
+            *,
+            flashcards (*)
+          )
+        `)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Error fetching followed decks data:', error);
+        throw new DataError('Failed to fetch followed decks data');
+      }
+      
+      // Transform the nested data structure to match our Deck type
+      const decks = data
+        .filter(item => item.decks) // Filter out any null references
+        .map(item => DeckMapper.toDomain(item.decks));
+      
+      return decks;
+    } catch (error) {
+      console.error('Error in getFollowedDecksData:', error);
+      if (error instanceof DataError) {
+        throw error;
+      }
+      throw new DataError('Failed to fetch followed decks data');
     }
   },
   

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 export const useSharingOperations = (
   decks: Deck[],
+  followedDecks: Deck[],
   setDecks: React.Dispatch<React.SetStateAction<Deck[]>>,
   userId?: string
 ) => {
@@ -36,8 +37,14 @@ export const useSharingOperations = (
         return deckCacheRef.current[deckId];
       }
       
-      // Check local decks array next to avoid unnecessary API calls
-      const cachedDeck = decks.find(d => d.id === deckId);
+      // Check user-created decks array
+      let cachedDeck = decks.find(d => d.id === deckId);
+      
+      // If not found in user decks, check followed decks
+      if (!cachedDeck && followedDecks) {
+        cachedDeck = followedDecks.find(d => d.id === deckId);
+      }
+      
       if (cachedDeck) {
         console.log('Using cached deck from memory');
         // Update cache
@@ -104,6 +111,16 @@ export const useSharingOperations = (
     setDecks(prev => [copiedDeck, ...prev]);
     return copiedDeck;
   };
+
+  // Clear the cache when user ID changes
+  if (userId) {
+    const currentUserId = useRef<string | undefined>(userId);
+    if (currentUserId.current !== userId) {
+      deckCacheRef.current = {};
+      shareCodeCacheRef.current = {};
+      currentUserId.current = userId;
+    }
+  }
 
   return {
     getDeckByShareCode,

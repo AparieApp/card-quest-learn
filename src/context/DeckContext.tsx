@@ -14,6 +14,7 @@ interface DeckContextType {
   decks: Deck[];
   favorites: string[];
   followedDeckIds: string[];
+  followedDecks: Deck[];
   loading: boolean;
   createDeck: (input: CreateDeckInput) => Promise<Deck>;
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
@@ -39,6 +40,7 @@ const DeckContext = createContext<DeckContextType>({
   decks: [],
   favorites: [],
   followedDeckIds: [],
+  followedDecks: [],
   loading: true,
   createDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
   updateDeck: async () => {},
@@ -66,6 +68,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
   const { 
     followedDeckIds = [], 
+    followedDecks = [],
     followDeck, 
     unfollowDeck, 
     isFollowingDeck, 
@@ -111,12 +114,21 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     getDeckByShareCode,
     generateShareCode,
     copyDeck,
-  } = useSharingOperations(decks, setDecks, userId);
+  } = useSharingOperations(decks, followedDecks, setDecks, userId);
   
   const getDeck = useCallback((id: string): Deck | null => {
     if (!id) return null;
-    return Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
-  }, [decks]);
+    
+    // First check user-created decks
+    let deck = Array.isArray(decks) ? decks.find(deck => deck.id === id) || null : null;
+    
+    // If not found, check followed decks
+    if (!deck && Array.isArray(followedDecks)) {
+      deck = followedDecks.find(deck => deck.id === id) || null;
+    }
+    
+    return deck;
+  }, [decks, followedDecks]);
 
   // Connect the setBypassThrottle from useDeckStorage to the setThrottlingPaused exposed by context
   const handleSetThrottlingPaused = useCallback((value: boolean) => {
@@ -128,6 +140,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     decks: Array.isArray(decks) ? decks : [],
     favorites: Array.isArray(favorites) ? favorites : [],
     followedDeckIds: Array.isArray(followedDeckIds) ? followedDeckIds : [],
+    followedDecks: Array.isArray(followedDecks) ? followedDecks : [],
     loading,
     createDeck,
     updateDeck,
