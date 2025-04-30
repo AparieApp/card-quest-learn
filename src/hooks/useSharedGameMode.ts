@@ -19,7 +19,7 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
   // Initialize error handling
   const { errorState, clearError } = useGameError();
 
-  // Initialize deck loading with shared deck loader - prevents multiple refreshes
+  // Initialize deck loading with shared deck loader
   const { loadSharedDeck } = useSharedDeckLoader(shareCode, setState);
 
   // Fisher-Yates shuffle algorithm
@@ -53,7 +53,7 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
   // Remove card prompt handler
   const handleRemoveCardPrompt = useRemovePrompt(setState);
 
-  // Practice mode controls
+  // Practice mode controls with stable dependencies
   const {
     endPractice,
     endReviewMode,
@@ -75,17 +75,20 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
     return state.isReviewMode ? state.reviewCards : state.cards;
   }, [state.isReviewMode, state.reviewCards, state.cards]);
 
-  // Fixed reload function to avoid any potential circular dependencies
+  // Fixed reloadDeck function to avoid any potential circular dependencies
+  // This is a standalone function that doesn't depend on itself
   const reloadDeck = useCallback(() => {
+    // Use refs to track loading state between renders
     if (loadedRef.current && !isInitialLoadRef.current) {
       console.log('Deck already loaded, skipping reload');
-      return Promise.resolve(null); // Return a resolved promise to maintain interface
+      return Promise.resolve(null);
     }
     
     isInitialLoadRef.current = false;
     loadedRef.current = true;
+    // Call the loader function without depending on reloadDeck itself
     return loadSharedDeck();
-  }, [loadSharedDeck]); // Only depend on loadSharedDeck function
+  }, [loadSharedDeck]);
 
   // Expose state and handlers
   return {
