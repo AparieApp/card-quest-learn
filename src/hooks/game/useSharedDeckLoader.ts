@@ -13,7 +13,7 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
   const isLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
   
-  // Memoized loader function to prevent unnecessary re-renders
+  // Memoized loader function with proper dependency array
   const loadSharedDeck = useCallback(async () => {
     if (!shareCode) {
       toast.error('Share code is missing');

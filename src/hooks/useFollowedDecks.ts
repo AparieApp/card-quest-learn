@@ -9,8 +9,9 @@ export const useFollowedDecks = () => {
   const [followedDeckIds, setFollowedDeckIds] = useState<string[]>([]);
   const [followedDecks, setFollowedDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   
+  // Fixed fetchFollowedDecks to avoid circular dependencies and improve error handling
   const fetchFollowedDecks = useCallback(async () => {
     if (!isAuthenticated) {
       setFollowedDeckIds([]);
@@ -39,12 +40,13 @@ export const useFollowedDecks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]); // Fixed: removed circular dependency by only including isAuthenticated
+  }, [isAuthenticated]); // Only depend on isAuthenticated
   
   useEffect(() => {
     fetchFollowedDecks();
   }, [fetchFollowedDecks]);
   
+  // Fixed followDeck to avoid circular dependencies
   const followDeck = useCallback(async (deckId: string) => {
     if (!isAuthenticated) {
       toast.error('Please log in to follow this deck');
@@ -57,16 +59,20 @@ export const useFollowedDecks = () => {
         if (prev.includes(deckId)) return prev;
         return [...prev, deckId];
       });
-      // Refresh followed decks data after following a new deck
-      fetchFollowedDecks();
+      
+      // Get the updated decks data after following
+      const updatedDecks = await followedDeckService.getFollowedDecksData();
+      setFollowedDecks(updatedDecks);
+      
       return true;
     } catch (error) {
       console.error('Error following deck:', error);
       toast.error('Failed to follow deck');
       return false;
     }
-  }, [isAuthenticated, fetchFollowedDecks]);
+  }, [isAuthenticated]);
   
+  // Fixed unfollowDeck to avoid circular dependencies
   const unfollowDeck = useCallback(async (deckId: string) => {
     if (!isAuthenticated) return false;
     
