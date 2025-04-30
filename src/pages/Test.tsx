@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDirectDeckLoad } from '@/hooks/game/useDirectDeckLoad';
 import { useGameState } from '@/hooks/game/useGameState';
@@ -8,13 +8,28 @@ import { useRemovePrompt } from '@/hooks/game/useRemovePrompt';
 import { useGameError } from '@/hooks/game/useGameError';
 import { useTestMode } from '@/hooks/game/modes/useTestMode';
 import GameLayout from '@/components/practice/GameLayout';
+import { resetAllCircuitBreakers } from '@/utils/circuitBreaker';
+import { toast } from 'sonner';
 
 const Test = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
+  // Reset circuit breakers on mount to ensure fresh start
+  useEffect(() => {
+    resetAllCircuitBreakers();
+  }, []);
+  
   // Initialize direct deck loading
-  const { deck, cards, isLoading: isDeckLoading } = useDirectDeckLoad(id);
+  const { deck, cards, isLoading: isDeckLoading, refreshDeck } = useDirectDeckLoad(id);
+  
+  // Add effect to handle empty cards
+  useEffect(() => {
+    if (!isDeckLoading && cards.length === 0 && deck) {
+      console.log('Detected empty cards array but deck exists, attempting refresh');
+      refreshDeck();
+    }
+  }, [isDeckLoading, cards.length, deck, refreshDeck]);
   
   // Initialize game state
   const { state, setState, selectors } = useGameState({
@@ -57,6 +72,14 @@ const Test = () => {
     }));
   }, [setState]);
 
+  // Handle manual refresh
+  const handleManualRefresh = React.useCallback(async () => {
+    toast.info("Refreshing deck data...");
+    resetAllCircuitBreakers();
+    await refreshDeck();
+    toast.success("Deck refreshed");
+  }, [refreshDeck]);
+
   // Get the active cards (review cards or full deck)
   const activeCards = React.useMemo(() => {
     return state.isReviewMode ? state.reviewCards : state.cards;
@@ -92,6 +115,7 @@ const Test = () => {
       onRemoveCardPrompt={handleRemoveCardPrompt}
       onRestartPractice={restartPractice}
       onBack={handleBackClick}
+      onRefresh={handleManualRefresh}
     />
   );
 };

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDirectSharedDeckLoad } from '@/hooks/game/useDirectSharedDeckLoad';
 import { useGameState } from '@/hooks/game/useGameState';
@@ -9,13 +9,28 @@ import { useGameError } from '@/hooks/game/useGameError';
 import { usePracticeControls } from '@/hooks/game/usePracticeControls';
 import { usePracticeMode } from '@/hooks/game/modes/usePracticeMode';
 import GameLayout from '@/components/practice/GameLayout';
+import { resetAllCircuitBreakers } from '@/utils/circuitBreaker';
+import { toast } from 'sonner';
 
 const SharedDeckPractice = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   
+  // Reset circuit breakers on mount to ensure fresh start
+  useEffect(() => {
+    resetAllCircuitBreakers();
+  }, []);
+  
   // Initialize direct deck loading
-  const { deck, cards, isLoading: isDeckLoading } = useDirectSharedDeckLoad(code);
+  const { deck, cards, isLoading: isDeckLoading, loadSharedDeck } = useDirectSharedDeckLoad(code);
+  
+  // Add effect to handle empty cards
+  useEffect(() => {
+    if (!isDeckLoading && cards.length === 0 && deck) {
+      console.log('Detected empty cards array but deck exists, attempting refresh');
+      loadSharedDeck(true); // Force refresh
+    }
+  }, [isDeckLoading, cards.length, deck, loadSharedDeck]);
   
   // Initialize game state
   const { state, setState, selectors } = useGameState({
@@ -51,6 +66,14 @@ const SharedDeckPractice = () => {
   
   // Remove card prompt handler
   const handleRemoveCardPrompt = useRemovePrompt(setState);
+
+  // Handle manual refresh
+  const handleManualRefresh = React.useCallback(async () => {
+    toast.info("Refreshing shared deck data...");
+    resetAllCircuitBreakers();
+    await loadSharedDeck(true);
+    toast.success("Shared deck refreshed");
+  }, [loadSharedDeck]);
 
   // Practice mode controls
   const {
@@ -105,6 +128,7 @@ const SharedDeckPractice = () => {
       onRestartPractice={restartPractice}
       onRemoveCardPrompt={handleRemoveCardPrompt}
       onBack={handleBackClick}
+      onRefresh={handleManualRefresh}
     />
   );
 };

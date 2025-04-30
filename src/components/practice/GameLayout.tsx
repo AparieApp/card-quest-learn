@@ -4,10 +4,11 @@ import GameHeader from './GameHeader';
 import ProgressBar from './ProgressBar';
 import { Flashcard, Deck } from '@/types/deck';
 import FlashcardDisplay from './FlashcardDisplay';
-import { Loader2, Power } from 'lucide-react';
+import { Loader2, Power, RefreshCw } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import SummaryView from './SummaryView';
 import { Button } from '../ui/button';
+import { toast } from 'sonner';
 
 interface GameLayoutProps {
   isLoading: boolean;
@@ -39,6 +40,7 @@ interface GameLayoutProps {
   onRestartPractice?: () => void;
   onRemoveCardPrompt?: (shouldRemove: boolean) => void;
   onBack: () => void;
+  onRefresh?: () => Promise<void>;
 }
 
 const GameLayout = ({
@@ -67,13 +69,42 @@ const GameLayout = ({
   onRestartPractice,
   onRemoveCardPrompt,
   onBack,
+  onRefresh,
 }: GameLayoutProps) => {
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (err) {
+      console.error("Error during refresh:", err);
+      toast.error("Failed to refresh deck");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (isLoading || !deck) {
     return (
       <Layout>
         <div className="container py-12 flex flex-col items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-flashcard-primary" />
           <p className="mt-4 text-muted-foreground">Loading cards...</p>
+          {onRefresh && (
+            <Button 
+              onClick={handleRefresh}
+              variant="outline" 
+              className="mt-6"
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh Deck'}
+            </Button>
+          )}
         </div>
       </Layout>
     );
@@ -81,6 +112,36 @@ const GameLayout = ({
 
   const cycleCards = isReviewMode ? reviewCards : deck.cards;
   const totalCardCount = cycleCards.length;
+  
+  // If we have a deck but no cards, show an error
+  if (totalCardCount === 0) {
+    return (
+      <Layout>
+        <div className="container py-12 flex flex-col items-center justify-center">
+          <p className="text-red-500 font-semibold">No cards found in this deck.</p>
+          <p className="mt-2 text-muted-foreground">This deck may be empty or cards failed to load.</p>
+          {onRefresh && (
+            <Button 
+              onClick={handleRefresh}
+              variant="outline" 
+              className="mt-6"
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh Deck'}
+            </Button>
+          )}
+          <Button 
+            onClick={onBack}
+            variant="default" 
+            className="mt-4"
+          >
+            Back to Deck
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
   
   // Calculate the current streak for the current card
   const currentCardId = currentCard?.id;
@@ -123,8 +184,8 @@ const GameLayout = ({
             </div>
 
             {/* Control buttons for Practice and Review modes */}
-            {mode === 'practice' && !isReviewMode && onEndPractice && (
-              <div className="w-full mb-6 flex justify-center">
+            <div className="w-full mb-6 flex justify-center gap-2">
+              {mode === 'practice' && !isReviewMode && onEndPractice && (
                 <Button 
                   onClick={onEndPractice}
                   variant="outline" 
@@ -133,11 +194,9 @@ const GameLayout = ({
                   <Power className="mr-2 h-4 w-4" />
                   End Practice
                 </Button>
-              </div>
-            )}
+              )}
 
-            {mode === 'practice' && isReviewMode && onEndReviewMode && (
-              <div className="w-full mb-6 flex justify-center">
+              {mode === 'practice' && isReviewMode && onEndReviewMode && (
                 <Button 
                   onClick={onEndReviewMode}
                   variant="outline" 
@@ -146,8 +205,20 @@ const GameLayout = ({
                   <Power className="mr-2 h-4 w-4" />
                   End Review
                 </Button>
-              </div>
-            )}
+              )}
+
+              {onRefresh && (
+                <Button 
+                  onClick={handleRefresh}
+                  variant="outline" 
+                  className="bg-white"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              )}
+            </div>
 
             {currentCard && (
               <FlashcardDisplay
