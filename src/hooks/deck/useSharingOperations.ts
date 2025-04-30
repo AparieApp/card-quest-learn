@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Deck } from '@/types/deck';
 import { deckService } from '@/services/deckService';
@@ -14,9 +13,18 @@ export const useSharingOperations = (
   // Use useRef for caching to maintain values between renders without triggering re-renders
   const shareCodeCacheRef = useRef<Record<string, string>>({});
   const deckCacheRef = useRef<Record<string, Deck>>({});
+  // Always initialize these refs regardless of userId
+  const currentUserIdRef = useRef<string | undefined>(userId);
   
   const { generateShareCode: genShareCode, getDeckIdByShareCode: getSharedDeckId } = useSharing();
   const [isLoadingShareCode, setIsLoadingShareCode] = useState(false);
+
+  // If userId changes, clear the caches
+  if (currentUserIdRef.current !== userId) {
+    deckCacheRef.current = {};
+    shareCodeCacheRef.current = {};
+    currentUserIdRef.current = userId;
+  }
 
   const getDeckByShareCode = async (code: string): Promise<Deck | null> => {
     try {
@@ -111,16 +119,6 @@ export const useSharingOperations = (
     setDecks(prev => [copiedDeck, ...prev]);
     return copiedDeck;
   };
-
-  // Clear the cache when user ID changes
-  if (userId) {
-    const currentUserId = useRef<string | undefined>(userId);
-    if (currentUserId.current !== userId) {
-      deckCacheRef.current = {};
-      shareCodeCacheRef.current = {};
-      currentUserId.current = userId;
-    }
-  }
 
   return {
     getDeckByShareCode,

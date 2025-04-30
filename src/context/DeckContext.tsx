@@ -130,6 +130,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     setThrottlingPaused
   } = useCardOperations(handleDecksUpdate, userId, refreshDecks);
 
+  // Initialize sharing operations hook - ensure it's always called
   const {
     getDeckByShareCode,
     generateShareCode,
