@@ -11,7 +11,16 @@ export const useFollowedDecks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
   
-  // Fixed fetchFollowedDecks to avoid circular dependencies and improve error handling
+  // Using a stable reference to the service functions to avoid dependency issues
+  const fetchFollowedDeckIdsFromServer = useCallback(async () => {
+    return await followedDeckService.getFollowedDecks();
+  }, []);
+  
+  const fetchFollowedDecksDataFromServer = useCallback(async () => {
+    return await followedDeckService.getFollowedDecksData();
+  }, []);
+  
+  // Fixed fetchFollowedDecks to avoid circular dependencies
   const fetchFollowedDecks = useCallback(async () => {
     if (!isAuthenticated) {
       setFollowedDeckIds([]);
@@ -23,13 +32,13 @@ export const useFollowedDecks = () => {
     setIsLoading(true);
     try {
       // Get followed deck IDs
-      const deckIds = await followedDeckService.getFollowedDecks();
+      const deckIds = await fetchFollowedDeckIdsFromServer();
       console.log('Fetched followed deck IDs:', deckIds.length);
       setFollowedDeckIds(deckIds);
       
       // Get complete deck data for followed decks
       if (deckIds.length > 0) {
-        const decks = await followedDeckService.getFollowedDecksData();
+        const decks = await fetchFollowedDecksDataFromServer();
         setFollowedDecks(decks);
       } else {
         setFollowedDecks([]);
@@ -40,13 +49,13 @@ export const useFollowedDecks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]); // Only depend on isAuthenticated
+  }, [isAuthenticated, fetchFollowedDeckIdsFromServer, fetchFollowedDecksDataFromServer]);
   
   useEffect(() => {
     fetchFollowedDecks();
   }, [fetchFollowedDecks]);
   
-  // Fixed followDeck to avoid circular dependencies
+  // Follow deck function with stable dependencies
   const followDeck = useCallback(async (deckId: string) => {
     if (!isAuthenticated) {
       toast.error('Please log in to follow this deck');
@@ -61,7 +70,7 @@ export const useFollowedDecks = () => {
       });
       
       // Get the updated decks data after following
-      const updatedDecks = await followedDeckService.getFollowedDecksData();
+      const updatedDecks = await fetchFollowedDecksDataFromServer();
       setFollowedDecks(updatedDecks);
       
       return true;
@@ -70,9 +79,9 @@ export const useFollowedDecks = () => {
       toast.error('Failed to follow deck');
       return false;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchFollowedDecksDataFromServer]);
   
-  // Fixed unfollowDeck to avoid circular dependencies
+  // Unfollow deck function with stable dependencies
   const unfollowDeck = useCallback(async (deckId: string) => {
     if (!isAuthenticated) return false;
     

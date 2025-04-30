@@ -75,17 +75,17 @@ export const useSharedGameMode = (shareCode: string | undefined, mode: GameMode)
     return state.isReviewMode ? state.reviewCards : state.cards;
   }, [state.isReviewMode, state.reviewCards, state.cards]);
 
-  // Custom reload function that prevents infinite reloads - fixed dependencies
+  // Fixed reload function to avoid any potential circular dependencies
   const reloadDeck = useCallback(() => {
     if (loadedRef.current && !isInitialLoadRef.current) {
       console.log('Deck already loaded, skipping reload');
-      return Promise.resolve(); // Return a resolved promise to maintain interface
+      return Promise.resolve(null); // Return a resolved promise to maintain interface
     }
     
     isInitialLoadRef.current = false;
     loadedRef.current = true;
     return loadSharedDeck();
-  }, [loadSharedDeck]); // Only depend on loadSharedDeck
+  }, [loadSharedDeck]); // Only depend on loadSharedDeck function
 
   // Expose state and handlers
   return {

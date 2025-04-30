@@ -13,7 +13,12 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
   const isLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
   
-  // Memoized loader function with proper dependency array
+  // Get deck function with stable reference to avoid dependency issues
+  const fetchDeckByShareCode = useCallback(async (code: string) => {
+    return await getDeckByShareCode(code);
+  }, [getDeckByShareCode]);
+
+  // Memoized loader function with fixed dependencies
   const loadSharedDeck = useCallback(async () => {
     if (!shareCode) {
       toast.error('Share code is missing');
@@ -39,7 +44,7 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
     try {
       // Use circuit breaker to prevent infinite loading loops
       const fetchedDeck = await withCircuitBreaker(
-        () => getDeckByShareCode(shareCode),
+        () => fetchDeckByShareCode(shareCode),
         `load-shared-deck-${shareCode}`,
         { failureThreshold: 2, resetTimeout: 30000 }
       );
@@ -88,7 +93,7 @@ export const useSharedDeckLoader = (shareCode: string | undefined, setState: Fun
     } finally {
       isLoadingRef.current = false;
     }
-  }, [shareCode, getDeckByShareCode, navigate, setState, handleGameError]);
+  }, [shareCode, fetchDeckByShareCode, navigate, setState, handleGameError]);
 
   // Effect to load deck on mount or when shareCode changes
   useEffect(() => {
