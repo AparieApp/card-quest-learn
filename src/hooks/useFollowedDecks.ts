@@ -39,7 +39,7 @@ export const useFollowedDecks = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated]); // Fixed: removed circular dependency by only including isAuthenticated
   
   useEffect(() => {
     fetchFollowedDecks();
