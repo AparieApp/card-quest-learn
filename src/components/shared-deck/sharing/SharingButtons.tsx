@@ -1,79 +1,78 @@
 
-import { Button } from "@/components/ui/button";
-import { Copy, Share2 } from "lucide-react";
-import { toast } from "sonner";
-import { Deck } from "@/types/deck";
-import { useState } from "react";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { BookCopy, Bell, BellOff } from 'lucide-react';
+import { Deck } from '@/types/deck';
+import { useDeck } from '@/context/DeckContext';
 
 interface SharingButtonsProps {
   deck: Deck;
   isCopying: boolean;
+  isFollowing?: boolean;
+  isTogglingFollow?: boolean;
   onCopy: () => Promise<void>;
+  onFollow?: () => Promise<void>;
+  onUnfollow?: () => Promise<void>;
 }
 
-export const SharingButtons = ({ deck, isCopying, onCopy }: SharingButtonsProps) => {
-  const [isSharing, setIsSharing] = useState(false);
+export const SharingButtons = ({
+  deck,
+  isCopying,
+  isFollowing = false,
+  isTogglingFollow = false,
+  onCopy,
+  onFollow,
+  onUnfollow,
+}: SharingButtonsProps) => {
+  
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await onCopy();
+  };
 
-  const handleShare = async () => {
-    setIsSharing(true);
-    try {
-      const shareUrl = window.location.href;
-      
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: `FlashCards: ${deck.title}`,
-            text: `Check out this flashcard deck: ${deck.title}`,
-            url: shareUrl,
-          });
-          toast.success('Deck shared successfully');
-        } catch (error: any) {
-          if (error.name === 'NotAllowedError') {
-            // User denied permission or not in secure context, fall back to clipboard
-            await navigator.clipboard.writeText(shareUrl);
-            toast.success('Share link copied to clipboard');
-          } else if (error.name !== 'AbortError') {
-            // Only show error if it's not a user cancellation
-            console.error('Share error:', error);
-            toast.error('Failed to share deck');
-          }
-        }
-      } else {
-        // Web Share API not available, use clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Share link copied to clipboard');
-      }
-    } catch (error) {
-      console.error('Failed to share:', error);
-      toast.error('Failed to share deck');
-    } finally {
-      setIsSharing(false);
+  const handleToggleFollow = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isFollowing && onUnfollow) {
+      await onUnfollow();
+    } else if (!isFollowing && onFollow) {
+      await onFollow();
     }
   };
 
   return (
-    <div className="space-y-4">
-      <Button 
-        variant="outline" 
-        className="w-full justify-start"
-        onClick={onCopy}
+    <div className="space-y-2">
+      <Button
+        variant="outline"
+        className="w-full flex items-center justify-center"
         disabled={isCopying}
+        onClick={handleCopy}
       >
-        <Copy className="mr-2 h-4 w-4" /> 
-        Save to My Decks
-        {isCopying && <span className="ml-2 animate-spin">⟳</span>}
+        <BookCopy className="mr-2 h-4 w-4" />
+        {isCopying ? 'Saving to My Decks...' : 'Save to My Decks'}
       </Button>
-      
-      <Button 
-        variant="outline" 
-        className="w-full justify-start"
-        onClick={handleShare}
-        disabled={isSharing}
-      >
-        <Share2 className="mr-2 h-4 w-4" /> 
-        Share This Deck
-        {isSharing && <span className="ml-2 animate-spin">⟳</span>}
-      </Button>
+
+      {onFollow && onUnfollow && (
+        <Button
+          variant={isFollowing ? "default" : "outline"}
+          className={`w-full flex items-center justify-center ${
+            isFollowing ? "bg-flashcard-primary hover:bg-flashcard-secondary" : ""
+          }`}
+          disabled={isTogglingFollow}
+          onClick={handleToggleFollow}
+        >
+          {isFollowing ? (
+            <>
+              <BellOff className="mr-2 h-4 w-4" />
+              {isTogglingFollow ? 'Updating...' : 'Unfollow Deck'}
+            </>
+          ) : (
+            <>
+              <Bell className="mr-2 h-4 w-4" />
+              {isTogglingFollow ? 'Updating...' : 'Follow Deck'}
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 };

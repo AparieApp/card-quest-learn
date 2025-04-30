@@ -9,6 +9,8 @@ import { QRCodeDisplay } from '@/components/deck/share/QRCodeDisplay';
 import { SharePageLoading } from '@/components/deck/share/SharePageLoading';
 import { DeckInfoCard } from '@/components/deck/share/DeckInfoCard';
 import { useShareDeckPage } from '@/hooks/deck/useShareDeckPage';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 const DeckShare = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +48,13 @@ const DeckShare = () => {
         </div>
         
         <DeckInfoCard deck={deck} />
+        
+        <Alert className="my-4 bg-blue-50 text-blue-800 border-blue-200">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            When others access your shared deck, they can study it, save a copy, or follow it to get updates when you make changes.
+          </AlertDescription>
+        </Alert>
         
         <div className="grid gap-6 md:grid-cols-2">
           <ShareOptions 

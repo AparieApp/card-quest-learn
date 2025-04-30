@@ -8,10 +8,12 @@ import { useDeckOperations } from '@/hooks/deck/useDeckOperations';
 import { useCardOperations } from '@/hooks/deck/useCardOperations';
 import { useSharingOperations } from '@/hooks/deck/useSharingOperations';
 import { deckService } from '@/services/deckService';
+import { useFollowedDecks } from '@/hooks/useFollowedDecks';
 
 interface DeckContextType {
   decks: Deck[];
   favorites: string[];
+  followedDeckIds: string[];
   loading: boolean;
   createDeck: (input: CreateDeckInput) => Promise<Deck>;
   updateDeck: (id: string, input: UpdateDeckInput) => Promise<void>;
@@ -22,6 +24,9 @@ interface DeckContextType {
   deleteCard: (deckId: string, cardId: string) => Promise<void>;
   toggleFavorite: (deckId: string) => Promise<void>;
   isFavorite: (deckId: string) => boolean;
+  followDeck: (deckId: string) => Promise<boolean>;
+  unfollowDeck: (deckId: string) => Promise<boolean>;
+  isFollowingDeck: (deckId: string) => boolean;
   getDeckByShareCode: (code: string) => Promise<Deck | null>;
   generateShareCode: (deckId: string) => string;
   copyDeck: (deckId: string) => Promise<Deck>;
@@ -33,6 +38,7 @@ interface DeckContextType {
 const DeckContext = createContext<DeckContextType>({
   decks: [],
   favorites: [],
+  followedDeckIds: [],
   loading: true,
   createDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
   updateDeck: async () => {},
@@ -43,6 +49,9 @@ const DeckContext = createContext<DeckContextType>({
   deleteCard: async () => {},
   toggleFavorite: async () => {},
   isFavorite: () => false,
+  followDeck: async () => false,
+  unfollowDeck: async () => false,
+  isFollowingDeck: () => false,
   getDeckByShareCode: async () => null,
   generateShareCode: () => '',
   copyDeck: async () => ({ id: '', title: '', description: '', creator_id: '', created_at: '', updated_at: '', cards: [] }),
@@ -55,6 +64,13 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const { decks = [], loading, setDecks, refreshDecks: refreshStoredDecks, setBypassThrottle } = useDeckStorage();
   const { favorites = [], toggleFavorite, isFavorite } = useFavorites();
+  const { 
+    followedDeckIds = [], 
+    followDeck, 
+    unfollowDeck, 
+    isFollowingDeck, 
+    refreshFollowedDecks 
+  } = useFollowedDecks();
   
   const userId = user?.id;
   
@@ -77,10 +93,11 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       await refreshStoredDecks(bypassThrottle);
+      await refreshFollowedDecks();
     } catch (error) {
       console.error('Error refreshing decks:', error);
     }
-  }, [userId, refreshStoredDecks]);
+  }, [userId, refreshStoredDecks, refreshFollowedDecks]);
 
   const {
     addCardToDeck,
@@ -110,6 +127,7 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = {
     decks: Array.isArray(decks) ? decks : [],
     favorites: Array.isArray(favorites) ? favorites : [],
+    followedDeckIds: Array.isArray(followedDeckIds) ? followedDeckIds : [],
     loading,
     createDeck,
     updateDeck,
@@ -120,6 +138,9 @@ export const DeckProvider = ({ children }: { children: ReactNode }) => {
     deleteCard,
     toggleFavorite,
     isFavorite,
+    followDeck,
+    unfollowDeck,
+    isFollowingDeck,
     getDeckByShareCode,
     generateShareCode,
     copyDeck,

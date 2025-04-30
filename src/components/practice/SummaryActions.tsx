@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -8,6 +8,8 @@ import {
   Play,
   Heart,
   Star,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { useDeck } from "@/context/DeckContext";
 import { useAuth } from "@/context/auth";
@@ -36,10 +38,12 @@ const SummaryActions: React.FC<SummaryActionsProps> = ({
   onRestartPractice,
   shareCode,
 }) => {
-  const { toggleFavorite, isFavorite, copyDeck } = useDeck();
+  const { toggleFavorite, isFavorite, copyDeck, followDeck, unfollowDeck, isFollowingDeck } = useDeck();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isSharedDeck = !!shareCode || window.location.pathname.includes("/shared/");
+  const [isFollowing, setIsFollowing] = useState(isFollowingDeck(deckId));
+  const [isUpdatingFollowStatus, setIsUpdatingFollowStatus] = useState(false);
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
@@ -79,6 +83,36 @@ const SummaryActions: React.FC<SummaryActionsProps> = ({
     } catch (error) {
       console.error("Error copying deck:", error);
       toast.error("Failed to save deck to your collection");
+    }
+  };
+
+  const handleToggleFollow = async () => {
+    if (!isAuthenticated) {
+      toast.error("You need to log in to follow this deck", {
+        action: {
+          label: "Login",
+          onClick: () => navigate("/auth"),
+        },
+      });
+      return;
+    }
+    
+    setIsUpdatingFollowStatus(true);
+    try {
+      if (isFollowing) {
+        await unfollowDeck(deckId);
+        toast.success("You have unfollowed this deck");
+        setIsFollowing(false);
+      } else {
+        await followDeck(deckId);
+        toast.success("You are now following this deck");
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error("Error toggling follow status:", error);
+      toast.error("Failed to update follow status");
+    } finally {
+      setIsUpdatingFollowStatus(false);
     }
   };
 
@@ -160,15 +194,40 @@ const SummaryActions: React.FC<SummaryActionsProps> = ({
         </Button>
 
         {isSharedDeck && (
-          <Button
-            variant="default"
-            onClick={handleAddToDeck}
-            className={cn(tertiaryButtonClass, "bg-blue-50 border-blue-200 hover:bg-blue-100")}
-            size="sm"
-          >
-            <Star className="mr-2 h-4 w-4 text-blue-600" />
-            Add to My Decks
-          </Button>
+          <>
+            <Button
+              variant="default"
+              onClick={handleAddToDeck}
+              className={cn(tertiaryButtonClass, "bg-blue-50 border-blue-200 hover:bg-blue-100")}
+              size="sm"
+            >
+              <Star className="mr-2 h-4 w-4 text-blue-600" />
+              Add to My Decks
+            </Button>
+            
+            <Button
+              variant={isFollowing ? "default" : "outline"}
+              onClick={handleToggleFollow}
+              disabled={isUpdatingFollowStatus}
+              className={cn(
+                tertiaryButtonClass, 
+                isFollowing && "bg-green-50 border-green-200 hover:bg-green-100"
+              )}
+              size="sm"
+            >
+              {isFollowing ? (
+                <>
+                  <BellOff className="mr-2 h-4 w-4 text-green-600" />
+                  Unfollow
+                </>
+              ) : (
+                <>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Follow Deck
+                </>
+              )}
+            </Button>
+          </>
         )}
       </div>
     </div>
