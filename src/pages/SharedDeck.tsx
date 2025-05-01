@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -19,8 +18,10 @@ const SharedDeck = () => {
     isCopying,
     isAuthenticated,
     isFavorite,
+    isFollowing,
     handleFavorite,
     handleCopyDeck,
+    handleFollowDeck,
   } = useSharedDeck(code);
   
   if (isLoading) {
@@ -73,7 +74,9 @@ const SharedDeck = () => {
               shareCode={code || ''}
               isCopying={isCopying}
               isAuthenticated={isAuthenticated}
+              isFollowing={isFollowing}
               onCopy={handleCopyDeck}
+              onFollow={handleFollowDeck}
             />
           </div>
         </div>

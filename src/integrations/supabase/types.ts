@@ -44,6 +44,42 @@ export type Database = {
           },
         ]
       }
+      followed_decks: {
+        Row: {
+          created_at: string
+          deck_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followed_decks_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followed_decks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string

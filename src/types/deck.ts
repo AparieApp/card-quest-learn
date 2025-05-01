@@ -1,4 +1,3 @@
-
 export interface Flashcard {
   id: string;
   deck_id: string;
@@ -18,6 +17,15 @@ export interface Deck {
   updated_at: string;
   cards: Flashcard[];
   flashcards?: Flashcard[]; // Used when fetching from Supabase
+}
+
+// Added for the Follow functionality
+export interface FollowedDeck {
+  id: string;
+  user_id: string;
+  deck_id: string;
+  created_at: string;
+  deck?: Deck;
 }
 
 export type CreateDeckInput = Pick<Deck, 'title' | 'description'>;

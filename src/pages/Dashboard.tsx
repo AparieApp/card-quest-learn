@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,9 +9,11 @@ import { useAuth } from '@/context/auth';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useFollowedDecks } from '@/hooks/useFollowedDecks';
 
 const Dashboard = () => {
   const { decks = [], favorites = [], loading } = useDeck();
+  const { followedDecks = [], loading: followedLoading } = useFollowedDecks();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
   const isMobile = useIsMobile();
@@ -58,9 +59,10 @@ const Dashboard = () => {
             value={activeTab} 
             onValueChange={setActiveTab}
           >
-            <TabsList className={isMobile ? "w-full grid grid-cols-3" : ""}>
+            <TabsList className={isMobile ? "w-full grid grid-cols-4" : ""}>
               <TabsTrigger value="decks">My Decks</TabsTrigger>
               <TabsTrigger value="favorites">Favorites</TabsTrigger>
+              <TabsTrigger value="followed">Followed</TabsTrigger>
               <TabsTrigger value="find">Find Deck</TabsTrigger>
             </TabsList>
             
@@ -89,6 +91,21 @@ const Dashboard = () => {
                   <DeckGrid 
                     decks={favoritedDecks} 
                     emptyMessage="You haven't favorited any decks yet."
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="followed">
+                {followedLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
+                    <p>Loading followed decks...</p>
+                  </div>
+                ) : (
+                  <DeckGrid 
+                    decks={Array.isArray(followedDecks) ? followedDecks : []} 
+                    emptyMessage="You haven't followed any decks yet."
+                    isFollowed={true}
                   />
                 )}
               </TabsContent>

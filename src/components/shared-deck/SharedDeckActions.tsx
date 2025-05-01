@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Deck } from '@/types/deck';
@@ -11,7 +10,9 @@ interface SharedDeckActionsProps {
   shareCode: string;
   isCopying: boolean;
   isAuthenticated: boolean;
+  isFollowing: boolean;
   onCopy: () => Promise<void>;
+  onFollow: () => Promise<void>;
 }
 
 export const SharedDeckActions = ({
@@ -19,7 +20,9 @@ export const SharedDeckActions = ({
   shareCode,
   isCopying,
   isAuthenticated,
+  isFollowing,
   onCopy,
+  onFollow,
 }: SharedDeckActionsProps) => {
   return (
     <Card>
@@ -28,7 +31,13 @@ export const SharedDeckActions = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <StudyButtons deck={deck} shareCode={shareCode} />
-        <SharingButtons deck={deck} isCopying={isCopying} onCopy={onCopy} />
+        <SharingButtons 
+          deck={deck} 
+          isCopying={isCopying} 
+          onCopy={onCopy} 
+          isFollowing={isFollowing} 
+          onFollow={onFollow}
+        />
         {!isAuthenticated && <AuthPrompt />}
       </CardContent>
     </Card>
