@@ -1,10 +1,12 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import CardList from './CardList';
 import { Flashcard } from '@/types/deck';
 import { useDeck } from '@/context/DeckContext';
+import { useEditDeckImageToggle } from '@/hooks/deck/useEditDeckImageToggle';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface DeckCardManagerProps {
   cards: Flashcard[];
@@ -27,6 +29,7 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
 }) => {
   const { refreshDecks } = useDeck();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { showImages, toggleShowImages } = useEditDeckImageToggle();
 
   const handleRefresh = async () => {
     if (isRefreshing || !deckId) return;
@@ -90,12 +93,25 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
         </div>
       </div>
       
+      <div className="flex items-center space-x-2 mb-4">
+        <Switch
+          id="show-card-images-toggle"
+          checked={showImages}
+          onCheckedChange={toggleShowImages}
+        />
+        <Label htmlFor="show-card-images-toggle" className="flex items-center cursor-pointer">
+          {showImages ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />} 
+          Show Card Images
+        </Label>
+      </div>
+
       <CardList
         cards={cards}
         onEdit={onEditCard}
         onDelete={onDeleteCard}
         isLoading={isLoading || isRefreshing}
         existingAnswers={existingAnswers}
+        showCardImages={showImages}
       />
     </div>
   );

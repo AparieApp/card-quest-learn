@@ -10,6 +10,7 @@ export interface CardListProps {
   onDelete: (cardId: string) => void;
   isLoading?: boolean;
   existingAnswers?: string[];
+  showCardImages?: boolean;
 }
 
 const CardList: React.FC<CardListProps> = ({ 
@@ -17,7 +18,8 @@ const CardList: React.FC<CardListProps> = ({
   onEdit, 
   onDelete, 
   isLoading = false, 
-  existingAnswers = [] 
+  existingAnswers = [],
+  showCardImages = true
 }) => {
   if (cards.length === 0) {
     return (
@@ -49,15 +51,17 @@ const CardList: React.FC<CardListProps> = ({
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  {card.question_image_url
+                  {showCardImages && card.question_image_url
                     ? (
                       <img
                         src={card.question_image_url}
                         alt="Question image"
-                        className="mb-2 max-w-full max-h-40 object-contain"
+                        className="mb-2 max-w-full max-h-40 object-contain rounded-md border"
                       />
                     ) : (
-                      <p className="font-medium mb-2">{card.front_text}</p>
+                      <p className="font-medium mb-2">
+                        {card.front_text || (card.question_image_url ? "(Image question)" : "(No question text or image)")}
+                      </p>
                     )}
                   <div className="mt-2">
                     <p className="text-sm text-green-600">✓ {card.correct_answer}</p>

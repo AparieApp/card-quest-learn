@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { UpdateCardInput } from '@/types/deck';
 import { DecksUpdater, OptimisticUpdateState } from '@/types/cardOperations';
@@ -48,6 +47,7 @@ export const useUpdateCard = (
       // Prepare data for the API
       const dataToSave = {
         ...(cardData.front_text !== undefined ? { front_text: cardData.front_text } : {}),
+        ...(cardData.question_image_url !== undefined ? { question_image_url: cardData.question_image_url } : {}),
         ...(cardData.correct_answer !== undefined ? { correct_answer: cardData.correct_answer } : {}),
         ...(cardData.incorrect_answers !== undefined ? { incorrect_answers: [...cardData.incorrect_answers] } : {}),
         ...(cardData.manual_incorrect_answers !== undefined ? { manual_incorrect_answers: [...cardData.manual_incorrect_answers] } : {})

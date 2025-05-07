@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Flashcard } from '@/types/deck';
 import { useDeck } from '@/context/DeckContext';
@@ -56,6 +55,7 @@ export const useCardManager = (
     await performOperationAndRefresh(async () => {
       const newCard = await addCardToDeck(deckId, {
         front_text: cardData.front_text,
+        question_image_url: cardData.question_image_url,
         correct_answer: cardData.correct_answer,
         incorrect_answers: cardData.incorrect_answers || [],
         manual_incorrect_answers: cardData.manual_incorrect_answers || []
