@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   FormField,
@@ -61,8 +60,8 @@ export const CardFormTextInputs = ({ form, isSubmitting }: CardFormTextInputsPro
       await new Promise<void>((resolve, reject) => {
         img.onload = () => {
           URL.revokeObjectURL(objectUrl);
-          if (img.width > 800 || img.height > 600) {
-            toast.error('Image resolution must be at most 800x600px');
+          if (img.width > 1280 || img.height > 960) {
+            toast.error('Image resolution must be at most 1280x960px');
             reject();
           } else {
             resolve();
@@ -147,7 +146,7 @@ export const CardFormTextInputs = ({ form, isSubmitting }: CardFormTextInputsPro
   };
 
   return (
-    <div onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} onPaste={handlePaste}>
+    <div onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} onPaste={handlePaste} className="space-y-6">
       <FormField
         control={form.control}
         name="front_text"
@@ -185,7 +184,7 @@ export const CardFormTextInputs = ({ form, isSubmitting }: CardFormTextInputsPro
                   onBlur={field.onBlur}
                   disabled={isSubmitting || uploading || field.disabled}
                   name={field.name}
-                  className="cursor-pointer"
+                  className="cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 h-9 flex items-center text-xs"
                 />
                 {uploading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
