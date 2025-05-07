@@ -29,8 +29,7 @@ export const deckOperationsService = {
     try {
       const { data: decks, error } = await supabase
         .from('decks')
-        .select(`
-          *,\n          flashcards (*)\n        `)
+        .select('*, flashcards!flashcards_deck_id_fkey(*)')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -52,8 +51,7 @@ export const deckOperationsService = {
       }
       const { data: deck, error } = await supabase
         .from('decks')
-        .select(`
-          *,\n          flashcards (*)\n        `)
+        .select('*, flashcards!flashcards_deck_id_fkey(*)')
         .eq('id', id)
         .maybeSingle();
 
