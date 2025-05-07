@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,15 +29,25 @@ export const useCardForm = (
       setManualAnswers([...card.manual_incorrect_answers]);
     } else {
       console.log('Initializing card form with manual answers: []');
+      setManualAnswers([]);
     }
   }, [card]);
 
   // Add a manual incorrect answer
   const addManualAnswer = (answer: string) => {
-    if (manualAnswers.length >= 3) return;
+    if (manualAnswers.length >= 3) {
+      return;
+    }
     
     const trimmedAnswer = answer.trim();
-    if (!trimmedAnswer) return;
+    if (!trimmedAnswer) {
+      return;
+    }
+    
+    // Check for duplicates
+    if (manualAnswers.includes(trimmedAnswer)) {
+      return;
+    }
     
     console.log('Adding manual answer:', trimmedAnswer);
     setManualAnswers(prev => {
@@ -64,7 +75,7 @@ export const useCardForm = (
     if (onSubmit) {
       const submissionData = {
         front_text: formData.front_text,
-        question_image_url: formData.question_image_url,
+        question_image_url: formData.question_image_url || '',
         correct_answer: formData.correct_answer,
         incorrect_answers: [],
         manual_incorrect_answers: [...manualAnswers]

@@ -44,42 +44,6 @@ export type Database = {
           },
         ]
       }
-      followed_decks: {
-        Row: {
-          created_at: string
-          deck_id: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          deck_id: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          deck_id?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "followed_decks_deck_id_fkey"
-            columns: ["deck_id"]
-            isOneToOne: false
-            referencedRelation: "decks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "followed_decks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       favorites: {
         Row: {
           created_at: string
@@ -184,6 +148,7 @@ export type Database = {
           id: string
           incorrect_answers: string[]
           manual_incorrect_answers: string[] | null
+          question_image_url: string | null
         }
         Insert: {
           correct_answer: string
@@ -193,6 +158,7 @@ export type Database = {
           id?: string
           incorrect_answers: string[]
           manual_incorrect_answers?: string[] | null
+          question_image_url?: string | null
         }
         Update: {
           correct_answer?: string
@@ -202,10 +168,43 @@ export type Database = {
           id?: string
           incorrect_answers?: string[]
           manual_incorrect_answers?: string[] | null
+          question_image_url?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "flashcards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      followed_decks: {
+        Row: {
+          created_at: string
+          deck_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followed_decks_deck_id_fkey"
             columns: ["deck_id"]
             isOneToOne: false
             referencedRelation: "decks"
