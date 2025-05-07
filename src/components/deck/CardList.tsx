@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,16 @@ const CardList: React.FC<CardListProps> = ({
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <p className="font-medium mb-2">{card.front_text}</p>
+                  {card.question_image_url
+                    ? (
+                      <img
+                        src={card.question_image_url}
+                        alt="Question image"
+                        className="mb-2 max-w-full max-h-40 object-contain"
+                      />
+                    ) : (
+                      <p className="font-medium mb-2">{card.front_text}</p>
+                    )}
                   <div className="mt-2">
                     <p className="text-sm text-green-600">✓ {card.correct_answer}</p>
                     {manualIncorrectAnswers.map((answer, index) => (

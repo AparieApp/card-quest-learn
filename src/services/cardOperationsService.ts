@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CreateCardInput, UpdateCardInput, Flashcard } from '@/types/deck';
 import { CardMapper } from '@/mappers/CardMapper';
@@ -20,6 +19,7 @@ export const cardOperationsService = {
       .insert({
         deck_id: deckId,
         front_text: cardData.front_text,
+        question_image_url: cardData.question_image_url,
         correct_answer: cardData.correct_answer,
         incorrect_answers: incorrectAnswers,
         manual_incorrect_answers: manualIncorrectAnswers
@@ -56,6 +56,10 @@ export const cardOperationsService = {
     
     if (cardData.manual_incorrect_answers !== undefined) {
       updateData.manual_incorrect_answers = [...cardData.manual_incorrect_answers];
+    }
+
+    if (cardData.question_image_url !== undefined) {
+      updateData.question_image_url = cardData.question_image_url;
     }
 
     console.log('Final update data being sent to Supabase:', updateData);

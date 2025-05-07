@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { CreateCardInput, Flashcard } from '@/types/deck';
 import { DecksUpdater, OptimisticUpdateState } from '@/types/cardOperations';
@@ -50,6 +49,7 @@ export const useAddCard = (
 
       const cardToSave = {
         front_text: card.front_text,
+        question_image_url: card.question_image_url,
         correct_answer: card.correct_answer,
         incorrect_answers: [...(card.incorrect_answers || [])],
         manual_incorrect_answers: [...(card.manual_incorrect_answers || [])]

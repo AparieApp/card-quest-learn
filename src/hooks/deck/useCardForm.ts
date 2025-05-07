@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +15,7 @@ export const useCardForm = (
     resolver: zodResolver(cardSchema),
     defaultValues: {
       front_text: card?.front_text || '',
+      question_image_url: card?.question_image_url || '',
       correct_answer: card?.correct_answer || '',
       manual_incorrect_answers: []
     }
@@ -64,6 +64,7 @@ export const useCardForm = (
     if (onSubmit) {
       const submissionData = {
         front_text: formData.front_text,
+        question_image_url: formData.question_image_url,
         correct_answer: formData.correct_answer,
         incorrect_answers: [],
         manual_incorrect_answers: [...manualAnswers]

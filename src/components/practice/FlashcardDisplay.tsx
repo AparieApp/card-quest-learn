@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -152,7 +151,15 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
           <CardContent className="p-6">
             <div className="space-y-6">
               <div className="text-center">
-                <h3 className="text-xl font-medium">{card.front_text}</h3>
+                {card.question_image_url ? (
+                  <img
+                    src={card.question_image_url}
+                    alt="Question"
+                    className="mx-auto mb-4 max-w-full max-h-60 object-contain"
+                  />
+                ) : (
+                  <h3 className="text-xl font-medium">{card.front_text}</h3>
+                )}
               </div>
 
               <div className="space-y-3">

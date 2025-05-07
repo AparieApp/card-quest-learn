@@ -71,3 +71,33 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+# Database Dump
+
+This project uses Supabase. To export your database schema and data to `data.sql`, use the npm script:
+
+```sh
+# On any OS (Bash, Zsh, PowerShell, CMD)
+npm run db:dump
+```
+
+If you prefer to run the Supabase CLI directly, here are examples:
+
+## Cross-platform One-liner
+```sh
+supabase db dump --project-ref khtlezzcdjahvqaflgvk --schema cache --schema public --file data.sql
+```
+
+## PowerShell Multi-line
+```powershell
+supabase db dump `
+  --project-ref khtlezzcdjahvqaflgvk `
+  --schema cache `
+  --schema public `
+  --file data.sql
+```
+
+## PowerShell Stop-parsing mode
+```powershell
+supabase --% db dump --project-ref khtlezzcdjahvqaflgvk --schema cache --schema public --file data.sql
+```
