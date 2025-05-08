@@ -54,7 +54,7 @@ export const useUpdateCard = (
       };
       
       // Update in the database
-      await deckService.updateCard(cardId, dataToSave);
+      await deckService.updateCard(deckId, cardId, dataToSave);
       
       toast.success('Card updated successfully!');
       
