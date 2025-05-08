@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth';
 import { Deck, CreateDeckInput, UpdateDeckInput, CreateCardInput, UpdateCardInput, Flashcard } from '@/types/deck';
@@ -38,7 +37,15 @@ const DeckContext = createContext<DeckContextType>({
   updateDeck: async () => {},
   deleteDeck: async () => {},
   getDeck: () => null,
-  addCardToDeck: async () => ({ id: '', deck_id: '', front_text: '', correct_answer: '', incorrect_answers: [], created_at: '' }),
+  addCardToDeck: async () => ({ 
+    id: '', 
+    deck_id: '', 
+    front_text: '', 
+    question_type: 'single-choice',
+    correct_answer: '', 
+    incorrect_answers: [], 
+    created_at: '' 
+  }),
   updateCard: async () => {},
   deleteCard: async () => {},
   toggleFavorite: async () => {},

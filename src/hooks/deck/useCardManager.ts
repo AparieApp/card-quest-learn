@@ -56,7 +56,9 @@ export const useCardManager = (
       const newCard = await addCardToDeck(deckId, {
         front_text: cardData.front_text,
         question_image_url: cardData.question_image_url,
+        question_type: cardData.question_type || 'single-choice',
         correct_answer: cardData.correct_answer,
+        correct_answers: cardData.correct_answers,
         incorrect_answers: cardData.incorrect_answers || [],
         manual_incorrect_answers: cardData.manual_incorrect_answers || []
       });

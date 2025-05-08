@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +18,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 interface CardFormAnswersProps {
   isSubmitting: boolean;
+  manualAnswers: string[];
+  correctAnswer?: string;
+  onAddAnswer: (answer: string) => void;
+  onRemoveAnswer: (index: number) => void;
 }
 
-export const CardFormAnswers = ({ isSubmitting }: CardFormAnswersProps) => {
+export const CardFormAnswers = ({ 
+  isSubmitting, 
+  manualAnswers, 
+  correctAnswer,
+  onAddAnswer,
+  onRemoveAnswer 
+}: CardFormAnswersProps) => {
   const { control, watch, setValue, getValues } = useFormContext<CardFormValues>();
   const questionType = watch('question_type');
   const correctAnswers = watch('correct_answers') || [];
@@ -57,6 +66,8 @@ export const CardFormAnswers = ({ isSubmitting }: CardFormAnswersProps) => {
     if (newManualIncorrect.trim() && manualIncorrectAnswers.length < 3 && !manualIncorrectAnswers.includes(newManualIncorrect.trim())) {
       setValue('manual_incorrect_answers', [...manualIncorrectAnswers, newManualIncorrect.trim()], { shouldValidate: true });
       setNewManualIncorrect('');
+      // Also notify parent component through the prop
+      onAddAnswer(newManualIncorrect.trim());
     }
   };
 
@@ -64,6 +75,8 @@ export const CardFormAnswers = ({ isSubmitting }: CardFormAnswersProps) => {
     const updated = [...manualIncorrectAnswers];
     updated.splice(index, 1);
     setValue('manual_incorrect_answers', updated, { shouldValidate: true });
+    // Also notify parent component through the prop
+    onRemoveAnswer(index);
   };
 
   return (
@@ -126,7 +139,7 @@ export const CardFormAnswers = ({ isSubmitting }: CardFormAnswersProps) => {
             ))}
           </div>
           
-          {correctAnswers.length < 10 && ( // Arbitrary limit for UI sanity
+          {correctAnswers.length < 10 && (
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Add a correct answer"
@@ -158,7 +171,6 @@ export const CardFormAnswers = ({ isSubmitting }: CardFormAnswersProps) => {
         </div>
       )}
 
-      {/* Manual Incorrect Answers Section (enhanced) */}
       <div className="space-y-3 border p-4 rounded-lg bg-card">
         <div className="flex items-center gap-1">
           <FormLabel className="font-medium text-lg">Optional: Add specific incorrect choices</FormLabel>

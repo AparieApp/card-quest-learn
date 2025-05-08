@@ -142,6 +142,7 @@ export type Database = {
       flashcards: {
         Row: {
           correct_answer: string
+          correct_answers: string[] | null
           created_at: string
           deck_id: string
           front_text: string
@@ -149,9 +150,11 @@ export type Database = {
           incorrect_answers: string[]
           manual_incorrect_answers: string[] | null
           question_image_url: string | null
+          question_type: string | null
         }
         Insert: {
           correct_answer: string
+          correct_answers?: string[] | null
           created_at?: string
           deck_id: string
           front_text: string
@@ -159,9 +162,11 @@ export type Database = {
           incorrect_answers: string[]
           manual_incorrect_answers?: string[] | null
           question_image_url?: string | null
+          question_type?: string | null
         }
         Update: {
           correct_answer?: string
+          correct_answers?: string[] | null
           created_at?: string
           deck_id?: string
           front_text?: string
@@ -169,6 +174,7 @@ export type Database = {
           incorrect_answers?: string[]
           manual_incorrect_answers?: string[] | null
           question_image_url?: string | null
+          question_type?: string | null
         }
         Relationships: [
           {

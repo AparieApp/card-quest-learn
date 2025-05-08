@@ -40,7 +40,7 @@ export const useDeleteCard = (
       );
 
       // Delete from database
-      await deckService.deleteCard(cardId);
+      await deckService.deleteCard(deckId, cardId);
       console.log('Card deleted successfully from database');
       
       toast.success('Card deleted successfully!');

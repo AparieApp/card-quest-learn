@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { CreateCardInput, Flashcard } from '@/types/deck';
 import { DecksUpdater, OptimisticUpdateState } from '@/types/cardOperations';
@@ -29,6 +30,7 @@ export const useAddCard = (
     const optimisticCard = {
       id: crypto.randomUUID(),
       deck_id: deckId,
+      question_type: card.question_type || 'single-choice',
       created_at: new Date().toISOString(),
       ...card
     };
@@ -50,7 +52,9 @@ export const useAddCard = (
       const cardToSave = {
         front_text: card.front_text,
         question_image_url: card.question_image_url,
+        question_type: card.question_type || 'single-choice',
         correct_answer: card.correct_answer,
+        correct_answers: card.correct_answers,
         incorrect_answers: [...(card.incorrect_answers || [])],
         manual_incorrect_answers: [...(card.manual_incorrect_answers || [])]
       };

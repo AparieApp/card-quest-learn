@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Loader2 } from 'lucide-react';
 import { Flashcard } from '@/types/deck';
+import { Badge } from '@/components/ui/badge';
 
 export interface CardListProps {
   cards: Flashcard[];
@@ -51,6 +53,12 @@ const CardList: React.FC<CardListProps> = ({
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant={card.question_type === 'multiple-select' ? 'secondary' : 'default'} className="text-xs">
+                      {card.question_type === 'multiple-select' ? 'Multiple Choice' : 'Single Choice'}
+                    </Badge>
+                  </div>
+                  
                   {showCardImages && card.question_image_url
                     ? (
                       <img
@@ -63,8 +71,16 @@ const CardList: React.FC<CardListProps> = ({
                         {card.front_text || (card.question_image_url ? "(Image question)" : "(No question text or image)")}
                       </p>
                     )}
+                    
                   <div className="mt-2">
-                    <p className="text-sm text-green-600">✓ {card.correct_answer}</p>
+                    {card.question_type === 'single-choice' ? (
+                      <p className="text-sm text-green-600">✓ {card.correct_answer}</p>
+                    ) : (
+                      Array.isArray(card.correct_answers) && card.correct_answers.map((answer, idx) => (
+                        <p key={`correct-${idx}`} className="text-sm text-green-600">✓ {answer}</p>
+                      ))
+                    )}
+                    
                     {manualIncorrectAnswers.map((answer, index) => (
                       <p key={`manual-${index}`} className="text-sm text-red-600">✗ {answer}</p>
                     ))}
