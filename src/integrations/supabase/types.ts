@@ -172,6 +172,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_flashcards_deck_id"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "flashcards_deck_id_fkey"
             columns: ["deck_id"]
             isOneToOne: false

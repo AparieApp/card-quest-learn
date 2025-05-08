@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -151,29 +152,30 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
         variants={cardVariants}
         className={`w-full max-w-lg mx-auto ${showFeedback && animateExit === 'correct' ? 'animate-flash-correct' : ''}`}
       >
-        <Card>
+        <Card className="shadow-lg border-2 border-muted">
           <CardContent className="p-6">
             <div className="space-y-6">
               <div className="text-center">
                 {card.question_image_url ? (
-                  <img src={card.question_image_url} alt="Question" className="mx-auto mb-4 max-w-full max-h-60 object-contain" />
-                ) : (
-                  <h3 className="text-xl font-medium">{card.front_text}</h3>
-                )}
+                  <img 
+                    src={card.question_image_url} 
+                    alt="Question" 
+                    className="mx-auto mb-4 max-w-full max-h-60 object-contain rounded-md shadow-sm" 
+                  />
+                ) : null}
+                <h3 className="text-xl font-medium">{card.front_text}</h3>
+                <div className="mt-2 flex items-center justify-center">
+                  <span className={`px-3 py-1 text-xs rounded-full ${isMultipleSelect ? 
+                    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' : 
+                    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100'}`}>
+                    {isMultipleSelect ? 'Select all that apply' : 'Select one answer'}
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-3">
                 {options.map((option, index) => {
                   const isSelected = selectedAnswers.includes(option.text);
-                  let buttonVariant: "default" | "destructive" | "outline" = "outline";
-                  if (isAnswerSubmitted && isSelected) {
-                    buttonVariant = option.isCorrect ? "default" : "destructive";
-                  } else if (isAnswerSubmitted && option.isCorrect) {
-                    buttonVariant = "outline";
-                  }
-                  if (showFeedback && option.isCorrect && isAnswerSubmitted) {
-                    
-                  }
                   
                   return (
                     <Button
@@ -183,13 +185,15 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
                           (option.isCorrect ? "default" : (isSelected ? "destructive" : "outline")) :
                           (isSelected ? "secondary" : "outline")
                       }
-                      className={`w-full justify-start text-left p-4 h-auto transition-colors duration-150 ${
+                      className={`w-full justify-start text-left p-4 h-auto transition-all duration-150 ${
+                        isMultipleSelect ? "pl-3" : ""
+                      } ${
                         showFeedback && option.isCorrect
-                          ? "bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-700"
+                          ? "bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 border-green-300 dark:border-green-600"
                           : ""
                       } ${
                         showFeedback && isSelected && !option.isCorrect
-                          ? "bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-700"
+                          ? "bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100 border-red-300 dark:border-red-600"
                           : ""
                       }`}
                       onClick={() => handleOptionClick(option.text)}
@@ -197,16 +201,24 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
                     >
                       <div className="flex items-center w-full">
                         {isMultipleSelect && (
-                          isSelected ? <CheckSquare className="h-5 w-5 mr-2" /> : <Square className="h-5 w-5 mr-2" />
+                          <div className="mr-2 flex-shrink-0">
+                            {isSelected ? 
+                              <div className="h-5 w-5 rounded border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
+                                <CheckSquare className="h-4 w-4 text-white" />
+                              </div> : 
+                              <div className="h-5 w-5 rounded border-2 border-gray-300 dark:border-gray-600">
+                                <Square className="h-4 w-4 text-transparent" />
+                              </div>
+                            }
+                          </div>
                         )}
                         <span className="flex-1">{option.text}</span>
                         {showFeedback && option.isCorrect && (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500 ml-2" />
                         )}
                         {showFeedback && isSelected && !option.isCorrect && (
-                            <XCircle className="h-5 w-5 text-red-500" />
-                          )
-                        }
+                          <XCircle className="h-5 w-5 text-red-500 ml-2" />
+                        )}
                       </div>
                     </Button>
                   );
@@ -215,10 +227,14 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
               {isMultipleSelect && !isAnswerSubmitted && (
                 <Button 
                   onClick={handleSubmitMultipleSelect} 
-                  className="w-full mt-4 bg-flashcard-primary hover:bg-flashcard-secondary"
+                  className={`w-full mt-4 ${
+                    selectedAnswers.length > 0 
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-gray-300 text-gray-700 hover:bg-gray-300 cursor-not-allowed"
+                  }`}
                   disabled={selectedAnswers.length === 0 || isAnswerSubmitted}
                 >
-                  Submit Answer
+                  Submit Answer{selectedAnswers.length > 0 ? ` (${selectedAnswers.length})` : ''}
                 </Button>
               )}
             </div>
