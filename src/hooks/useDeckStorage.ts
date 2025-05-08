@@ -26,73 +26,89 @@ export const useDeckStorage = () => {
   }, []);
   
   useEffect(() => {
-    // Only fetch decks if auth state meaningfully changed
-    const shouldFetchDecks = 
-      isAuthenticated !== previousAuthState.current.isAuthenticated || 
-      (isAuthenticated && user?.id !== previousAuthState.current.userId);
-    
-    if (!shouldFetchDecks) return;
-    
-    const fetchDecks = async () => {
-      if (!isAuthenticated || !user) {
-        if (isMountedRef.current) {
-          setDecks([]);
+    if (isMountedRef.current) { // Ensure component is mounted for any state updates
+      if (isAuthenticated && user?.id) {
+        const authActuallyChanged = previousAuthState.current.isAuthenticated !== isAuthenticated;
+        const userActuallyChanged = previousAuthState.current.userId !== user.id;
+
+        // Fetch if:
+        // 1. User just logged in (isAuthenticated changed from false to true)
+        // 2. The user.id itself has changed (e.g. different user, or first time ID is available)
+        if (authActuallyChanged || userActuallyChanged) {
+          console.log('Auth or user ID change detected, fetching user decks.', { authActuallyChanged, userActuallyChanged, userId: user.id });
+          // fetchUserDecks manages its own loading state (setLoading, isFetchingRef)
+          const fetchUserDecks = async () => {
+            if (!isMountedRef.current || !user?.id || !isAuthenticated) { // Re-check critical conditions
+              if(isMountedRef.current) {
+                if (!isAuthenticated || !user?.id) setDecks([]);
+                setLoading(false);
+              }
+              return;
+            }
+            if (isFetchingRef.current) {
+              console.log('Fetch already in progress, skipping for new user/auth change trigger.');
+              return;
+            }
+            isFetchingRef.current = true;
+            setLoading(true);
+            try {
+              console.log('Fetching all decks to filter for user:', user.id);
+              const fetchedDecks = await deckService.getDecks();
+              if (!isMountedRef.current || !user?.id || !isAuthenticated) { // Re-check after await
+                if (isMountedRef.current) {
+                  if (!isAuthenticated || !user?.id) setDecks([]);
+                  setLoading(false);
+                }
+                isFetchingRef.current = false;
+                return;
+              }
+              const ownDecks = Array.isArray(fetchedDecks)
+                ? fetchedDecks.filter(d => d.creator_id === user.id)
+                : [];
+              if (isMountedRef.current) {
+                setDecks(ownDecks);
+                console.log('Fetched own decks:', ownDecks.length);
+              }
+              lastFetchTimeRef.current = Date.now();
+              networkErrorCountRef.current = 0;
+            } catch (error) {
+              console.error('Error fetching or filtering user decks:', error);
+              if (isMountedRef.current) {
+                networkErrorCountRef.current++;
+                setDecks([]);
+              }
+            } finally {
+              if (isMountedRef.current) {
+                setLoading(false);
+              }
+              isFetchingRef.current = false;
+            }
+          };
+          fetchUserDecks();
+        }
+        // No automatic re-fetch if decks remain empty after the initial fetch for this user.
+        // Manual refresh is handled by refreshDecksWithThrottle.
+
+      } else { // Not authenticated or user.id is missing
+        // This handles logout or if auth is lost
+        if (previousAuthState.current.isAuthenticated && !isAuthenticated) {
+          console.log('User logged out or auth lost. Clearing decks and stopping loading.');
+          if (decks.length > 0) {
+            setDecks([]);
+          }
+        }
+        // Ensure loading and fetching flags are false if not authenticated
+        if (loading) {
           setLoading(false);
         }
-        return;
-      }
-
-      if (isFetchingRef.current) {
-        console.log('Fetch already in progress, skipping');
-        return;
-      }
-      
-      isFetchingRef.current = true;
-      if (isMountedRef.current) {
-        setLoading(true);
-      }
-      
-      try {
-        console.log('Fetching decks with auth state change');
-        const fetchedDecks = await deckService.getDecks();
-        
-        // Only keep decks created by the current user
-        const ownDecks = Array.isArray(fetchedDecks) && user?.id
-          ? fetchedDecks.filter(d => d.creator_id === user.id)
-          : [];
-        
-        // Only update state if component is still mounted
-        if (isMountedRef.current) {
-          setDecks(ownDecks);
-          console.log('Fetched own decks:', ownDecks.length);
+        if (isFetchingRef.current) {
+          isFetchingRef.current = false;
         }
-        
-        lastFetchTimeRef.current = Date.now();
-        networkErrorCountRef.current = 0; // Reset error counter on success
-      } catch (error) {
-        console.error('Error fetching decks:', error);
-        
-        // Only update state if component is still mounted
-        if (isMountedRef.current) {
-          // Increment error counter for exponential backoff
-          networkErrorCountRef.current++;
-          setDecks([]);
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
-        isFetchingRef.current = false;
       }
-      
-      previousAuthState.current = {
-        isAuthenticated,
-        userId: user?.id
-      };
-    };
-
-    fetchDecks();
-  }, [isAuthenticated, user]);
+      // Update previous state *after* all logic for the current render, using current values
+      previousAuthState.current = { isAuthenticated, userId: user?.id };
+    }
+  }, [isAuthenticated, user]); // Effect runs if isAuthenticated or user object reference changes.
 
   // Improved refresh function with better error handling for mobile
   const refreshDecksWithThrottle = async (bypassThrottle = false) => {
