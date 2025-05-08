@@ -3,9 +3,11 @@ export interface Flashcard {
   deck_id: string;
   front_text: string;
   question_image_url?: string;
-  correct_answer: string;
+  question_type: 'single-choice' | 'multiple-select';
+  correct_answer?: string;
+  correct_answers?: string[];
   incorrect_answers: string[];
-  manual_incorrect_answers?: string[]; // Make this optional with ?
+  manual_incorrect_answers?: string[];
   created_at: string;
 }
 
@@ -31,9 +33,13 @@ export interface FollowedDeck {
 
 export type CreateDeckInput = Pick<Deck, 'title' | 'description'>;
 export type UpdateDeckInput = Pick<Deck, 'title' | 'description'>;
-export type CreateCardInput = Pick<Flashcard, 'front_text' | 'question_image_url' | 'correct_answer' | 'incorrect_answers'> & {
+export type CreateCardInput = Pick<Flashcard, 'front_text' | 'question_image_url' | 'incorrect_answers' | 'question_type'> & {
+  correct_answer?: string;
+  correct_answers?: string[];
   manual_incorrect_answers?: string[];
 };
-export type UpdateCardInput = Partial<Pick<Flashcard, 'front_text' | 'question_image_url' | 'correct_answer' | 'incorrect_answers'>> & {
+export type UpdateCardInput = Partial<Pick<Flashcard, 'front_text' | 'question_image_url' | 'incorrect_answers' | 'question_type'>> & {
+  correct_answer?: string;
+  correct_answers?: string[];
   manual_incorrect_answers?: string[];
 };

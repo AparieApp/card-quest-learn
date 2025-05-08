@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Flashcard, Deck } from '@/types/deck';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, CheckSquare, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateAnswerOptions, AnswerOption } from '@/services/answerGenerationService';
 
 interface FlashcardDisplayProps {
   card: Flashcard;
   deck: Deck;
-  cards: Flashcard[]; // The pool of cards to generate answer options from
+  cards: Flashcard[];
   previousCycles?: Flashcard[];
   onAnswer: (isCorrect: boolean) => void;
   mode: 'practice' | 'test';
@@ -32,40 +32,67 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
   streakThreshold = 3,
 }) => {
   const [options, setOptions] = useState<AnswerOption[]>([]);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [animateExit, setAnimateExit] = useState<'correct' | 'incorrect' | null>(null);
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+
+  const isMultipleSelect = useMemo(() => card.question_type === 'multiple-select', [card.question_type]);
 
   useEffect(() => {
     const answerOptions = generateAnswerOptions(card, deck, cards, previousCycles);
     setOptions(answerOptions);
-    setSelectedAnswer(null);
+    setSelectedAnswers([]);
     setShowFeedback(false);
     setAnimateExit(null);
+    setIsAnswerSubmitted(false);
   }, [card, deck, cards, previousCycles]);
 
-  const handleOptionClick = (option: AnswerOption) => {
-    if (selectedAnswer !== null || showRemovePrompt) return;
+  const handleOptionClick = (optionText: string) => {
+    if (isAnswerSubmitted || showRemovePrompt) return;
 
-    setSelectedAnswer(option.text);
-    setShowFeedback(true);
-    setAnimateExit(option.isCorrect ? 'correct' : 'incorrect');
-
-    // Calculate feedback delay based on mode and correctness
-    const feedbackDelay = mode === 'practice' 
-      ? (option.isCorrect ? 550 : 700) // Reduced from 1000/2000 to 550/700ms
-      : 550; // Test mode is always faster
-    
-    // If this is practice mode, in review mode, with a correct answer, and the streak would meet threshold,
-    // don't proceed with the usual flow as we want to show the prompt
-    if (mode === 'practice' && option.isCorrect) {
-      console.log(`Card answered correctly, current streak: ${currentStreak}, threshold: ${streakThreshold}`);
+    if (isMultipleSelect) {
+      setSelectedAnswers(prev =>
+        prev.includes(optionText)
+          ? prev.filter(item => item !== optionText)
+          : [...prev, optionText]
+      );
+    } else {
+      setSelectedAnswers([optionText]);
+      setIsAnswerSubmitted(true);
+      const selectedOption = options.find(opt => opt.text === optionText);
+      if (selectedOption) {
+        setShowFeedback(true);
+        setAnimateExit(selectedOption.isCorrect ? 'correct' : 'incorrect');
+        const feedbackDelay = mode === 'practice' 
+          ? (selectedOption.isCorrect ? 550 : 700)
+          : 550;
+        setTimeout(() => {
+          setShowFeedback(false);
+          onAnswer(selectedOption.isCorrect);
+        }, feedbackDelay);
+      }
     }
+  };
 
+  const handleSubmitMultipleSelect = () => {
+    if (!isMultipleSelect || selectedAnswers.length === 0 || isAnswerSubmitted || showRemovePrompt) return;
+
+    setIsAnswerSubmitted(true);
+    const correctAnswersForCard = card.correct_answers || [];
+    const isCorrect = 
+      selectedAnswers.length === correctAnswersForCard.length &&
+      selectedAnswers.every(sa => correctAnswersForCard.includes(sa)) &&
+      correctAnswersForCard.every(ca => selectedAnswers.includes(ca));
+
+    setShowFeedback(true);
+    setAnimateExit(isCorrect ? 'correct' : 'incorrect');
+    const feedbackDelay = mode === 'practice' 
+      ? (isCorrect ? 550 : 700)
+      : 550;
     setTimeout(() => {
-      // Only process the answer if we're not going to show a removal prompt
       setShowFeedback(false);
-      onAnswer(option.isCorrect);
+      onAnswer(isCorrect);
     }, feedbackDelay);
   };
 
@@ -75,7 +102,7 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
         key={`${card.id}-prompt`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }} // Faster animation (200ms)
+        transition={{ duration: 0.2 }}
         className="w-full max-w-lg mx-auto"
       >
         <Card className="shadow-lg">
@@ -87,29 +114,18 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
                   You've gotten this card correct multiple times in a row. Remove it from practice?
                 </p>
               </div>
-
               <div className="flex justify-center items-center gap-4">
-                <Button
-                  variant="default"
-                  onClick={() => onRemoveCardPrompt?.(true)}
-                  className="w-32"
-                >
-                  Yes, remove
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => onRemoveCardPrompt?.(false)}
-                  className="w-32"
-                >
-                  No, continue
-                </Button>
+                <Button variant="default" onClick={() => onRemoveCardPrompt?.(true)} className="w-32">Yes, remove</Button>
+                <Button variant="outline" onClick={() => onRemoveCardPrompt?.(false)} className="w-32">No, continue</Button>
               </div>
-
               <div className="p-4 bg-muted rounded-md">
                 <p className="font-medium text-sm mb-1">Card:</p>
                 <p>{card.front_text}</p>
-                <p className="font-medium text-sm mt-3 mb-1">Correct answer:</p>
-                <p className="text-green-600">{card.correct_answer}</p>
+                <p className="font-medium text-sm mt-3 mb-1">Correct answer(s):</p>
+                {isMultipleSelect ? 
+                  (card.correct_answers || []).map((ans, i) => <p key={i} className="text-green-600">{ans}</p>) :
+                  <p className="text-green-600">{card.correct_answer}</p>
+                }
               </div>
             </div>
           </CardContent>
@@ -118,23 +134,11 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
     );
   }
 
-  // Animation variants for different states
   const cardVariants = {
     initial: { opacity: 0, y: 20, scale: 0.95 },
     animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } },
-    exitCorrect: { 
-      x: '110%', 
-      opacity: 0,
-      transition: { 
-        duration: 0.4,
-        ease: [0.34, 1.56, 0.64, 1] // Custom easing for smoother slide
-      } 
-    },
-    exitIncorrect: { 
-      opacity: 0,
-      scale: 0.95,
-      transition: { duration: 0.2 } 
-    }
+    exitCorrect: { x: '110%', opacity: 0, transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] } },
+    exitIncorrect: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
   };
 
   return (
@@ -147,60 +151,76 @@ const FlashcardDisplay: React.FC<FlashcardDisplayProps> = ({
         variants={cardVariants}
         className={`w-full max-w-lg mx-auto ${showFeedback && animateExit === 'correct' ? 'animate-flash-correct' : ''}`}
       >
-        <Card className={`shadow-lg ${showFeedback && animateExit === 'incorrect' ? 'animate-shake' : ''}`}>
+        <Card>
           <CardContent className="p-6">
             <div className="space-y-6">
               <div className="text-center">
                 {card.question_image_url ? (
-                  <img
-                    src={card.question_image_url}
-                    alt="Question"
-                    className="mx-auto mb-4 max-w-full max-h-60 object-contain"
-                  />
+                  <img src={card.question_image_url} alt="Question" className="mx-auto mb-4 max-w-full max-h-60 object-contain" />
                 ) : (
                   <h3 className="text-xl font-medium">{card.front_text}</h3>
                 )}
               </div>
 
               <div className="space-y-3">
-                {options.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant={
-                      selectedAnswer === option.text
-                        ? option.isCorrect
-                          ? "default"
-                          : "destructive"
-                        : "outline"
-                    }
-                    className={`w-full justify-start text-left p-4 h-auto transition-colors duration-150 ${
-                      showFeedback && option.isCorrect
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : ""
-                    } ${
-                      showFeedback &&
-                      selectedAnswer === option.text &&
-                      !option.isCorrect
-                        ? "bg-red-100 text-red-800 hover:bg-red-200"
-                        : ""
-                    }`}
-                    onClick={() => handleOptionClick(option)}
-                    disabled={selectedAnswer !== null}
-                  >
-                    <div className="flex items-center w-full">
-                      <span className="flex-1">{option.text}</span>
-                      {showFeedback && option.isCorrect && (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      )}
-                      {showFeedback &&
-                        selectedAnswer === option.text &&
-                        !option.isCorrect && (
-                          <XCircle className="h-5 w-5 text-red-500" />
+                {options.map((option, index) => {
+                  const isSelected = selectedAnswers.includes(option.text);
+                  let buttonVariant: "default" | "destructive" | "outline" = "outline";
+                  if (isAnswerSubmitted && isSelected) {
+                    buttonVariant = option.isCorrect ? "default" : "destructive";
+                  } else if (isAnswerSubmitted && option.isCorrect) {
+                    buttonVariant = "outline";
+                  }
+                  if (showFeedback && option.isCorrect && isAnswerSubmitted) {
+                    
+                  }
+                  
+                  return (
+                    <Button
+                      key={index}
+                      variant={
+                        isAnswerSubmitted ? 
+                          (option.isCorrect ? "default" : (isSelected ? "destructive" : "outline")) :
+                          (isSelected ? "secondary" : "outline")
+                      }
+                      className={`w-full justify-start text-left p-4 h-auto transition-colors duration-150 ${
+                        showFeedback && option.isCorrect
+                          ? "bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-700"
+                          : ""
+                      } ${
+                        showFeedback && isSelected && !option.isCorrect
+                          ? "bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-700"
+                          : ""
+                      }`}
+                      onClick={() => handleOptionClick(option.text)}
+                      disabled={isAnswerSubmitted && !isMultipleSelect}
+                    >
+                      <div className="flex items-center w-full">
+                        {isMultipleSelect && (
+                          isSelected ? <CheckSquare className="h-5 w-5 mr-2" /> : <Square className="h-5 w-5 mr-2" />
                         )}
-                    </div>
-                  </Button>
-                ))}
+                        <span className="flex-1">{option.text}</span>
+                        {showFeedback && option.isCorrect && (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        )}
+                        {showFeedback && isSelected && !option.isCorrect && (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )
+                        }
+                      </div>
+                    </Button>
+                  );
+                })}
               </div>
+              {isMultipleSelect && !isAnswerSubmitted && (
+                <Button 
+                  onClick={handleSubmitMultipleSelect} 
+                  className="w-full mt-4 bg-flashcard-primary hover:bg-flashcard-secondary"
+                  disabled={selectedAnswers.length === 0 || isAnswerSubmitted}
+                >
+                  Submit Answer
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

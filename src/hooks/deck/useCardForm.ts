@@ -1,15 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Flashcard } from '@/types/deck';
+import { Flashcard, CreateCardInput } from '@/types/deck';
 import { cardSchema, CardFormValues } from '@/components/deck/card-form/types';
 
 export const useCardForm = (
   card?: Flashcard,
   onSubmit?: (data: Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>) => void
 ) => {
-  const [manualAnswers, setManualAnswers] = useState<string[]>([]);
+  const [manualAnswers, setManualAnswers] = useState<string[]>(card?.manual_incorrect_answers || []);
 
   // Initialize form with default values
   const form = useForm<CardFormValues>({
@@ -17,21 +16,37 @@ export const useCardForm = (
     defaultValues: {
       front_text: card?.front_text || '',
       question_image_url: card?.question_image_url || '',
+      question_type: card?.question_type || 'single-choice',
       correct_answer: card?.correct_answer || '',
-      manual_incorrect_answers: []
+      correct_answers: card?.correct_answers || [],
+      manual_incorrect_answers: card?.manual_incorrect_answers || [] // Keep this for manual incorrect answers UI
     }
   });
 
-  // Initialize manual answers from existing card if editing
+  // Reset form if card changes (e.g. when dialog opens for edit vs add)
   useEffect(() => {
-    if (card?.manual_incorrect_answers && Array.isArray(card.manual_incorrect_answers)) {
-      console.log('Initializing manual answers from card:', card.manual_incorrect_answers);
-      setManualAnswers([...card.manual_incorrect_answers]);
+    if (card) {
+      form.reset({
+        front_text: card.front_text || '',
+        question_image_url: card.question_image_url || '',
+        question_type: card.question_type || 'single-choice',
+        correct_answer: card.correct_answer || '',
+        correct_answers: card.correct_answers || [],
+        manual_incorrect_answers: card.manual_incorrect_answers || []
+      });
+      setManualAnswers(card.manual_incorrect_answers || []);
     } else {
-      console.log('Initializing card form with manual answers: []');
+      form.reset({
+        front_text: '',
+        question_image_url: '',
+        question_type: 'single-choice',
+        correct_answer: '',
+        correct_answers: [],
+        manual_incorrect_answers: []
+      });
       setManualAnswers([]);
     }
-  }, [card]);
+  }, [card, form.reset]);
 
   // Add a manual incorrect answer
   const addManualAnswer = (answer: string) => {
@@ -68,22 +83,29 @@ export const useCardForm = (
   };
 
   // Handle form submission
-  const handleSubmit = (formData: CardFormValues) => {
-    console.log('Form submitted with values:', formData);
-    console.log('Current manual answers list:', manualAnswers);
-    
-    if (onSubmit) {
-      const submissionData = {
-        front_text: formData.front_text,
-        question_image_url: formData.question_image_url || '',
-        correct_answer: formData.correct_answer,
-        incorrect_answers: [],
-        manual_incorrect_answers: [...manualAnswers]
-      };
-      
-      console.log('Submitting card with data:', submissionData);
-      onSubmit(submissionData);
+  const handleSubmit = (values: CardFormValues) => {
+    if (!onSubmit) return;
+
+    const submissionData: CreateCardInput = {
+      front_text: values.front_text,
+      question_image_url: values.question_image_url,
+      question_type: values.question_type,
+      incorrect_answers: [], // This is usually auto-generated, or could be part of form if needed
+      manual_incorrect_answers: manualAnswers, // Use the state variable for manual answers
+    };
+
+    if (values.question_type === 'single-choice') {
+      submissionData.correct_answer = values.correct_answer;
+      submissionData.correct_answers = undefined; // Ensure it's not set
+    } else {
+      submissionData.correct_answers = values.correct_answers;
+      submissionData.correct_answer = undefined; // Ensure it's not set
     }
+    
+    console.log('Submitting card form with values:', submissionData);
+    // The onSubmit prop expects Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>
+    // which CreateCardInput should satisfy if Flashcard type is aligned.
+    onSubmit(submissionData as Omit<Flashcard, 'id' | 'created_at' | 'deck_id'>);
   };
 
   return {

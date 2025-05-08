@@ -20,7 +20,9 @@ export const cardOperationsService = {
         deck_id: deckId,
         front_text: cardData.front_text,
         question_image_url: cardData.question_image_url,
-        correct_answer: cardData.correct_answer,
+        question_type: cardData.question_type,
+        correct_answer: cardData.question_type === 'single-choice' ? cardData.correct_answer : undefined,
+        correct_answers: cardData.question_type === 'multiple-select' ? cardData.correct_answers : undefined,
         incorrect_answers: incorrectAnswers,
         manual_incorrect_answers: manualIncorrectAnswers
       })
@@ -33,55 +35,62 @@ export const cardOperationsService = {
     }
     
     console.log('Successfully added card:', data);
-    return CardMapper.toDomain(data);
+    return CardMapper.toDomain(data as any);
   },
 
-  async updateCard(cardId: string, cardData: UpdateCardInput): Promise<void> {
+  async updateCard(deckId: string, cardId: string, cardData: UpdateCardInput): Promise<void> {
     console.log('Updating card with data:', cardData);
     console.log('Manual incorrect answers to update:', cardData.manual_incorrect_answers);
     
-    const updateData: any = {};
-    
-    if (cardData.front_text !== undefined) {
-      updateData.front_text = cardData.front_text;
-    }
-    
-    if (cardData.correct_answer !== undefined) {
-      updateData.correct_answer = cardData.correct_answer;
-    }
-    
-    if (cardData.incorrect_answers !== undefined) {
-      updateData.incorrect_answers = [...cardData.incorrect_answers];
-    }
-    
-    if (cardData.manual_incorrect_answers !== undefined) {
-      updateData.manual_incorrect_answers = [...cardData.manual_incorrect_answers];
-    }
+    const updatePayload: { [key: string]: any } = {
+      front_text: cardData.front_text,
+      question_image_url: cardData.question_image_url,
+      question_type: cardData.question_type,
+      ...(cardData.incorrect_answers !== undefined && { incorrect_answers: cardData.incorrect_answers || [] }),
+      ...(cardData.manual_incorrect_answers !== undefined && { manual_incorrect_answers: cardData.manual_incorrect_answers || [] }),
+    };
 
-    if (cardData.question_image_url !== undefined) {
-      updateData.question_image_url = cardData.question_image_url;
+    if (cardData.question_type === 'single-choice') {
+      updatePayload.correct_answer = cardData.correct_answer;
+      updatePayload.correct_answers = null;
+    } else if (cardData.question_type === 'multiple-select') {
+      updatePayload.correct_answers = cardData.correct_answers;
+      updatePayload.correct_answer = null;
+    } else {
+      if (cardData.correct_answer !== undefined) {
+        updatePayload.correct_answer = cardData.correct_answer;
+      }
+      if (cardData.correct_answers !== undefined) {
+        updatePayload.correct_answers = cardData.correct_answers;
+      }
     }
-
-    console.log('Final update data being sent to Supabase:', updateData);
+    
+    Object.keys(updatePayload).forEach(key => {
+      if (updatePayload[key] === undefined) {
+        delete updatePayload[key];
+      }
+    });
 
     const { error } = await supabase
       .from('flashcards')
-      .update(updateData)
-      .eq('id', cardId);
+      .update(updatePayload)
+      .eq('id', cardId)
+      .eq('deck_id', deckId);
 
     if (error) {
       console.error('Supabase error updating card:', error);
       throw error;
     }
     
-    console.log('Card updated successfully');
+    console.log('Successfully updated card:', cardId);
   },
 
-  async deleteCard(cardId: string): Promise<void> {
+  async deleteCard(deckId: string, cardId: string): Promise<void> {
     const { error } = await supabase
       .from('flashcards')
       .delete()
-      .eq('id', cardId);
+      .eq('id', cardId)
+      .eq('deck_id', deckId);
 
     if (error) throw error;
   }
