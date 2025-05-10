@@ -6,12 +6,14 @@ interface DeckGridProps {
   decks: Deck[];
   emptyMessage?: string;
   isFollowed?: boolean;
+  onDeleteDeck?: (id: string) => void;
 }
 
 const DeckGrid: React.FC<DeckGridProps> = ({ 
   decks, 
   emptyMessage = 'No decks found.',
-  isFollowed = false
+  isFollowed = false,
+  onDeleteDeck
 }) => {
   if (decks.length === 0) {
     return (
@@ -24,7 +26,12 @@ const DeckGrid: React.FC<DeckGridProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {decks.map(deck => (
-        <DeckCard key={deck.id} deck={deck} isFollowed={isFollowed} />
+        <DeckCard 
+          key={deck.id} 
+          deck={deck} 
+          isFollowed={isFollowed} 
+          onDeleteDeck={onDeleteDeck}
+        />
       ))}
     </div>
   );

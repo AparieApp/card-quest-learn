@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useFollowedDecks } from '@/hooks/useFollowedDecks';
 
 const Dashboard = () => {
-  const { decks = [], favorites = [], loading } = useDeck();
+  const { decks = [], favorites = [], loading, deleteDeck } = useDeck();
   const { followedDecks = [], loading: followedLoading } = useFollowedDecks();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
@@ -81,6 +80,7 @@ const Dashboard = () => {
                   <DeckGrid 
                     decks={Array.isArray(decks) ? decks : []} 
                     emptyMessage="You haven't created any decks yet. Click 'Create Deck' to get started."
+                    onDeleteDeck={deleteDeck}
                   />
                 )}
               </TabsContent>
