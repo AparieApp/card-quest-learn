@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDeck } from '@/context/DeckContext';
@@ -34,6 +35,9 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
+  // Get username from user object (already provided by auth context)
+  const username = user?.username || 'User';
+  
   // Safely filter favorited decks, ensuring decks and favorites are arrays
   const favoritedDecks = Array.isArray(decks) && Array.isArray(favorites) 
     ? decks.filter(deck => favorites.includes(deck.id)) 
@@ -44,7 +48,7 @@ const Dashboard = () => {
       <div className="container py-6 space-y-6 px-4 md:px-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {user?.username || 'User'}!</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {username}!</h1>
             <p className="text-muted-foreground">Manage your decks</p>
           </div>
           <div className="w-full sm:w-auto">

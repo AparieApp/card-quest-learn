@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/context/auth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +62,13 @@ const Header: React.FC = () => {
             Dashboard
           </Button>
           
+          {isAuthenticated && (
+            <div className="px-4 py-2 border-t border-border">
+              <p className="text-sm font-medium mb-1">Signed in as:</p>
+              <p className="text-md font-bold">{user?.username}</p>
+            </div>
+          )}
+          
           {isAuthenticated ? (
             <Button 
               variant="ghost" 
@@ -117,8 +125,9 @@ const Header: React.FC = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  {user?.username}
+                <DropdownMenuLabel className="flex flex-col">
+                  <span className="font-normal text-xs text-muted-foreground">Signed in as</span>
+                  <span className="font-medium">{user?.username}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/dashboard')}>

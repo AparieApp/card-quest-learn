@@ -1,149 +1,59 @@
-import React, { useEffect, useState } from 'react';
+
+import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Deck } from '@/types/deck';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Edit, Trash, Share2, PlayCircle, ClipboardCheck, Bookmark, ExternalLink } from 'lucide-react';
-import { useDeck } from '@/context/DeckContext';
-import { useFollowedDecks } from '@/hooks/useFollowedDecks';
-import { followedDeckService } from '@/services/followedDeckService';
+import { formatDistanceToNow } from 'date-fns';
+import DeckOwner from './DeckOwner';
 
 interface DeckCardProps {
   deck: Deck;
+  isFavorite?: boolean;
   isFollowed?: boolean;
+  onDeleteDeck?: (id: string) => void;
 }
 
-const DeckCard: React.FC<DeckCardProps> = ({ deck, isFollowed = false }) => {
+const DeckCard = ({ deck, isFavorite = false, isFollowed = false }: DeckCardProps) => {
   const navigate = useNavigate();
-  const { toggleFavorite, isFavorite, deleteDeck } = useDeck();
-  const { unfollowDeck } = useFollowedDecks();
-  const [shareCode, setShareCode] = useState<string | null>(null);
-  
-  useEffect(() => {
-    // If this is a followed deck, get the share code
-    if (isFollowed) {
-      const getShareCode = async () => {
-        const code = await followedDeckService.getShareCodeForDeck(deck.id);
-        setShareCode(code);
-      };
-      getShareCode();
-    }
-  }, [isFollowed, deck.id]);
-  
-  const handlePlay = () => {
-    if (isFollowed) {
-      if (shareCode) {
-        navigate(`/shared/${shareCode}/practice`);
-      } else {
-        navigate(`/deck/${deck.id}/practice`);
-      }
-    } else {
-      navigate(`/deck/${deck.id}/practice`);
-    }
-  };
-  
-  const handleTest = () => {
-    if (isFollowed) {
-      if (shareCode) {
-        navigate(`/shared/${shareCode}/test`);
-      } else {
-        navigate(`/deck/${deck.id}/test`);
-      }
-    } else {
-      navigate(`/deck/${deck.id}/test`);
-    }
-  };
-  
-  const handleEdit = () => {
-    navigate(`/deck/${deck.id}`);
-  };
-  
-  const handleShare = () => {
-    navigate(`/deck/${deck.id}/share`);
-  };
-  
-  const handleToggleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-    toggleFavorite(deck.id);
-  };
-  
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-    if (confirm('Are you sure you want to delete this deck?')) {
-      deleteDeck(deck.id);
-    }
-  };
+  const cardCount = deck.cards ? deck.cards.length : 0;
+  const lastUpdated = formatDistanceToNow(new Date(deck.updated_at), { addSuffix: true });
 
-  const handleUnfollow = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-    if (confirm('Are you sure you want to unfollow this deck?')) {
-      unfollowDeck(deck.id);
-    }
+  const handleClick = () => {
+    navigate(`/deck/${deck.id}`);
   };
 
   return (
-    <Card className="h-full cursor-pointer hover:shadow-md transition-shadow duration-200">
+    <Card className="overflow-hidden hover:border-flashcard-primary transition-all duration-200 cursor-pointer" onClick={handleClick}>
       <CardHeader className="pb-2">
-        <CardTitle className="flex justify-between items-center">
-          <span className="text-lg line-clamp-1">{deck.title}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="p-0 h-8 w-8" 
-            onClick={handleToggleFavorite}
-          >
-            <Heart 
-              className={`h-5 w-5 ${isFavorite(deck.id) ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} 
-            />
-          </Button>
-        </CardTitle>
+        <CardTitle className="line-clamp-1 text-lg">{deck.title}</CardTitle>
       </CardHeader>
-      <CardContent 
-        className="pb-2"
-        onClick={handlePlay}
-      >
-        <p className="text-muted-foreground text-sm line-clamp-2">
-          {isFollowed ? (
-            <span className="flex items-center gap-1">
-              <Bookmark className="h-3 w-3" />
-              Followed deck {deck.description ? `• ${deck.description}` : `• ${deck.cards.length} cards`}
-            </span>
-          ) : (
-            deck.description || `${deck.cards.length} cards`
-          )}
+      <CardContent>
+        <p className="text-muted-foreground text-sm line-clamp-2 min-h-[2.5rem]">
+          {deck.description || "No description"}
         </p>
-      </CardContent>
-      <CardFooter className="pt-2 flex justify-between">
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handlePlay}>
-            <PlayCircle className="h-4 w-4 mr-1" />
-            Practice
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleTest}>
-            <ClipboardCheck className="h-4 w-4 mr-1" />
-            Test
-          </Button>
+        <div className="flex flex-col gap-2 mt-4">
+          <div className="flex justify-between items-center">
+            <Badge variant="outline" className="text-xs">
+              {cardCount} {cardCount === 1 ? 'card' : 'cards'}
+            </Badge>
+            {isFavorite && (
+              <Badge className="bg-red-500 text-white hover:bg-red-600 text-xs">
+                Favorite
+              </Badge>
+            )}
+            {isFollowed && (
+              <Badge className="bg-blue-500 text-white hover:bg-blue-600 text-xs">
+                Following
+              </Badge>
+            )}
+          </div>
+          <DeckOwner creatorId={deck.creator_id} className="mt-1" />
         </div>
-        <div className="flex gap-1">
-          {isFollowed ? (
-            <>
-              <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleUnfollow}>
-                <Bookmark className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleEdit}>
-                <Edit className="h-4 w-4 text-muted-foreground" />
-              </Button>
-              <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleShare}>
-                <Share2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
-              <Button variant="ghost" size="sm" className="p-2 h-8 w-8" onClick={handleDelete}>
-                <Trash className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </>
-          )}
+      </CardContent>
+      <CardFooter className="pt-2 pb-3 text-xs text-muted-foreground">
+        <div className="w-full flex justify-between">
+          <span>Updated {lastUpdated}</span>
         </div>
       </CardFooter>
     </Card>

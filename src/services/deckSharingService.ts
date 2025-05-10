@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Deck } from '@/types/deck';
+import { Deck, Flashcard } from '@/types/deck';
 import { deckOperationsService } from './deckOperationsService';
 
 export const deckSharingService = {
@@ -43,20 +43,23 @@ export const deckSharingService = {
 
       if (cardsError) throw cardsError;
 
+      // Convert to proper Flashcard type with strict question_type values
+      const typedCards: Flashcard[] = newCards.map(card => ({
+        id: card.id,
+        deck_id: card.deck_id,
+        front_text: card.front_text,
+        question_type: (card.question_type as 'single-choice' | 'multiple-select') || 'single-choice',
+        correct_answer: card.correct_answer,
+        correct_answers: card.correct_answers || [],
+        incorrect_answers: card.incorrect_answers || [],
+        manual_incorrect_answers: card.manual_incorrect_answers || [],
+        question_image_url: card.question_image_url,
+        created_at: card.created_at
+      }));
+
       return {
         ...newDeck,
-        cards: newCards.map(card => ({
-          id: card.id,
-          deck_id: card.deck_id,
-          front_text: card.front_text,
-          question_type: card.question_type || 'single-choice',
-          correct_answer: card.correct_answer,
-          correct_answers: card.correct_answers,
-          incorrect_answers: card.incorrect_answers,
-          manual_incorrect_answers: card.manual_incorrect_answers || [],
-          question_image_url: card.question_image_url,
-          created_at: card.created_at
-        }))
+        cards: typedCards
       };
     }
 

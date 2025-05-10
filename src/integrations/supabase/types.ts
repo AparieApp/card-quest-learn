@@ -141,7 +141,7 @@ export type Database = {
       }
       flashcards: {
         Row: {
-          correct_answer: string
+          correct_answer: string | null
           correct_answers: string[] | null
           created_at: string
           deck_id: string
@@ -153,7 +153,7 @@ export type Database = {
           question_type: string | null
         }
         Insert: {
-          correct_answer: string
+          correct_answer?: string | null
           correct_answers?: string[] | null
           created_at?: string
           deck_id: string
@@ -165,7 +165,7 @@ export type Database = {
           question_type?: string | null
         }
         Update: {
-          correct_answer?: string
+          correct_answer?: string | null
           correct_answers?: string[] | null
           created_at?: string
           deck_id?: string
