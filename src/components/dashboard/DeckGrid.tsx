@@ -7,13 +7,17 @@ interface DeckGridProps {
   emptyMessage?: string;
   isFollowed?: boolean;
   onDeleteDeck?: (id: string) => void;
+  onToggleFavorite?: (id: string) => void;
+  favoritesArray?: string[];
 }
 
 const DeckGrid: React.FC<DeckGridProps> = ({ 
   decks, 
   emptyMessage = 'No decks found.',
   isFollowed = false,
-  onDeleteDeck
+  onDeleteDeck,
+  onToggleFavorite,
+  favoritesArray = []
 }) => {
   if (decks.length === 0) {
     return (
@@ -25,14 +29,20 @@ const DeckGrid: React.FC<DeckGridProps> = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {decks.map(deck => (
-        <DeckCard 
-          key={deck.id} 
-          deck={deck} 
-          isFollowed={isFollowed} 
-          onDeleteDeck={onDeleteDeck}
-        />
-      ))}
+      {decks.map(deck => {
+        const isFavorite = favoritesArray.includes(deck.id);
+        
+        return (
+          <DeckCard 
+            key={deck.id} 
+            deck={deck} 
+            isFavorite={isFavorite}
+            isFollowed={isFollowed}
+            onDeleteDeck={onDeleteDeck}
+            onToggleFavorite={onToggleFavorite}
+          />
+        );
+      })}
     </div>
   );
 };

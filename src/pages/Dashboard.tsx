@@ -12,7 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useFollowedDecks } from '@/hooks/useFollowedDecks';
 
 const Dashboard = () => {
-  const { decks = [], favorites = [], loading, deleteDeck } = useDeck();
+  const { decks = [], favorites = [], loading, deleteDeck, toggleFavorite } = useDeck();
   const { followedDecks = [], loading: followedLoading } = useFollowedDecks();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState('decks');
@@ -81,6 +81,8 @@ const Dashboard = () => {
                     decks={Array.isArray(decks) ? decks : []} 
                     emptyMessage="You haven't created any decks yet. Click 'Create Deck' to get started."
                     onDeleteDeck={deleteDeck}
+                    onToggleFavorite={toggleFavorite}
+                    favoritesArray={favorites}
                   />
                 )}
               </TabsContent>
@@ -95,6 +97,9 @@ const Dashboard = () => {
                   <DeckGrid 
                     decks={favoritedDecks} 
                     emptyMessage="You haven't favorited any decks yet."
+                    onDeleteDeck={deleteDeck}
+                    onToggleFavorite={toggleFavorite}
+                    favoritesArray={favorites}
                   />
                 )}
               </TabsContent>
