@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -178,14 +177,21 @@
   /* iOS-only styles */
   body {
     /* Prevents scrolling issues on iOS */
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
+    /* position: fixed; */
+    /* width: 100%; */
+    /* height: 100%; */
+    /* overflow: auto; */
   }
   
   /* Prevent element highlighting on tap */
   * {
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* Keep -webkit-tap-highlight-color globally if it wasn't only in the @supports block, 
+   or add it here if it was iOS-specific but still desired.
+   Assuming it's generally good to prevent tap highlight. */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
