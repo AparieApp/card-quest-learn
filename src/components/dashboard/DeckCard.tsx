@@ -91,7 +91,7 @@ const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, 
         </p>
       </CardContent>
       <CardFooter className="pt-1 pb-2">
-        <div className="w-full flex items-center justify-between">
+        <div className="w-full flex flex-wrap items-center justify-between gap-2">
           {/* Left: Practice/Test */}
           <div className="flex flex-wrap gap-1 sm:gap-2">
             <Button 
