@@ -22,13 +22,15 @@ const DeckGrid: React.FC<DeckGridProps> = ({
   if (decks.length === 0) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
-        <p>{emptyMessage}</p>
+        <div className="text-center space-y-2">
+          <p className="text-responsive-base">{emptyMessage}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
       {decks.map(deck => {
         const isFavorite = favoritesArray.includes(deck.id);
         

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { BookOpen, Play, Edit, Share2, Trash2, Heart } from 'lucide-react';
 import DeckOwner from './DeckOwner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DeckCardProps {
   deck: Deck;
@@ -18,6 +19,7 @@ interface DeckCardProps {
 
 const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, onToggleFavorite }: DeckCardProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const cardCount = deck.cards ? deck.cards.length : 0;
   const lastUpdated = formatDistanceToNow(new Date(deck.updated_at), { addSuffix: true });
 
@@ -63,41 +65,53 @@ const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, 
   };
 
   return (
-    <Card className="overflow-hidden hover:border-flashcard-primary transition-all duration-200 cursor-pointer" onClick={handleClick}>
-      <CardHeader className="pb-2 flex flex-row items-start justify-between">
+    <Card className="overflow-hidden hover:border-flashcard-primary transition-all duration-200 cursor-pointer hover-touch group" onClick={handleClick}>
+      <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
         {/* Left part of header: Title and Card Count */}
-        <div className="flex-grow">
+        <div className="flex-grow min-w-0 pr-2">
+          <div className="flex items-start gap-2 mb-1">
+            <CardTitle className="line-clamp-2 text-base sm:text-lg leading-tight">
+              {deck.title}
+            </CardTitle>
+          </div>
           <div className="flex items-center gap-2">
-            <CardTitle className="line-clamp-1 text-lg">{deck.title}</CardTitle>
-            <Badge variant="outline" className="text-xs h-5 flex items-center whitespace-nowrap">{cardCount} {cardCount === 1 ? 'card' : 'cards'}</Badge>
+            <Badge variant="outline" className="text-xs h-5 flex items-center whitespace-nowrap">
+              {cardCount} {cardCount === 1 ? 'card' : 'cards'}
+            </Badge>
           </div>
         </div>
+        
         {/* Right part of header: Favorite Button */}
         {onToggleFavorite && (
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={handleToggleFavorite} 
-            className="hover:bg-flashcard-primary hover:text-white transition-colors ml-2 -mt-1 -mr-1 flex-shrink-0" // Adjusted margin for alignment
+            className="btn-mobile-optimized hover:bg-flashcard-primary hover:text-white transition-colors flex-shrink-0" 
             title={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <Heart className={`h-5 w-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+            <Heart className={`h-4 w-4 sm:h-5 sm:w-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
           </Button>
         )}
       </CardHeader>
-      <CardContent className="pb-1">
+      
+      <CardContent className="pb-3">
         <p className="text-muted-foreground text-sm line-clamp-2 min-h-[2.5rem]">
           {deck.description || "No description"}
         </p>
       </CardContent>
-      <CardFooter className="pt-1 pb-2">
-        <div className="w-full flex flex-wrap items-center justify-between gap-2">
-          {/* Left: Practice/Test */}
-          <div className="flex flex-wrap gap-1 sm:gap-2">
+      
+      <CardFooter className="pt-0 pb-3">
+        <div className="w-full space-y-3">
+          {/* Practice and Test buttons - full width on mobile */}
+          <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
             <Button 
               variant="outline" 
               onClick={handlePractice} 
-              className="hover:bg-flashcard-primary hover:text-white transition-colors"
+              className={`
+                hover:bg-flashcard-primary hover:text-white transition-colors btn-mobile-optimized
+                ${isMobile ? 'w-full justify-center' : 'flex-1'}
+              `}
             >
               <BookOpen className="h-4 w-4 mr-2" />
               Practice
@@ -105,22 +119,26 @@ const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, 
             <Button 
               variant="outline" 
               onClick={handleTest}
-              className="hover:bg-flashcard-primary hover:text-white transition-colors"
+              className={`
+                hover:bg-flashcard-primary hover:text-white transition-colors btn-mobile-optimized
+                ${isMobile ? 'w-full justify-center' : 'flex-1'}
+              `}
             >
               <Play className="h-4 w-4 mr-2" />
               Test
             </Button>
           </div>
-          {/* Right: Share/Delete (Favorite button moved to header) */}
-          <div className="flex items-center gap-1">
+          
+          {/* Action buttons */}
+          <div className="flex items-center justify-end gap-1">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={handleShare} 
-              className="hover:bg-flashcard-primary hover:text-white transition-colors"
+              className="btn-mobile-optimized hover:bg-flashcard-primary hover:text-white transition-colors"
               title="Share"
             >
-              <Share2 className="h-5 w-5" />
+              <Share2 className="h-4 w-4" />
             </Button>
             {onDeleteDeck && (
               <Button 
@@ -134,10 +152,10 @@ const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, 
                     }
                   }
                 }}
-                className="hover:bg-flashcard-primary hover:text-white transition-colors"
+                className="btn-mobile-optimized hover:bg-red-500 hover:text-white transition-colors"
                 title="Delete"
               >
-                <Trash2 className="h-5 w-5" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>

@@ -1,15 +1,16 @@
-
 import React, { useEffect } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/auth';
 import Layout from '@/components/layout/Layout';
 import { Loader2 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, isLoading, authInitialized } = useAuth();
+  const isMobile = useIsMobile();
   
   // Check if there's a redirect parameter
   const searchParams = new URLSearchParams(location.search);
@@ -27,7 +28,7 @@ const Auth = () => {
       <Layout>
         <div className="container py-12 flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="h-10 w-10 animate-spin text-flashcard-primary" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+          <p className="mt-4 text-muted-foreground text-responsive-sm">Loading...</p>
         </div>
       </Layout>
     );
@@ -40,8 +41,17 @@ const Auth = () => {
 
   return (
     <Layout showHeader={true}>
-      <div className="container py-8 md:py-12 flex flex-col items-center justify-center min-h-[80vh] safe-top safe-bottom">
-        <AuthForm onSuccess={() => navigate(redirectTo, { replace: true })} />
+      <div className={`
+        container flex flex-col items-center justify-center
+        ${isMobile 
+          ? 'py-4 px-4 content-mobile-height' 
+          : 'py-8 md:py-12 min-h-[80vh]'
+        }
+        safe-area-x
+      `}>
+        <div className="w-full max-w-md mx-auto">
+          <AuthForm onSuccess={() => navigate(redirectTo, { replace: true })} />
+        </div>
       </div>
     </Layout>
   );

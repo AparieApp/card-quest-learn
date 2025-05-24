@@ -44,37 +44,90 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="container py-6 space-y-6 px-4 md:px-6">
+      <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-4 md:px-6">
+        {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {username}!</h1>
-            <p className="text-muted-foreground">Manage your decks</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-responsive-xl font-bold mb-1 truncate">
+              Welcome, {username}!
+            </h1>
+            <p className="text-muted-foreground text-responsive-sm">Manage your decks</p>
           </div>
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto flex-shrink-0">
             <CreateDeckButton />
           </div>
         </div>
         
-        <div className="flex justify-between items-center">
+        {/* Tabs Section */}
+        <div className="w-full">
           <Tabs 
             defaultValue="decks" 
             className="w-full" 
             value={activeTab} 
             onValueChange={setActiveTab}
           >
-            <TabsList className={isMobile ? "w-full grid grid-cols-4" : ""}>
-              <TabsTrigger value="decks">My Decks</TabsTrigger>
-              <TabsTrigger value="favorites">Favorites</TabsTrigger>
-              <TabsTrigger value="followed">Followed</TabsTrigger>
-              <TabsTrigger value="find">Find Deck</TabsTrigger>
-            </TabsList>
+            <div className="sticky top-16 bg-background/95 backdrop-blur pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 md:static md:bg-transparent md:backdrop-blur-none">
+              <TabsList className={`
+                ${isMobile 
+                  ? 'w-full grid grid-cols-4 h-auto p-1' 
+                  : 'inline-flex h-10'
+                }
+                bg-muted/50 rounded-lg
+              `}>
+                <TabsTrigger 
+                  value="decks" 
+                  className={`
+                    ${isMobile ? 'text-xs px-1 py-2' : 'text-sm px-3 py-1.5'}
+                    data-[state=active]:bg-background
+                    data-[state=active]:text-flashcard-primary
+                    transition-all duration-200
+                  `}
+                >
+                  My Decks
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="favorites"
+                  className={`
+                    ${isMobile ? 'text-xs px-1 py-2' : 'text-sm px-3 py-1.5'}
+                    data-[state=active]:bg-background
+                    data-[state=active]:text-flashcard-primary
+                    transition-all duration-200
+                  `}
+                >
+                  Favorites
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="followed"
+                  className={`
+                    ${isMobile ? 'text-xs px-1 py-2' : 'text-sm px-3 py-1.5'}
+                    data-[state=active]:bg-background
+                    data-[state=active]:text-flashcard-primary
+                    transition-all duration-200
+                  `}
+                >
+                  Followed
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="find"
+                  className={`
+                    ${isMobile ? 'text-xs px-1 py-2' : 'text-sm px-3 py-1.5'}
+                    data-[state=active]:bg-background
+                    data-[state=active]:text-flashcard-primary
+                    transition-all duration-200
+                  `}
+                >
+                  Find Deck
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
-            <div className="mt-6">
-              <TabsContent value="decks">
+            {/* Tab Content */}
+            <div className="mt-4 sm:mt-6">
+              <TabsContent value="decks" className="mt-0">
                 {loading ? (
                   <div className="flex justify-center items-center p-8">
                     <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
-                    <p>Loading decks...</p>
+                    <p className="text-responsive-sm">Loading decks...</p>
                   </div>
                 ) : (
                   <DeckGrid 
@@ -87,11 +140,11 @@ const Dashboard = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="favorites">
+              <TabsContent value="favorites" className="mt-0">
                 {loading ? (
                   <div className="flex justify-center items-center p-8">
                     <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
-                    <p>Loading favorites...</p>
+                    <p className="text-responsive-sm">Loading favorites...</p>
                   </div>
                 ) : (
                   <DeckGrid 
@@ -104,11 +157,11 @@ const Dashboard = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="followed">
+              <TabsContent value="followed" className="mt-0">
                 {followedLoading ? (
                   <div className="flex justify-center items-center p-8">
                     <Loader2 className="h-6 w-6 mr-2 animate-spin text-flashcard-primary" />
-                    <p>Loading followed decks...</p>
+                    <p className="text-responsive-sm">Loading followed decks...</p>
                   </div>
                 ) : (
                   <DeckGrid 
@@ -119,14 +172,18 @@ const Dashboard = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="find" className="flex justify-center pt-4 sm:pt-8">
-                <div className="text-center space-y-4 w-full max-w-md">
-                  <h2 className="text-lg sm:text-xl font-semibold">Find a Shared Deck</h2>
-                  <p className="text-muted-foreground max-w-md">
-                    Enter a deck code shared with you to access the flashcards.
-                  </p>
-                  <div className="flex justify-center pt-2">
-                    <FindDeckForm />
+              <TabsContent value="find" className="mt-0">
+                <div className="flex justify-center pt-4 sm:pt-8">
+                  <div className="text-center space-y-4 w-full max-w-md mx-auto px-4">
+                    <h2 className="text-responsive-lg font-semibold">
+                      Find a Shared Deck
+                    </h2>
+                    <p className="text-muted-foreground text-responsive-sm max-w-md mx-auto">
+                      Enter a deck code shared with you to access the flashcards.
+                    </p>
+                    <div className="flex justify-center pt-2">
+                      <FindDeckForm />
+                    </div>
                   </div>
                 </div>
               </TabsContent>

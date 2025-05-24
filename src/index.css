@@ -96,24 +96,60 @@
     min-height: 100vh;
     min-height: calc(var(--vh, 1vh) * 100);
     -webkit-overflow-scrolling: touch;
+    /* Prevent iOS zoom on input focus */
+    font-size: 16px;
+    /* Better text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Improve tap target sizes on mobile */
-  .ios-device button, 
-  .ios-device a,
-  .ios-device [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+  /* Enhanced mobile optimizations */
+  .ios-device,
+  .mobile-device {
+    /* Improved tap target sizes */
+    button, 
+    a,
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"] {
+      min-height: 44px;
+      min-width: 44px;
+      /* Better touch feedback */
+      touch-action: manipulation;
+      /* Prevent text selection on buttons */
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Better input handling */
+    input,
+    textarea,
+    select {
+      font-size: 16px; /* Prevent zoom on iOS */
+      /* Better touch feedback */
+      touch-action: manipulation;
+    }
   }
 
   /* Prevent text size adjustment after orientation changes */
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Better scroll behavior */
+    scroll-behavior: smooth;
+  }
+
+  /* Enhanced focus styles for better accessibility */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }
 
 @layer utilities {
+  /* Enhanced safe area utilities */
   .safe-top {
     padding-top: env(safe-area-inset-top);
   }
@@ -129,14 +165,105 @@
   .safe-right {
     padding-right: env(safe-area-inset-right);
   }
+
+  .safe-area-full {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-y {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   
-  /* iOS-specific adjustments */
+  /* Margin variants for safe areas */
+  .safe-top-m {
+    margin-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom-m {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-left-m {
+    margin-left: env(safe-area-inset-left);
+  }
+  
+  .safe-right-m {
+    margin-right: env(safe-area-inset-right);
+  }
+
+  /* iOS-specific utilities */
   .ios-notch-padding {
     padding-top: env(safe-area-inset-top);
   }
 
   .ios-home-indicator-padding {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Container responsive adjustments */
+  .container-mobile {
+    @apply px-4 mx-auto max-w-full;
+  }
+
+  .container-tablet {
+    @apply px-6 mx-auto max-w-6xl;
+  }
+
+  .container-desktop {
+    @apply px-8 mx-auto max-w-7xl;
+  }
+
+  /* Responsive text utilities */
+  .text-responsive-xl {
+    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
+  }
+
+  .text-responsive-lg {
+    @apply text-base sm:text-lg md:text-xl lg:text-2xl;
+  }
+
+  .text-responsive-base {
+    @apply text-sm sm:text-base md:text-lg;
+  }
+
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm md:text-base;
+  }
+
+  /* Button responsive utilities */
+  .btn-mobile-optimized {
+    @apply min-h-[44px] min-w-[44px] touch-manipulation;
+  }
+
+  .btn-responsive-padding {
+    @apply px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-3;
+  }
+
+  /* Grid responsive utilities */
+  .grid-responsive-cards {
+    @apply grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  .grid-responsive-tabs {
+    @apply grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:flex;
+  }
+
+  /* Navigation utilities */
+  .nav-mobile-height {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .content-mobile-height {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 4rem);
   }
   
   /* Animation keyframes */
@@ -156,42 +283,110 @@
     animation: float 3s ease-in-out infinite;
   }
   
-  /* Enhanced responsiveness for different screen sizes */
-  .iphone-se {
-    /* Optimizations for iPhone SE (smaller device) */
-    @media screen and (max-width: 320px) {
+  /* Device-specific optimizations */
+  @media screen and (max-width: 320px) {
+    .iphone-se-text {
       font-size: 90%;
     }
+    
+    .iphone-se-padding {
+      @apply px-3 py-2;
+    }
+    
+    .iphone-se-gap {
+      @apply gap-2;
+    }
   }
-  
-  .iphone-pro-max {
-    /* Optimizations for larger iPhones */
-    @media screen and (min-width: 428px) {
-      /* Pro Max specific adjustments */
+
+  @media screen and (min-width: 390px) and (max-width: 428px) {
+    .iphone-12-optimized {
+      /* iPhone 12/13/14 specific optimizations */
+    }
+  }
+
+  @media screen and (min-width: 428px) {
+    .iphone-pro-max-optimized {
+      /* iPhone Pro Max specific optimizations */
+    }
+  }
+
+  /* Landscape orientation adjustments */
+  @media screen and (orientation: landscape) and (max-height: 500px) {
+    .landscape-mobile {
+      /* Adjustments for landscape mobile */
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+    
+    .landscape-mobile .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  /* High DPI display optimizations */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .retina-optimized {
+      /* High DPI specific styles */
+      border-width: 0.5px;
     }
   }
 }
 
-/* Additional iOS-specific adjustments */
+/* WebKit-specific styles for iOS Safari */
 @supports (-webkit-touch-callout: none) {
   /* iOS-only styles */
   body {
-    /* Prevents scrolling issues on iOS */
-    /* position: fixed; */
-    /* width: 100%; */
-    /* height: 100%; */
-    /* overflow: auto; */
+    /* Better iOS handling */
+    -webkit-overflow-scrolling: touch;
   }
   
   /* Prevent element highlighting on tap */
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* Better input handling on iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    /* Prevent iOS zoom */
+    font-size: 16px;
+    /* Better border radius on iOS */
+    border-radius: 0.375rem;
+    /* Remove iOS input styling */
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  /* Better button handling on iOS */
+  button {
+    /* Remove iOS button styling */
+    -webkit-appearance: none;
+    appearance: none;
+    /* Better touch feedback */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
-/* Keep -webkit-tap-highlight-color globally if it wasn't only in the @supports block, 
-   or add it here if it was iOS-specific but still desired.
-   Assuming it's generally good to prevent tap highlight. */
+/* Prevent tap highlight globally */
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Focus-within for better mobile navigation */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device specific styles */
+  .hover-touch:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+  
+  .button-touch:active {
+    transform: translateY(1px);
+    transition: transform 0.1s ease;
+  }
 }
