@@ -95,55 +95,51 @@ const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, 
         )}
       </CardHeader>
       
-      <CardContent className="pb-3">
+      <CardContent className="pb-1">
         <p className="text-muted-foreground text-sm line-clamp-2 min-h-[2.5rem]">
           {deck.description || "No description"}
         </p>
       </CardContent>
       
-      <CardFooter className="pt-0 pb-3">
-        <div className="w-full space-y-3">
-          {/* Practice and Test buttons - full width on mobile */}
-          <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+      <CardFooter className="pt-1 pb-3">
+        <div className="w-full flex flex-col gap-2">
+          {/* Practice and Test buttons - more compact layout */}
+          <div className={`flex gap-1.5 ${isMobile ? '' : ''}`}>
             <Button 
               variant="outline" 
               onClick={handlePractice} 
-              className={`
-                hover:bg-flashcard-primary hover:text-white transition-colors btn-mobile-optimized
-                ${isMobile ? 'w-full justify-center' : 'flex-1'}
-              `}
+              className="hover:bg-flashcard-primary hover:text-white transition-colors btn-mobile-optimized flex-1 text-sm"
+              size="sm"
             >
-              <BookOpen className="h-4 w-4 mr-2" />
+              <BookOpen className="h-4 w-4 mr-1.5" />
               Practice
             </Button>
             <Button 
               variant="outline" 
               onClick={handleTest}
-              className={`
-                hover:bg-flashcard-primary hover:text-white transition-colors btn-mobile-optimized
-                ${isMobile ? 'w-full justify-center' : 'flex-1'}
-              `}
+              className="hover:bg-flashcard-primary hover:text-white transition-colors btn-mobile-optimized flex-1 text-sm"
+              size="sm"
             >
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4 mr-1.5" />
               Test
             </Button>
           </div>
           
-          {/* Action buttons */}
+          {/* Action buttons - more compact */}
           <div className="flex items-center justify-end gap-1">
             <Button 
               variant="ghost" 
-              size="icon" 
+              size="sm" 
               onClick={handleShare} 
-              className="btn-mobile-optimized hover:bg-flashcard-primary hover:text-white transition-colors"
+              className="btn-mobile-optimized hover:bg-flashcard-primary hover:text-white transition-colors h-8 px-2"
               title="Share"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-3.5 w-3.5" />
             </Button>
             {onDeleteDeck && (
               <Button 
                 variant="ghost" 
-                size="icon" 
+                size="sm" 
                 onClick={e => {
                   e.stopPropagation();
                   if (window.confirm('Are you sure you want to delete this deck? This action cannot be undone.')) {
@@ -152,10 +148,10 @@ const DeckCard = ({ deck, isFavorite = false, isFollowed = false, onDeleteDeck, 
                     }
                   }
                 }}
-                className="btn-mobile-optimized hover:bg-red-500 hover:text-white transition-colors"
+                className="btn-mobile-optimized hover:bg-red-500 hover:text-white transition-colors h-8 px-2"
                 title="Delete"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

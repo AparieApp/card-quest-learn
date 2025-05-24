@@ -93,15 +93,36 @@ const DeckCardManager: React.FC<DeckCardManagerProps> = ({
         </div>
       </div>
       
-      <div className="flex items-center space-x-2 mb-4">
-        <Switch
-          id="show-card-images-toggle"
-          checked={showImages}
-          onCheckedChange={toggleShowImages}
-        />
-        <Label htmlFor="show-card-images-toggle" className="flex items-center cursor-pointer">
+      <div className="flex items-center space-x-2 py-2 px-3 bg-muted/30 rounded-lg border">
+        <div className="relative inline-flex items-center">
+          <input
+            type="checkbox"
+            id="show-card-images-toggle"
+            checked={showImages}
+            onChange={toggleShowImages}
+            className="sr-only"
+          />
+          <label
+            htmlFor="show-card-images-toggle"
+            className={`
+              relative inline-flex h-6 w-11 items-center rounded-md border-2 transition-colors duration-200 ease-in-out cursor-pointer
+              ${showImages 
+                ? 'bg-flashcard-primary border-flashcard-primary' 
+                : 'bg-gray-200 border-gray-300'
+              }
+            `}
+          >
+            <span
+              className={`
+                inline-block h-4 w-4 transform rounded-sm bg-white transition-transform duration-200 ease-in-out
+                ${showImages ? 'translate-x-6' : 'translate-x-1'}
+              `}
+            />
+          </label>
+        </div>
+        <Label htmlFor="show-card-images-toggle" className="flex items-center cursor-pointer text-sm font-medium">
           {showImages ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />} 
-          Show Card Images
+          Toggle Show Images
         </Label>
       </div>
 
